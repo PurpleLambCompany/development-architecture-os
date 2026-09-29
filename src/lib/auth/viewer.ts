@@ -4,24 +4,34 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { roleSide, type AppRole, type MemberSide } from "@/domain/roles/roles";
 
+export type ViewerMembership = {
+  organizationId: string;
+  organizationName: string;
+  role: AppRole;
+  side: MemberSide;
+};
+
 export type Viewer = {
   id: string;
   email: string;
   firstName: string;
   lastName: string;
   displayName: string;
-  /** null when the account has no active organization membership. */
+  /** Active memberships in active organizations. A person may belong to several. */
+  memberships: ViewerMembership[];
+  /**
+   * internal when the person has an active TPLCo membership, client when
+   * they only have client memberships, null when they have none.
+   */
   side: MemberSide | null;
-  role: AppRole | null;
-  organizationId: string | null;
-  organizationName: string | null;
-  membershipStatus: string | null;
+  /** The TPLCo role for internal users; null for client users, whose role is per organization. */
+  internalRole: AppRole | null;
 };
 
 /**
- * The signed-in user, their profile and organization role. Cached per
- * request. Used for navigation and to decide which actions to offer;
- * the database still enforces every permission.
+ * The signed-in user, their profile and organization memberships. Cached per
+ * request. Used for navigation and to decide which actions to offer; the
+ * database still enforces every permission.
  */
 export const getViewer = cache(async (): Promise<Viewer | null> => {
   const supabase = await createSupabaseServerClient();
@@ -30,7 +40,7 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [{ data: profile }, { data: membership }] = await Promise.all([
+  const [{ data: profile }, { data: rows }] = await Promise.all([
     supabase
       .from("profiles")
       .select("first_name, last_name, email, status")
@@ -39,8 +49,7 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
     supabase
       .from("organization_members")
       .select("role, status, organization_id, organizations(name, status)")
-      .eq("user_id", user.id)
-      .maybeSingle(),
+      .eq("user_id", user.id),
   ]);
 
   const firstName = profile?.first_name ?? "";
@@ -49,10 +58,19 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
 
   // Access requires an active profile, an active membership and an active
   // organization, exactly as the database helpers do.
-  const hasAccess =
-    profile?.status === "active" &&
-    membership?.status === "active" &&
-    membership.organizations?.status === "active";
+  const memberships: ViewerMembership[] =
+    profile?.status === "active"
+      ? (rows ?? [])
+          .filter((m) => m.status === "active" && m.organizations?.status === "active")
+          .map((m) => ({
+            organizationId: m.organization_id,
+            organizationName: m.organizations?.name ?? "",
+            role: m.role,
+            side: roleSide(m.role),
+          }))
+      : [];
+
+  const internal = memberships.find((m) => m.side === "internal");
 
   return {
     id: user.id,
@@ -60,11 +78,9 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
     firstName,
     lastName,
     displayName: [firstName, lastName].filter(Boolean).join(" ") || email,
-    side: hasAccess ? roleSide(membership.role) : null,
-    role: hasAccess ? membership.role : null,
-    organizationId: membership?.organization_id ?? null,
-    organizationName: membership?.organizations?.name ?? null,
-    membershipStatus: membership?.status ?? null,
+    memberships,
+    side: internal ? "internal" : memberships.length > 0 ? "client" : null,
+    internalRole: internal?.role ?? null,
   };
 });
 
@@ -74,18 +90,29 @@ export async function requireViewer(): Promise<Viewer> {
   return viewer;
 }
 
-export type InternalViewer = Viewer & { side: "internal"; role: AppRole };
-export type ClientViewer = Viewer & { side: "client"; role: AppRole; organizationId: string };
+export type InternalViewer = Viewer & {
+  side: "internal";
+  /** The viewer's TPLCo role. */
+  role: AppRole;
+  organizationName: string;
+};
+export type ClientViewer = Viewer & { side: "client" };
 
 export async function requireInternal(): Promise<InternalViewer> {
   const viewer = await requireViewer();
-  if (viewer.side !== "internal" || !viewer.role) redirect("/");
-  return viewer as InternalViewer;
+  const internal = viewer.memberships.find((m) => m.side === "internal");
+  if (viewer.side !== "internal" || !internal) redirect("/");
+  return {
+    ...viewer,
+    side: "internal",
+    role: internal.role,
+    organizationName: internal.organizationName,
+  };
 }
 
 export async function requireClient(): Promise<ClientViewer> {
   const viewer = await requireViewer();
-  if (viewer.side !== "client" || !viewer.role || !viewer.organizationId) redirect("/");
+  if (viewer.side !== "client") redirect("/");
   return viewer as ClientViewer;
 }
 

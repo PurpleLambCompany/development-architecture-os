@@ -48,7 +48,9 @@ insert into demo_users (id, email, first_name, last_name) values
   ('30000000-0000-4000-8000-000000000002', 'lead@harbor.test',          'Nadia',   'Farouk'),
   ('30000000-0000-4000-8000-000000000003', 'finance@harbor.test',       'Owen',    'Pratt'),
   ('30000000-0000-4000-8000-000000000004', 'contributor@harbor.test',   'Lucia',   'Moreno'),
-  ('30000000-0000-4000-8000-000000000005', 'viewer@harbor.test',        'Theo',    'Garner');
+  ('30000000-0000-4000-8000-000000000005', 'viewer@harbor.test',        'Theo',    'Garner'),
+  -- Independent advisor who works with both client organizations
+  ('40000000-0000-4000-8000-000000000001', 'advisor@consulting.test',   'Claire',  'Donovan');
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -108,7 +110,10 @@ insert into public.organization_members (organization_id, user_id, role) values
   ('a0000000-0000-4000-8000-000000000003', '30000000-0000-4000-8000-000000000002', 'client_project_lead'),
   ('a0000000-0000-4000-8000-000000000003', '30000000-0000-4000-8000-000000000003', 'client_finance'),
   ('a0000000-0000-4000-8000-000000000003', '30000000-0000-4000-8000-000000000004', 'client_contributor'),
-  ('a0000000-0000-4000-8000-000000000003', '30000000-0000-4000-8000-000000000005', 'client_viewer');
+  ('a0000000-0000-4000-8000-000000000003', '30000000-0000-4000-8000-000000000005', 'client_viewer'),
+  -- One person, two organizations, a different role in each.
+  ('a0000000-0000-4000-8000-000000000002', '40000000-0000-4000-8000-000000000001', 'client_contributor'),
+  ('a0000000-0000-4000-8000-000000000003', '40000000-0000-4000-8000-000000000001', 'client_project_lead');
 
 -- -----------------------------------------------------------------------------
 -- Engagements
@@ -183,7 +188,18 @@ insert into public.engagement_members (engagement_id, user_id, side, role) value
   ('e0000000-0000-4000-8000-000000000003', '10000000-0000-4000-8000-000000000003', 'internal', 'architect'),
   ('e0000000-0000-4000-8000-000000000003', '30000000-0000-4000-8000-000000000001', 'client',   'executive_sponsor'),
   ('e0000000-0000-4000-8000-000000000003', '30000000-0000-4000-8000-000000000002', 'client',   'client_project_lead'),
-  ('e0000000-0000-4000-8000-000000000003', '30000000-0000-4000-8000-000000000005', 'client',   'client_viewer');
+  ('e0000000-0000-4000-8000-000000000003', '30000000-0000-4000-8000-000000000005', 'client',   'client_viewer'),
+  -- The multi-organization advisor, on one engagement in each organization
+  ('e0000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000001', 'client',   'client_contributor'),
+  ('e0000000-0000-4000-8000-000000000003', '40000000-0000-4000-8000-000000000001', 'client',   'client_project_lead');
+
+-- A capability override: Meridian's Project Lead has no financial visibility
+-- by default; the sponsor authorized it for the Innovation District only.
+insert into public.engagement_member_capability_overrides (engagement_member_id, capability, granted, reason)
+select em.id, 'view_financials', true, 'Authorized by the Executive Sponsor'
+from public.engagement_members em
+where em.engagement_id = 'e0000000-0000-4000-8000-000000000001'
+  and em.user_id = '20000000-0000-4000-8000-000000000002';
 
 -- -----------------------------------------------------------------------------
 -- Method/IP (internal only; exists to prove client isolation)

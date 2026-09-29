@@ -7,7 +7,7 @@ export function UserMenu({
   organizationName,
 }: {
   name: string;
-  role: AppRole;
+  role: AppRole | null;
   organizationName: string | null;
 }) {
   return (
@@ -15,8 +15,7 @@ export function UserMenu({
       <div className="text-right leading-tight">
         <p className="text-sm text-ink">{name}</p>
         <p className="text-xs text-ink-subtle">
-          {ROLE_LABELS[role]}
-          {organizationName ? ` · ${organizationName}` : ""}
+          {[role ? ROLE_LABELS[role] : null, organizationName].filter(Boolean).join(" · ")}
         </p>
       </div>
       <form action={signOut}>

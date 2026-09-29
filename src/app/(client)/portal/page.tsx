@@ -36,6 +36,7 @@ export default async function PortalHome() {
                     {engagement.title}
                   </Link>
                   <p className="text-sm text-ink-muted">
+                    {engagement.organizations?.name ? `${engagement.organizations.name} · ` : ""}
                     {ENGAGEMENT_TYPE_LABELS[engagement.engagement_type]}
                     {engagement.start_date
                       ? ` · ${formatDateRange(engagement.start_date, engagement.target_end_date)}`

@@ -1,20 +1,62 @@
-# Row Level Security and role matrix (Phase 1)
+# Row Level Security, roles and capabilities (Phase 1)
 
-Every table has RLS enabled. Policies call `SECURITY DEFINER` helpers in the unexposed `private` schema (ADR-0003). `anon` has no privileges on any table. Tests: `supabase/tests/01_phase1_rls.test.sql` (`pnpm db:test`).
+Every table has RLS enabled. Policies call `SECURITY DEFINER` helpers in the unexposed `private` schema (ADR-0003). `anon` has no privileges on any table. Tests (`pnpm db:test`, also run in CI): `01_phase1_rls.test.sql`, `02_multi_organization.test.sql`, `03_engagement_capabilities.test.sql` in `supabase/tests/`.
 
 ## Who can see what
 
-| Table                  | System Admin / Principal Architect | Other internal roles    | Client users                         |
-| ---------------------- | ---------------------------------- | ----------------------- | ------------------------------------ |
-| `organizations`        | all                                | all                     | own organization                     |
-| `organization_members` | all                                | all                     | own organization                     |
-| `profiles`             | all                                | all                     | self + people on a shared engagement |
-| `engagements`          | all                                | assigned only           | assigned **and** in own organization |
-| `engagement_members`   | for visible engagements            | for visible engagements | for visible engagements              |
-| `method_assets`        | yes                                | yes                     | **never**                            |
-| `activity_log`         | yes                                | no                      | no                                   |
+| Table                                    | System Admin / Principal Architect | Other internal roles    | Client users                                                        |
+| ---------------------------------------- | ---------------------------------- | ----------------------- | ------------------------------------------------------------------- |
+| `organizations`                          | all                                | all                     | organizations they are an active member of                          |
+| `organization_members`                   | all                                | all                     | members of organizations they belong to                             |
+| `profiles`                               | all                                | all                     | self + people on a shared engagement                                |
+| `engagements`                            | all                                | assigned only           | assigned **and** an active member of that engagement's organization |
+| `role_capability_defaults`               | all                                | all                     | all (reference data)                                                |
+| `engagement_member_capability_overrides` | for visible engagements            | for visible engagements | their own only                                                      |
+| `engagement_members`                     | for visible engagements            | for visible engagements | for visible engagements                                             |
+| `method_assets`                          | yes                                | yes                     | **never**                                                           |
+| `activity_log`                           | yes                                | no                      | no                                                                  |
 
 "Active" means the profile, the organization membership and the organization are all `active`. Invited or suspended members see nothing.
+
+A person may belong to several organizations (ADR-0007). Every check is made per organization: an assignment to a client engagement counts only while the person has an active membership in that engagement's organization, and suspending one membership affects that organization only.
+
+Finance Administrators see only engagements they are assigned to, as above, even though they hold portfolio-wide financial visibility (below).
+
+## Engagement capabilities (ADR-0008)
+
+Permissions on an engagement are evaluated through capabilities. A member's effective capability is their override for that engagement if one exists, otherwise their role default.
+
+| Role                  | view_financials | approve_change_orders | pay_invoices | approve_architecture | manage_client_team | view_confidential_deliverables |
+| --------------------- | :-------------: | :-------------------: | :----------: | :------------------: | :----------------: | :----------------------------: |
+| System Administrator  |  ✓ (portfolio)  |          n/a          |     n/a      |          ✓           |         ✓          |               ✓                |
+| Principal Architect   |        ✓        |          n/a          |     n/a      |          ✓           |         ✓          |               ✓                |
+| Architect             |                 |          n/a          |     n/a      |                      |                    |               ✓                |
+| Researcher            |                 |          n/a          |     n/a      |                      |                    |               ✓                |
+| Project Administrator |                 |          n/a          |     n/a      |                      |         ✓          |               ✓                |
+| Finance Administrator |  ✓ (portfolio)  |          n/a          |     n/a      |                      |                    |                                |
+| Executive Sponsor     |        ✓        |           ✓           |      ✓       |          ✓           |         ✓          |               ✓                |
+| Client Project Lead   |                 |                       |              |          ✓           |         ✓          |               ✓                |
+| Client Finance        |        ✓        |                       |      ✓       |                      |                    |                                |
+| Client Contributor    |                 |                       |              |                      |                    |                                |
+| Client Viewer         |                 |                       |              |                      |                    |                                |
+
+"n/a": client-side only; cannot be granted to internal members. "Portfolio": System and Finance Administrators hold `view_financials` on every engagement **without assignment**. That passes the financial check (`private.can_view_engagement_financials`) only; it does not make the engagement, its team or any project content visible. Everyone else holds a capability only through an active assignment.
+
+| Helper                                             | Purpose                                         |
+| -------------------------------------------------- | ----------------------------------------------- |
+| `private.has_engagement_capability(engagement, c)` | caller holds capability `c` on the engagement   |
+| `private.can_view_engagement_financials(e)`        | the check Phase 2 financial tables will use     |
+| `private.can_manage_capability(e, member, c)`      | caller may grant or revoke `c` for that member  |
+| `public.my_engagement_capabilities(e)`             | the caller's effective capabilities, for the UI |
+
+Changing capabilities (insert/update/delete of overrides):
+
+| Capability                                                                     | Who may grant or revoke                                                                 |
+| ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `view_financials`, `approve_change_orders`, `pay_invoices`                     | System Admin, Principal Architect, Finance Administrator **assigned** to the engagement |
+| `approve_architecture`, `manage_client_team`, `view_confidential_deliverables` | whoever can manage the engagement (see below)                                           |
+
+Nobody except a System Administrator can change their own capabilities. Role defaults cannot be changed through the API.
 
 ## Who can change what
 
@@ -31,6 +73,7 @@ Every table has RLS enabled. Policies call `SECURITY DEFINER` helpers in the une
 | Edit own first/last name                          | everyone                                                                            |
 | Change profile status or email                    | System Admin                                                                        |
 | Manage method assets                              | System Admin, Principal Architect                                                   |
+| Grant / revoke engagement capabilities            | see the capability table above                                                      |
 | Write activity log                                | nobody (triggers only)                                                              |
 
 Architects, Researchers and Finance Administrators have read access to assigned engagements in Phase 1. Their write permissions arrive with the tables they own (finance in Phase 2; architecture and intelligence in Phases 3–4). Client users have no write access in Phase 1 except their own name.

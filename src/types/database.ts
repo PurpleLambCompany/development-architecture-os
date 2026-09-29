@@ -81,6 +81,64 @@ export type Database = {
           },
         ];
       };
+      engagement_member_capability_overrides: {
+        Row: {
+          capability: Database["public"]["Enums"]["engagement_capability"];
+          created_at: string;
+          created_by: string | null;
+          engagement_id: string;
+          engagement_member_id: string;
+          granted: boolean;
+          id: string;
+          reason: string;
+          updated_at: string;
+        };
+        Insert: {
+          capability: Database["public"]["Enums"]["engagement_capability"];
+          created_at?: string;
+          created_by?: string | null;
+          engagement_id: string;
+          engagement_member_id: string;
+          granted: boolean;
+          id?: string;
+          reason?: string;
+          updated_at?: string;
+        };
+        Update: {
+          capability?: Database["public"]["Enums"]["engagement_capability"];
+          created_at?: string;
+          created_by?: string | null;
+          engagement_id?: string;
+          engagement_member_id?: string;
+          granted?: boolean;
+          id?: string;
+          reason?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "engagement_member_capability_override_engagement_member_id_fkey";
+            columns: ["engagement_member_id"];
+            isOneToOne: false;
+            referencedRelation: "engagement_members";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "engagement_member_capability_overrides_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "engagement_member_capability_overrides_engagement_id_fkey";
+            columns: ["engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagements";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       engagement_members: {
         Row: {
           created_at: string;
@@ -317,7 +375,7 @@ export type Database = {
           {
             foreignKeyName: "organization_members_user_id_fkey";
             columns: ["user_id"];
-            isOneToOne: true;
+            isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
@@ -394,12 +452,39 @@ export type Database = {
         };
         Relationships: [];
       };
+      role_capability_defaults: {
+        Row: {
+          capability: Database["public"]["Enums"]["engagement_capability"];
+          role: Database["public"]["Enums"]["app_role"];
+        };
+        Insert: {
+          capability: Database["public"]["Enums"]["engagement_capability"];
+          role: Database["public"]["Enums"]["app_role"];
+        };
+        Update: {
+          capability?: Database["public"]["Enums"]["engagement_capability"];
+          role?: Database["public"]["Enums"]["app_role"];
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
       accept_invitation: { Args: Record<PropertyKey, never>; Returns: undefined };
+      capability_side: {
+        Args: { capability: Database["public"]["Enums"]["engagement_capability"] };
+        Returns: Database["public"]["Enums"]["member_side"];
+      };
+      is_financial_capability: {
+        Args: { capability: Database["public"]["Enums"]["engagement_capability"] };
+        Returns: boolean;
+      };
+      my_engagement_capabilities: {
+        Args: { target_engagement_id: string };
+        Returns: Database["public"]["Enums"]["engagement_capability"][];
+      };
       role_side: {
         Args: { role: Database["public"]["Enums"]["app_role"] };
         Returns: Database["public"]["Enums"]["member_side"];
@@ -419,6 +504,13 @@ export type Database = {
         | "client_contributor"
         | "client_viewer";
       architecture_domain: "knowledge" | "capability" | "strategic_model" | "application";
+      engagement_capability:
+        | "view_financials"
+        | "approve_change_orders"
+        | "pay_invoices"
+        | "approve_architecture"
+        | "manage_client_team"
+        | "view_confidential_deliverables";
       engagement_status: "proposed" | "active" | "paused" | "completed" | "archived";
       engagement_type:
         | "development_architecture_sprint"
@@ -565,6 +657,14 @@ export const Constants = {
         "client_viewer",
       ],
       architecture_domain: ["knowledge", "capability", "strategic_model", "application"],
+      engagement_capability: [
+        "view_financials",
+        "approve_change_orders",
+        "pay_invoices",
+        "approve_architecture",
+        "manage_client_team",
+        "view_confidential_deliverables",
+      ],
       engagement_status: ["proposed", "active", "paused", "completed", "archived"],
       engagement_type: [
         "development_architecture_sprint",

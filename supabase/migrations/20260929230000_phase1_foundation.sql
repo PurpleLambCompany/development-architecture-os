@@ -121,10 +121,11 @@ create table public.organization_members (
   created_by       uuid references public.profiles (id) on delete set null default auth.uid(),
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now(),
-  -- Phase 1: a person belongs to exactly one organization (ADR-0002).
-  constraint organization_members_one_org_per_user unique (user_id)
+  -- A person may belong to many organizations, once each, with a role per
+  -- membership (ADR-0007).
+  constraint organization_members_unique unique (organization_id, user_id)
 );
-create index organization_members_org_idx on public.organization_members (organization_id);
+create index organization_members_user_idx on public.organization_members (user_id);
 
 create table public.engagements (
   id                      uuid primary key default gen_random_uuid(),
@@ -240,30 +241,34 @@ as $$
   select coalesce(private.current_internal_role() = any (roles), false);
 $$;
 
--- The caller's client organization, if they are an active member of an
--- active client organization and their profile is active.
-create function private.current_client_organization_id()
-returns uuid
+-- True when the caller is an active member of the given active
+-- organization and their profile is active. A person may hold memberships
+-- in several organizations; each is evaluated on its own, so access
+-- through one membership never extends to another organization.
+create function private.is_active_org_member(target_organization_id uuid)
+returns boolean
 language sql
 stable
 security definer
 set search_path = ''
 as $$
-  select m.organization_id
-  from public.organization_members m
-  join public.organizations o on o.id = m.organization_id
-  join public.profiles p on p.id = m.user_id
-  where m.user_id = auth.uid()
-    and m.status = 'active'
-    and o.type = 'client'
-    and o.status = 'active'
-    and p.status = 'active'
-  limit 1;
+  select exists (
+    select 1
+    from public.organization_members m
+    join public.organizations o on o.id = m.organization_id
+    join public.profiles p on p.id = m.user_id
+    where m.organization_id = target_organization_id
+      and m.user_id = auth.uid()
+      and m.status = 'active'
+      and o.status = 'active'
+      and p.status = 'active'
+  );
 $$;
 
--- The caller's active role on an engagement. For client users this also
--- requires the engagement to belong to their own organization, so a stray
--- assignment can never leak another tenant's engagement.
+-- The caller's active role on an engagement. A client-side assignment
+-- only counts while the caller is an active member of that engagement's
+-- own client organization, so a stray assignment (or a membership in a
+-- different organization) can never expose another tenant's engagement.
 create function private.engagement_role(target_engagement_id uuid)
 returns public.app_role
 language sql
@@ -279,7 +284,7 @@ as $$
     and em.status = 'active'
     and (
       (em.side = 'internal' and private.is_internal())
-      or (em.side = 'client' and e.client_organization_id = private.current_client_organization_id())
+      or (em.side = 'client' and private.is_active_org_member(e.client_organization_id))
     )
   limit 1;
 $$;
@@ -720,11 +725,11 @@ create policy "profiles: users edit themselves, system administrators edit anyon
   );
 
 -- organizations ---------------------------------------------------------------
-create policy "organizations: internal reads all, clients read their own"
+create policy "organizations: internal reads all, others read organizations they belong to"
   on public.organizations for select to authenticated
   using (
     (select private.is_internal())
-    or id = (select private.current_client_organization_id())
+    or private.is_active_org_member(id)
   );
 
 create policy "organizations: directory managers create client organizations"
@@ -745,11 +750,11 @@ create policy "organizations: directory managers edit client organizations, admi
   );
 
 -- organization_members --------------------------------------------------------
-create policy "organization members: internal reads all, clients read their own organization"
+create policy "organization members: internal reads all, others read organizations they belong to"
   on public.organization_members for select to authenticated
   using (
     (select private.is_internal())
-    or organization_id = (select private.current_client_organization_id())
+    or private.is_active_org_member(organization_id)
   );
 
 -- Directory managers manage client memberships. Only System Administrators

@@ -7,6 +7,7 @@ import {
   MATURITY_STATES,
 } from "@/domain/engagements/catalog";
 import { getEngagementBySlug } from "@/domain/engagements/queries";
+import { getMyEngagementCapabilities } from "@/domain/capabilities/queries";
 import { ROLE_LABELS } from "@/domain/roles/roles";
 import { EngagementStatusTag } from "@/components/engagements/engagement-status";
 import { NavPlaceholder } from "@/components/shell/nav-link";
@@ -27,7 +28,7 @@ const CLIENT_SECTIONS = [
 
 export default async function ClientEngagementPage({ params }: PageProps<"/portal/[slug]">) {
   const { slug } = await params;
-  const viewer = await requireClient();
+  await requireClient();
   // RLS returns nothing for engagements outside the viewer's assignments.
   const engagement = await getEngagementBySlug(slug);
   if (!engagement) notFound();
@@ -38,7 +39,11 @@ export default async function ClientEngagementPage({ params }: PageProps<"/porta
   const clientTeam = engagement.engagement_members.filter(
     (m) => m.side === "client" && m.status !== "suspended",
   );
-  const seesBilling = viewer.role === "executive_sponsor" || viewer.role === "client_finance";
+  // Financial visibility is a capability evaluated in the database (role
+  // default plus any per-engagement override), not a role name. Phase 2
+  // financial tables enforce the same check in RLS.
+  const capabilities = await getMyEngagementCapabilities(engagement.id);
+  const seesBilling = capabilities.has("view_financials");
 
   return (
     <div className="space-y-8">
@@ -57,7 +62,12 @@ export default async function ClientEngagementPage({ params }: PageProps<"/porta
       </nav>
 
       <PageHeader
-        eyebrow={ENGAGEMENT_TYPE_LABELS[engagement.engagement_type]}
+        eyebrow={[
+          engagement.organizations?.name,
+          ENGAGEMENT_TYPE_LABELS[engagement.engagement_type],
+        ]
+          .filter(Boolean)
+          .join(" · ")}
         title={engagement.title}
         description={<EngagementStatusTag status={engagement.status} />}
       />

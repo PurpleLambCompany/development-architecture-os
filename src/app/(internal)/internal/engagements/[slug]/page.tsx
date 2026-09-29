@@ -4,8 +4,22 @@ import { requireInternal } from "@/lib/auth/viewer";
 import { formatDate, personName } from "@/lib/format";
 import { ARCHITECTURE_DOMAINS, ENGAGEMENT_TYPE_LABELS } from "@/domain/engagements/catalog";
 import { getEngagementBySlug } from "@/domain/engagements/queries";
+import {
+  ENGAGEMENT_CAPABILITIES,
+  ROLE_CAPABILITY_DEFAULTS,
+  canManageCapability,
+  capabilitySide,
+  effectiveCapabilities,
+  type EngagementCapability,
+} from "@/domain/capabilities/catalog";
+import { listCapabilityOverrides } from "@/domain/capabilities/queries";
 import { listAssignableUsers } from "@/domain/memberships/queries";
 import { ROLE_LABELS, canManageEngagement } from "@/domain/roles/roles";
+import {
+  CapabilityMatrix,
+  type CapabilityCell,
+  type CapabilityRow,
+} from "@/components/engagements/capability-matrix";
 import { EngagementStatusTag } from "@/components/engagements/engagement-status";
 import { AddTeamMemberForm, RemoveTeamMemberButton } from "@/components/engagements/team-controls";
 import { ButtonLink } from "@/components/ui/button";
@@ -33,6 +47,42 @@ export default async function EngagementPage({
         (u) => !assignedIds.has(u.userId),
       )
     : [];
+
+  const overrides = await listCapabilityOverrides(engagement.id);
+  const capabilityRows: CapabilityRow[] = engagement.engagement_members
+    .filter((m) => m.status === "active")
+    .sort((a, b) => a.side.localeCompare(b.side))
+    .map((member) => {
+      const memberOverrides = overrides.filter((o) => o.engagement_member_id === member.id);
+      const effective = effectiveCapabilities(member.role, memberOverrides);
+      const cells = Object.fromEntries(
+        ENGAGEMENT_CAPABILITIES.map((capability): [EngagementCapability, CapabilityCell] => {
+          const override = memberOverrides.find((o) => o.capability === capability);
+          const side = capabilitySide(capability);
+          return [
+            capability,
+            {
+              byDefault: ROLE_CAPABILITY_DEFAULTS[member.role].includes(capability),
+              setting: override ? (override.granted ? "grant" : "revoke") : "default",
+              effective: effective.includes(capability),
+              applicable: side === null || side === member.side,
+              canManage: canManageCapability({
+                viewerRole: viewer.role,
+                viewerEngagementRole: myAssignment?.role ?? null,
+                isSelf: member.user_id === viewer.id,
+                capability,
+              }),
+            },
+          ];
+        }),
+      ) as Record<EngagementCapability, CapabilityCell>;
+      return {
+        memberId: member.id,
+        name: personName(member.profiles),
+        roleLabel: ROLE_LABELS[member.role],
+        cells,
+      };
+    });
 
   const internalTeam = engagement.engagement_members.filter((m) => m.side === "internal");
   const clientTeam = engagement.engagement_members.filter((m) => m.side === "client");
@@ -118,6 +168,15 @@ export default async function EngagementPage({
           description="TPLCo staff, or people from this client organization."
         >
           <AddTeamMemberForm engagementId={engagement.id} candidates={candidates} />
+        </Panel>
+      ) : null}
+
+      {capabilityRows.length > 0 ? (
+        <Panel
+          title="Capabilities"
+          description="What each active member may do on this engagement. Roles supply defaults; an override applies to this engagement only and never changes the role."
+        >
+          <CapabilityMatrix rows={capabilityRows} />
         </Panel>
       ) : null}
 

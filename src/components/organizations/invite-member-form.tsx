@@ -40,7 +40,13 @@ export function InviteMemberForm({
         applyServerErrors(form, result);
         return;
       }
-      setMessage({ tone: "success", text: `Invitation sent to ${values.email}.` });
+      setMessage({
+        tone: "success",
+        text:
+          result.data.outcome === "added"
+            ? `${values.email} already has an account and was added to this organization.`
+            : `Invitation sent to ${values.email}.`,
+      });
       form.reset();
       router.refresh();
     });

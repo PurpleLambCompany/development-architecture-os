@@ -6,7 +6,12 @@ import { requireInternal } from "@/lib/auth/viewer";
 import { publicEnv } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { canManageClientDirectory, canManageInternalStaff, roleSide } from "@/domain/roles/roles";
+import {
+  canManageClientDirectory,
+  canManageInternalStaff,
+  roleSide,
+  type AppRole,
+} from "@/domain/roles/roles";
 import { assignEngagementMemberSchema, inviteMemberSchema, updateMemberSchema } from "./schemas";
 
 /**
@@ -21,7 +26,7 @@ import { assignEngagementMemberSchema, inviteMemberSchema, updateMemberSchema } 
 export async function inviteOrganizationMember(
   organizationId: string,
   input: unknown,
-): Promise<ActionResult> {
+): Promise<ActionResult<{ outcome: "invited" | "added" }>> {
   const viewer = await requireInternal();
 
   const parsed = inviteMemberSchema.safeParse(input);
@@ -50,15 +55,22 @@ export async function inviteOrganizationMember(
     });
   }
 
+  // A person may belong to several organizations (for example a consultant
+  // advising two clients). If they already have an account, add the new
+  // membership instead of sending another invitation.
+  const { data: existing } = await supabase
+    .from("profiles")
+    .select("id, status")
+    .eq("email", email.toLowerCase())
+    .maybeSingle();
+  if (existing) return addExistingPerson(organization, existing, role);
+
   const admin = createSupabaseAdminClient();
   const { data: invited, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
     data: { first_name: firstName, last_name: lastName },
     redirectTo: `${publicEnv.NEXT_PUBLIC_SITE_URL}/auth/confirm`,
   });
   if (inviteError || !invited.user) {
-    if (inviteError?.status === 422) {
-      return fail("This person already has an account.", { email: "Already has an account" });
-    }
     console.error("Invitation failed", inviteError);
     return fail("The invitation could not be sent. Please try again.");
   }
@@ -75,7 +87,7 @@ export async function inviteOrganizationMember(
   }
 
   revalidatePath(`/internal/organizations/${organization.slug}`);
-  return ok(undefined);
+  return ok({ outcome: "invited" as const });
 }
 
 export async function updateOrganizationMember(
@@ -141,4 +153,43 @@ export async function removeEngagementMember(memberId: string): Promise<ActionRe
   revalidatePath("/internal", "layout");
   revalidatePath("/portal", "layout");
   return ok(undefined);
+}
+
+/**
+ * Add someone who already has an account to another organization. If they
+ * have already accepted an invitation elsewhere the membership is active
+ * at once; otherwise it stays invited and is activated, with their other
+ * memberships, when they accept.
+ */
+async function addExistingPerson(
+  organization: { id: string; slug: string },
+  person: { id: string; status: string },
+  role: AppRole,
+): Promise<ActionResult<{ outcome: "invited" | "added" }>> {
+  const supabase = await createSupabaseServerClient();
+  const { data: activeElsewhere } = await supabase
+    .from("organization_members")
+    .select("id")
+    .eq("user_id", person.id)
+    .eq("status", "active")
+    .limit(1);
+  const alreadyAccepted = person.status === "active" && (activeElsewhere?.length ?? 0) > 0;
+
+  const { error } = await supabase.from("organization_members").insert({
+    organization_id: organization.id,
+    user_id: person.id,
+    role,
+    status: alreadyAccepted ? "active" : "invited",
+  });
+  if (error) {
+    if (error.code === "23505") {
+      return fail("This person is already a member of this organization.", {
+        email: "Already a member",
+      });
+    }
+    return fromDatabaseError(error);
+  }
+
+  revalidatePath(`/internal/organizations/${organization.slug}`);
+  return ok({ outcome: "added" as const });
 }
