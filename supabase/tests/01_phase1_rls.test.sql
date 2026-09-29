@@ -7,7 +7,7 @@
 -- =============================================================================
 begin;
 
-select plan(45);
+select plan(48);
 
 -- Impersonate a seeded user by email (or clear to act as anon).
 create function pg_temp.act_as(user_email text)
@@ -242,6 +242,20 @@ select pg_temp.reset_actor();
 select pg_temp.act_as('lead@meridian.test');
 select is((select count(*)::int from public.engagements), 0,
   'suspending an organization membership removes engagement access');
+select pg_temp.reset_actor();
+
+-- -----------------------------------------------------------------------------
+-- Invitations grant nothing until accepted
+-- -----------------------------------------------------------------------------
+update public.organization_members set status = 'invited'
+  where user_id = '30000000-0000-4000-8000-000000000004';
+
+select pg_temp.act_as('contributor@harbor.test');
+select is((select count(*)::int from public.organizations), 0,
+  'an invited member sees nothing before accepting');
+select lives_ok($$ select public.accept_invitation() $$, 'an invited member can accept their invitation');
+select is((select count(*)::int from public.organizations), 1,
+  'an accepted member sees their organization');
 select pg_temp.reset_actor();
 
 -- -----------------------------------------------------------------------------

@@ -1,8 +1,7 @@
 # Phase 1 — Foundation: Proposal for Approval
 
-**Status:** Awaiting approval  
-**Scope:** Phase 1 only, per `DSA_OS_MASTER_BUILD_SPEC.md` §30  
-**Nothing in this document has been implemented yet.**
+**Status:** Approved 2026-09-29 with all recommended defaults. Implemented; see README and `docs/architecture-decisions/`.  
+**Scope:** Phase 1 only, per `DSA_OS_MASTER_BUILD_SPEC.md` §30
 
 This proposal covers the four things the first prompt asks for before significant code is written: folder structure, initial Supabase schema, RLS strategy, and the decisions needed from you. Each decision has a recommended default so work can start as soon as you approve.
 
@@ -70,18 +69,20 @@ Principles: UI components never query the database directly; they call `domain/*
 All tables in `public`, all with RLS enabled and `created_at`, `updated_at` (trigger), and `created_by` where meaningful.
 
 ### Enums
-| Enum | Values |
-|---|---|
-| `organization_type` | `tplco`, `client`, `licensed_practice` (reserved, unused) |
-| `record_status` | `active`, `invited`, `suspended`, `archived` |
-| `member_side` | `internal`, `client` |
-| `app_role` | `system_administrator`, `principal_architect`, `architect`, `researcher`, `project_administrator`, `finance_administrator`, `executive_sponsor`, `client_project_lead`, `client_finance`, `client_contributor`, `client_viewer` |
-| `engagement_type` | `development_architecture_sprint`, `development_architecture_intensive`, `embedded_development_partner`, `cohort`, `custom` |
-| `engagement_status` | `proposed`, `active`, `paused`, `completed`, `archived` |
-| `architecture_domain` | `knowledge`, `capability`, `strategic_model`, `application` (created now, used by the client shell labels and Phase 3) |
+
+| Enum                  | Values                                                                                                                                                                                                                          |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `organization_type`   | `tplco`, `client`, `licensed_practice` (reserved, unused)                                                                                                                                                                       |
+| `record_status`       | `active`, `invited`, `suspended`, `archived`                                                                                                                                                                                    |
+| `member_side`         | `internal`, `client`                                                                                                                                                                                                            |
+| `app_role`            | `system_administrator`, `principal_architect`, `architect`, `researcher`, `project_administrator`, `finance_administrator`, `executive_sponsor`, `client_project_lead`, `client_finance`, `client_contributor`, `client_viewer` |
+| `engagement_type`     | `development_architecture_sprint`, `development_architecture_intensive`, `embedded_development_partner`, `cohort`, `custom`                                                                                                     |
+| `engagement_status`   | `proposed`, `active`, `paused`, `completed`, `archived`                                                                                                                                                                         |
+| `architecture_domain` | `knowledge`, `capability`, `strategic_model`, `application` (created now, used by the client shell labels and Phase 3)                                                                                                          |
 
 ### Tables
-**`profiles`** — one per auth user. `id` (PK, = `auth.users.id`), `first_name`, `last_name`, `email`, `status`. Created automatically by a trigger on `auth.users` insert. *(Spec lists a separate `auth_user_id`; using the auth id as the primary key is the Supabase convention and removes a join from every policy. See ADR.)*
+
+**`profiles`** — one per auth user. `id` (PK, = `auth.users.id`), `first_name`, `last_name`, `email`, `status`. Created automatically by a trigger on `auth.users` insert. _(Spec lists a separate `auth_user_id`; using the auth id as the primary key is the Supabase convention and removes a join from every policy. See ADR.)_
 
 **`organizations`** — `id`, `name`, `slug` (unique), `type`, `status`. Exactly one `tplco` organization, enforced by a partial unique index.
 
@@ -115,28 +116,28 @@ Roles are looked up from tables on each request rather than baked into JWT custo
 
 **Read rules**
 
-| Table | Internal | Client |
-|---|---|---|
-| `organizations` | all | own organization only |
-| `organization_members` | all | members of own organization |
-| `profiles` | all | self, plus people who share an engagement |
-| `engagements` | see Decision 2 | engagements they are assigned to **and** that belong to their organization (both conditions) |
-| `engagement_members` | for engagements they can see | for engagements they can see |
-| `method_assets` | internal only | **never** — no client policy exists |
-| `activity_log` | System Admin and Principal Architect | none in Phase 1 |
+| Table                  | Internal                             | Client                                                                                       |
+| ---------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `organizations`        | all                                  | own organization only                                                                        |
+| `organization_members` | all                                  | members of own organization                                                                  |
+| `profiles`             | all                                  | self, plus people who share an engagement                                                    |
+| `engagements`          | see Decision 2                       | engagements they are assigned to **and** that belong to their organization (both conditions) |
+| `engagement_members`   | for engagements they can see         | for engagements they can see                                                                 |
+| `method_assets`        | internal only                        | **never** — no client policy exists                                                          |
+| `activity_log`         | System Admin and Principal Architect | none in Phase 1                                                                              |
 
 **Write rules**
 
-| Action | Allowed roles |
-|---|---|
-| Create/edit organization | System Administrator, Principal Architect, Project Administrator |
-| Add/remove organization members, invite users | System Administrator, Principal Architect, Project Administrator |
-| Create engagement | System Administrator, Principal Architect, Project Administrator |
-| Edit engagement | System Administrator; Principal Architect; Project Administrator assigned to it |
-| Assign engagement members | same as edit engagement |
-| Archive engagement | System Administrator, Principal Architect (no hard deletes from the app) |
-| Edit own profile name | everyone |
-| Any other write | nobody |
+| Action                                        | Allowed roles                                                                   |
+| --------------------------------------------- | ------------------------------------------------------------------------------- |
+| Create/edit organization                      | System Administrator, Principal Architect, Project Administrator                |
+| Add/remove organization members, invite users | System Administrator, Principal Architect, Project Administrator                |
+| Create engagement                             | System Administrator, Principal Architect, Project Administrator                |
+| Edit engagement                               | System Administrator; Principal Architect; Project Administrator assigned to it |
+| Assign engagement members                     | same as edit engagement                                                         |
+| Archive engagement                            | System Administrator, Principal Architect (no hard deletes from the app)        |
+| Edit own profile name                         | everyone                                                                        |
+| Any other write                               | nobody                                                                          |
 
 Architects, Researchers and Finance Administrators get read access to assigned engagements in Phase 1; their write rights arrive with the tables they own (Phase 2 finance, Phase 3–4 architecture and intelligence). Client users have no write access in Phase 1 except their own profile.
 
@@ -166,13 +167,13 @@ Tailwind with a restrained token set: warm off-white and deep ink neutrals, a si
 
 Each has a recommended default. Reply with the numbers you want changed; silence on a number means the default stands.
 
-1. **Supabase project.** Build and test against a local Supabase (CLI + Docker) now, and connect a new, dedicated Supabase project (never Peephole's) when you're ready to deploy. *Recommended: local now, you create the hosted project later.*
-2. **Internal visibility.** System Administrators and Principal Architects see every engagement; Architects, Researchers, Project Administrators and Finance Administrators see only engagements they're assigned to. *Recommended: yes (least privilege).*
-3. **Client visibility.** Every client user, including Executive Sponsors, must be explicitly assigned to an engagement to see it. *Recommended: yes. Alternative: Executive Sponsors automatically see all of their organization's engagements.*
-4. **Contract value.** Keep it off `engagements` and introduce it with `contracts` in Phase 2, because RLS is row-level and Client Viewers/Contributors would otherwise see the fee. *Recommended: defer to Phase 2.*
-5. **Sign-in.** Invite-only (no public sign-up); email + password with magic-link as an alternative. SSO later. *Recommended: yes.*
-6. **Tooling.** pnpm, latest stable Next.js App Router, Node 22, Vitest for domain logic, pgTAP for RLS. *Recommended: yes.*
-7. **One organization per user.** A person belongs to exactly one organization in Phase 1 (licensed practitioners and multi-org consultants come later). *Recommended: yes.*
+1. **Supabase project.** Build and test against a local Supabase (CLI + Docker) now, and connect a new, dedicated Supabase project (never Peephole's) when you're ready to deploy. _Recommended: local now, you create the hosted project later._
+2. **Internal visibility.** System Administrators and Principal Architects see every engagement; Architects, Researchers, Project Administrators and Finance Administrators see only engagements they're assigned to. _Recommended: yes (least privilege)._
+3. **Client visibility.** Every client user, including Executive Sponsors, must be explicitly assigned to an engagement to see it. _Recommended: yes. Alternative: Executive Sponsors automatically see all of their organization's engagements._
+4. **Contract value.** Keep it off `engagements` and introduce it with `contracts` in Phase 2, because RLS is row-level and Client Viewers/Contributors would otherwise see the fee. _Recommended: defer to Phase 2._
+5. **Sign-in.** Invite-only (no public sign-up); email + password with magic-link as an alternative. SSO later. _Recommended: yes._
+6. **Tooling.** pnpm, latest stable Next.js App Router, Node 22, Vitest for domain logic, pgTAP for RLS. _Recommended: yes._
+7. **One organization per user.** A person belongs to exactly one organization in Phase 1 (licensed practitioners and multi-org consultants come later). _Recommended: yes._
 
 ---
 

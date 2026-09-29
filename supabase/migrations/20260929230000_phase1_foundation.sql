@@ -639,6 +639,28 @@ create trigger method_assets_set_created_by before insert on public.method_asset
   for each row execute function private.set_created_by();
 
 -- -----------------------------------------------------------------------------
+-- Invitation acceptance
+--
+-- Invited memberships grant no access until the invited person signs in
+-- through their invitation link, which calls this function. It can only
+-- activate the caller's own invited membership.
+-- -----------------------------------------------------------------------------
+create function public.accept_invitation()
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  update public.organization_members
+  set status = 'active'
+  where user_id = auth.uid()
+    and status = 'invited';
+$$;
+
+revoke all on function public.accept_invitation() from public, anon;
+grant execute on function public.accept_invitation() to authenticated;
+
+-- -----------------------------------------------------------------------------
 -- Privileges: no anonymous access to anything; column-limited profile edits.
 -- -----------------------------------------------------------------------------
 revoke all on

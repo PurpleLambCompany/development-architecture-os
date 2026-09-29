@@ -399,6 +399,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      accept_invitation: { Args: Record<PropertyKey, never>; Returns: undefined };
       role_side: {
         Args: { role: Database["public"]["Enums"]["app_role"] };
         Returns: Database["public"]["Enums"]["member_side"];
