@@ -1,0 +1,91 @@
+You are helping build a new standalone application called Development Systems Architecture OS (DSA OS) for The Purple Lamb Company.
+
+This application is completely independent from another product called Peephole. Do not inspect, reference, connect to, copy from, or modify the Peephole repository or any Peephole infrastructure. This project must maintain its own repository, dependencies, environment variables, database, and deployment configuration.
+
+The product is the digital operating environment for a professional methodology called the Development Architecture Method™. It is designed to help TPLCo conduct Development Systems Architecture engagements across four domains:
+
+1. Knowledge Architecture
+2. Capability Architecture
+3. Strategic Model Architecture
+4. Application Architecture
+
+The long-term application will include client project environments, architecture workspaces, structured project intelligence, engagement financials, method/IP management, portfolio intelligence, and eventually certification/licensing.
+
+However, do not attempt to build the entire platform now.
+
+First, read DSA_OS_MASTER_BUILD_SPEC.md in this repository and use it as the primary product specification.
+
+Then build Phase 1 — Foundation only.
+
+Phase 1 must include:
+1. Next.js + TypeScript application foundation
+2. Tailwind CSS and a restrained executive UI foundation
+3. Supabase integration
+4. Authentication
+5. User profiles
+6. Organizations
+7. Organization membership
+8. Role-based access model
+9. Engagement CRUD
+10. Engagement membership
+11. Internal dashboard shell
+12. Client dashboard shell
+13. Initial Row Level Security policies
+14. Seed/demo data
+15. .env.example
+16. README with setup instructions
+17. /docs/architecture-decisions/ for technical ADRs
+
+Roles to support initially:
+
+Internal:
+- System Administrator
+- Principal Architect
+- Architect
+- Researcher
+- Project Administrator
+- Finance Administrator
+
+Client:
+- Executive Sponsor
+- Client Project Lead
+- Client Finance
+- Client Contributor
+- Client Viewer
+
+Security requirements:
+- client users may only access engagements belonging to their organization
+- tenant isolation must be enforced at the database layer where feasible
+- no client role may access internal Method/IP content
+- frontend visibility must never be the only authorization mechanism
+
+Do not build yet:
+- Stripe
+- invoices
+- architecture objects
+- AI features
+- method library UI
+- certification
+- advanced portfolio analytics
+
+Before writing significant code:
+1. Inspect the empty/new repository.
+2. Read the master build specification.
+3. Propose the Phase 1 folder structure.
+4. Propose the initial Supabase schema and RLS strategy.
+5. Identify any decisions you need from me.
+6. Wait for my approval before making broad architectural choices that would be expensive to reverse.
+
+Then proceed incrementally.
+
+At the end of Phase 1, provide:
+- implementation summary
+- schema summary
+- security/RLS summary
+- files created or changed
+- setup steps
+- tests/checks performed
+- known limitations
+- recommended Phase 2 plan
+
+The product should feel institutional, architectural, premium, calm, and executive-level. Avoid generic project-management aesthetics, gamification, visual clutter, or playful SaaS styling.
