@@ -58,10 +58,35 @@ import { StatementsPanel } from "@/components/architecture/statements-panel";
 import { VersionsPanel } from "@/components/architecture/versions-panel";
 import { ActivityList } from "@/components/architecture/activity-list";
 import { escalateFields, requiredNoteFields, triageFields } from "@/components/intelligence/fields";
-import { ActionButton, ActionForm } from "@/components/ui/action-form";
+import { ActionButton, ActionForm, type FieldSpec } from "@/components/ui/action-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { DetailList, EmptyState, Panel } from "@/components/ui/panel";
 import { StatusTag } from "@/components/ui/status-tag";
+
+/**
+ * The optional, explicit publication fields offered on a status-changing
+ * form, mirroring the Intelligence resolve-with-publish pattern: publishing
+ * a new version is never automatic, only an opt-in choice by the caller.
+ */
+function publishFields(subject: string): FieldSpec[] {
+  return [
+    {
+      name: "publish",
+      label: `Publish ${subject}`,
+      type: "select",
+      options: [
+        { value: "no", label: "No, publish later" },
+        { value: "yes", label: "Yes, publish a new version now" },
+      ],
+      hint: "Clients see the change only once a new version is published.",
+    },
+    {
+      name: "changeSummary",
+      label: "Change summary",
+      hint: "Optional; used when publishing.",
+    },
+  ];
+}
 
 export default async function InitiativeDetailPage({
   params,
@@ -282,8 +307,9 @@ export default async function InitiativeDetailPage({
                     type: "textarea",
                     hint: "Required when moving to stalled.",
                   },
+                  ...(canPublish ? publishFields("this status") : []),
                 ]}
-                defaultValues={{ status: row.implementation_status }}
+                defaultValues={{ status: row.implementation_status, publish: "no" }}
                 action={updateImplementationStatus.bind(null, element.id)}
                 submitLabel="Save status"
               />
@@ -302,8 +328,12 @@ export default async function InitiativeDetailPage({
                     ],
                   },
                   { name: "rationale", label: "Rationale", type: "textarea" },
+                  ...publishFields("this resolution"),
                 ]}
-                defaultValues={{ status: eligibleForValidated ? "validated" : "abandoned" }}
+                defaultValues={{
+                  status: eligibleForValidated ? "validated" : "abandoned",
+                  publish: "no",
+                }}
                 action={resolveInitiative.bind(null, element.id)}
                 submitLabel="Resolve"
                 variant="danger"
