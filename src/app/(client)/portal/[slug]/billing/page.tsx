@@ -256,6 +256,9 @@ function Billing({
                     </Td>
                     <Td>
                       <StatusTag tone={state.tone}>{state.label}</StatusTag>
+                      {invoice.status === "void" && invoice.void_reason ? (
+                        <p className="mt-1 text-xs text-ink-subtle">{invoice.void_reason}</p>
+                      ) : null}
                     </Td>
                     <Td className="text-right">
                       {canPay && invoice.paymentLink ? (

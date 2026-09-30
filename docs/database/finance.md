@@ -60,7 +60,7 @@ Each is `SECURITY DEFINER`, locks the contract row first, checks permission (SQL
 | Contracts                      | All                        | Not draft or void                                     | Nothing     |
 | Change orders and history      | All                        | Submitted and later                                   | Nothing     |
 | Milestones                     | All                        | Of visible contracts                                  | Nothing     |
-| Invoices, lines, credit notes  | All                        | Issued or void only                                   | Nothing     |
+| Invoices, lines, credit notes  | All                        | Issued, and void (with reason)                        | Nothing     |
 | Payment links                  | All                        | Only with `pay_invoices`, issued invoice, balance > 0 | Nothing     |
 | Payments, allocations, refunds | All                        | Payments and refunds; active allocations              | Nothing     |
 | Financial events               | All                        | `client_visible` only                                 | Nothing     |
@@ -72,3 +72,16 @@ Internal financial viewers: System Administrators, Principal Architects and Fina
 ## Tests
 
 `supabase/tests/04_finance_access.test.sql` (who sees and changes what), `05_finance_calculations.test.sql` (every figure and the identities through partial payments, split payment, credit note, prepayment, reversal, bounced payment, refund, negative change order), `06_finance_integrity.test.sql` (double billing, numbering, immutability, guards, composite keys, allocations, credit notes, refunds, card numbers, HTTPS links, current-contract rule, approval provenance, suspension), `99_finance_concurrency.test.sql` (two real sessions racing for the same credit and for invoice numbers).
+
+## Confirmed decisions (2026-09-30)
+
+- Clients keep seeing an invoice after it is voided, marked Void with the void reason (`invoice_is_client_visible` is "issued at some point").
+- Finance Administrators manage financials portfolio-wide but never execute contracts; execution and external change-order approvals are for Principal Architects and System Administrators.
+
+## Pre-production operational requirements
+
+Not required for the Phase 2 merge; required before real client money or documents go through the system:
+
+1. Upload UI for receipts, signed contracts and change-order approval evidence (bucket, policies and path columns exist; storage policies need test coverage).
+2. Invoice PDFs, generated at issue and immutable.
+3. Notification emails: invoice issued, invoice overdue, change order submitted, change order decided.

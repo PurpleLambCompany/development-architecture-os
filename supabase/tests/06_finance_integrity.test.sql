@@ -8,7 +8,7 @@
 -- =============================================================================
 begin;
 
-select plan(62);
+select plan(64);
 
 create function pg_temp.act_as(user_email text)
 returns void
@@ -118,6 +118,18 @@ select is((select invoice_number from public.invoices where id = (select id from
   'A voided invoice keeps its number');
 select is(public.issue_invoice((select id from t where name = 'n3'), date '2031-03-02'), 'TPL-2031-0003',
   'A voided number is never reused');
+-- Decision 2026-09-30: clients keep seeing a voided invoice, marked void with its reason.
+select pg_temp.reset_actor();
+select pg_temp.act_as('sponsor@meridian.test');
+select is(
+  (select status::text || ': ' || void_reason from public.invoices where invoice_number = 'TPL-2031-0002'),
+  'void: Issued in error', 'A client still sees a voided invoice, with its status and reason');
+select is(
+  (select count(*)::int from public.invoice_lines l join public.invoices i on i.id = l.invoice_id
+   where i.invoice_number = 'TPL-2031-0002'),
+  1, 'and its lines');
+select pg_temp.reset_actor();
+select pg_temp.act_as('principal@tplco.test');
 insert into public.credit_notes (invoice_id, amount_minor, reason) select id, 50, 'Test' from t where name = 'n1'
   returning id as cn \gset
 select is(public.issue_credit_note(:'cn', date '2031-03-03'), 'TPL-CN-2031-0001',
