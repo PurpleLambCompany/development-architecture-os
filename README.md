@@ -9,7 +9,7 @@ DSA OS is a standalone application. It shares no code, database, environment var
 - Architecture decisions: [`docs/architecture-decisions/`](docs/architecture-decisions/)
 - Database schema and access rules: [`docs/database/`](docs/database/)
 
-**Current phase:** Phase 4 — Project Intelligence (approved; being built). Phases 1 (foundation), 2 (commercial engagement) and 3 (Architecture Core: the four architecture domains, Project Intelligence records, evidence, typed relationships, published versions, client approvals, decisions and baselines; see the [Phase 3 report](docs/product/PHASE_3_REPORT.md)) are merged. Phase 4 follows [`docs/product/PHASE_4_PROPOSAL.md`](docs/product/PHASE_4_PROPOSAL.md).
+**Current phase:** Phase 4 — Project Intelligence (built; PR open for review). Phases 1 (foundation), 2 (commercial engagement) and 3 (Architecture Core: the four architecture domains, Project Intelligence records, evidence, typed relationships, published versions, client approvals, decisions and baselines; see the [Phase 3 report](docs/product/PHASE_3_REPORT.md)) are merged. Phase 4 adds record stewardship (attention, triage, resolution, escalation), client requests and contributions, contributor areas and deterministic intelligence signals, following [`docs/product/PHASE_4_PROPOSAL.md`](docs/product/PHASE_4_PROPOSAL.md); see the [Phase 4 report](docs/product/PHASE_4_REPORT.md) and [`docs/database/intelligence.md`](docs/database/intelligence.md).
 
 ## Stack
 
@@ -66,6 +66,8 @@ Seeded finances (dates relative to the day the seed is loaded): the Regional Inn
 
 Seeded architecture: the Regional Innovation District carries a worked architecture across the four domains (28 core objects, from the commercial real estate market through the acquisition capability to the acquisition team and its metric) and seven Project Intelligence records (an assumption, two risks, one spanning two domains and one engagement-wide, a constraint, a dependency, a decision with three options and a recommended option, and a recommendation record). Statements cite four evidence sources. `KNW-008` is published but internal only. `CAP-001` has an approved v2, `STR-001` v1 awaits the sponsor's response, `CAP-007` is an unpublished draft, and two frozen baselines (v1 approved outside the portal) can be compared. Harbor has two objects.
 
+Seeded Project Intelligence (Regional Innovation District): two opportunities (a published partnership whose window closes within 30 days, and an internal one whose window has already closed), triage on most records (one critical, one past its review date), a risk re-scored and an assumption's confidence raised, a new risk resolved as closed with a rationale, a Principal-level escalation and a client-executive escalation (which sends an executive-attention request to the Executive Sponsor), client requests in every state (open, open and overdue, responded, closed and recorded as evidence, withdrawn), client input both received and acknowledged, contributor areas (the Client Contributor has the Capability domain; the multi-organization advisor has the district operating model and everything under it), and one dismissed signal.
+
 ## Scripts
 
 | Command                                  | What it does                                                                   |
@@ -99,8 +101,11 @@ src/
     auth/confirm/           verifies invitation / sign-in / recovery links server-side
     account/set-password/   first password after accepting an invitation
     (internal)/internal/    TPLCo workspace: dashboard, organizations, engagements (architecture domains,
-                            intelligence, evidence, reviews, baselines), finance, settings
-    (client)/portal/        client environment: overview, architecture, decisions, billing, invoices
+                            intelligence: registers, client requests, client input, signals; evidence,
+                            reviews, baselines), finance, settings; cross-engagement intelligence register
+    (client)/portal/        client environment: overview, actions (what is required from us), architecture
+                            (with Project Intelligence and the risk grid), decisions, billing, invoices
+    files/[fileId]/         signed-URL download for an engagement file the caller may read
   components/ui/            design-system primitives
   components/…              feature components (architecture, finance, portal, shell)
   domain/                   business logic, schemas (Zod), queries and server actions — no React
@@ -126,6 +131,7 @@ docs/
 - Every change to organizations, memberships, engagements and teams is recorded in an append-only activity log.
 - Finances: money is stored in integer minor units with its currency, and business dates use `BUSINESS_TIME_ZONE` (America/Chicago) ([ADR-0010](docs/architecture-decisions/0010-money-and-business-dates.md)). Price, billing and cash are separate records; payments count against an invoice only through explicit allocations ([ADR-0011](docs/architecture-decisions/0011-allocations-credit-notes-refunds.md)). Money moves only through database operations that lock the contract and re-check every invariant; nobody writes cash records directly ([ADR-0012](docs/architecture-decisions/0012-finance-operations-and-integrity.md), [finance.md](docs/database/finance.md)). DSA OS stores no card or bank credentials; payment links are HTTPS references to an external provider.
 - Architecture: working copies are internal; clients read only published, immutable snapshots of client-visible elements, and approval never gates visibility ([ADR-0014](docs/architecture-decisions/0014-publication-is-the-client-boundary.md)). Drafting, publishing, viewing and approving are separate capabilities; System Administrators hold none of them by default ([ADR-0024](docs/architecture-decisions/0024-architecture-capabilities.md)). Method lineage is internal only, and no architecture table references finance ([architecture.md](docs/database/architecture.md)).
+- Project Intelligence: stewardship, status history and escalations are internal only; a client sees a record's status only inside a published snapshot or a client action. A client action reaches only a named, eligible addressee, and its subjects must already be published and client-visible; a client's words become evidence only when TPLCo deliberately records them as such. Contributor areas gate what an area-limited client sees, never what they may do. Signals are computed deterministically from the register on every read, never AI-generated, and a dismissal is a stored judgment with a reason, not a suppression of the underlying fact ([ADR-0026](docs/architecture-decisions/0026-opportunity-record-kind.md)–[ADR-0033](docs/architecture-decisions/0033-engagement-files.md), [intelligence.md](docs/database/intelligence.md)).
 
 ## Deploying (when ready)
 
