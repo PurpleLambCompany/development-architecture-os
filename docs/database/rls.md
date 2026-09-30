@@ -1,6 +1,6 @@
 # Row Level Security, roles and capabilities (Phase 1)
 
-> Phase 2 financial access rules are documented in [finance.md](finance.md).
+> Phase 2 financial access rules are documented in [finance.md](finance.md), and Phase 3 architecture access rules in [architecture.md](architecture.md).
 
 Every table has RLS enabled. Policies call `SECURITY DEFINER` helpers in the unexposed `private` schema (ADR-0003). `anon` has no privileges on any table. Tests (`pnpm db:test`, also run in CI): `01_phase1_rls.test.sql`, `02_multi_organization.test.sql`, `03_engagement_capabilities.test.sql` in `supabase/tests/`.
 
@@ -57,6 +57,7 @@ Changing capabilities (insert/update/delete of overrides):
 | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
 | `view_financials`, `approve_change_orders`, `pay_invoices`                     | System Admin, Principal Architect, Finance Administrator **assigned** to the engagement |
 | `approve_architecture`, `manage_client_team`, `view_confidential_deliverables` | whoever can manage the engagement (see below)                                           |
+| `edit_architecture`, `publish_architecture`, `view_architecture` (Phase 3)     | whoever can manage the engagement (see below)                                           |
 
 Nobody except a System Administrator can change their own capabilities. Role defaults cannot be changed through the API.
 

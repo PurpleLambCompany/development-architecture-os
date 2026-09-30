@@ -1,6 +1,6 @@
 # Database schema (Phase 1)
 
-> Phase 2 financial tables, functions and rules are documented in [finance.md](finance.md).
+> Phase 2 financial tables, functions and rules are documented in [finance.md](finance.md), and Phase 3 architecture tables, operations and read models in [architecture.md](architecture.md).
 
 Migrations: `20260929230000_phase1_foundation.sql`, `20260929233000_engagement_capabilities.sql`.
 

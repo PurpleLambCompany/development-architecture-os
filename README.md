@@ -9,7 +9,7 @@ DSA OS is a standalone application. It shares no code, database, environment var
 - Architecture decisions: [`docs/architecture-decisions/`](docs/architecture-decisions/)
 - Database schema and access rules: [`docs/database/`](docs/database/)
 
-**Current phase:** Phase 3 — Architecture Core (in development). Phase 1 (foundation: auth, organizations, roles, engagements, access control) and Phase 2 (commercial engagement: contracts, change orders, payment plan, invoices, credit notes, payments, allocations, refunds) are merged. Phase 3 (Architecture Core) is being built from the approved proposal in [`docs/product/PHASE_3_PROPOSAL.md`](docs/product/PHASE_3_PROPOSAL.md).
+**Current phase:** Phase 3 — Architecture Core (built; awaiting review before merge). Phase 1 (foundation: auth, organizations, roles, engagements, access control) and Phase 2 (commercial engagement: contracts, change orders, payment plan, invoices, credit notes, payments, allocations, refunds) are merged. Phase 3 adds the four architecture domains, Project Intelligence records, evidence, typed relationships, published versions, client approvals, decisions and baselines, from the approved proposal in [`docs/product/PHASE_3_PROPOSAL.md`](docs/product/PHASE_3_PROPOSAL.md). See the [Phase 3 report](docs/product/PHASE_3_REPORT.md).
 
 ## Stack
 
@@ -64,20 +64,22 @@ Seeded engagements: _Regional Innovation District_ (Meridian, active, full team)
 
 Seeded finances (dates relative to the day the seed is loaded): the Regional Innovation District has an active USD 150,000 contract, an approved change order (CO-1, +12,000, approved in the portal) and one awaiting the sponsor (CO-2, +8,500), five milestones, three issued invoices (one paid, one with a credit note and 10,000 past due, one partly paid with a payment link), a draft invoice scheduled for later, a wire split across two invoices, and a check held as credit on account with part refunded. Harbor has an executed contract with an unpaid installment and a change order approved outside the portal. The Workforce Capability Program has a draft contract (visible only internally).
 
+Seeded architecture: the Regional Innovation District carries a worked architecture across the four domains (28 core objects, from the commercial real estate market through the acquisition capability to the acquisition team and its metric) and seven Project Intelligence records (an assumption, two risks, one spanning two domains and one engagement-wide, a constraint, a dependency, a decision with three options and a recommended option, and a recommendation record). Statements cite four evidence sources. `KNW-008` is published but internal only. `CAP-001` has an approved v2, `STR-001` v1 awaits the sponsor's response, `CAP-007` is an unpublished draft, and two frozen baselines (v1 approved outside the portal) can be compared. Harbor has two objects.
+
 ## Scripts
 
-| Command                                  | What it does                                                           |
-| ---------------------------------------- | ---------------------------------------------------------------------- |
-| `pnpm dev` / `pnpm build` / `pnpm start` | Next.js                                                                |
-| `pnpm lint`                              | ESLint                                                                 |
-| `pnpm typecheck`                         | Route type generation + `tsc --noEmit`                                 |
-| `pnpm format` / `pnpm format:check`      | Prettier                                                               |
-| `pnpm test`                              | Vitest unit tests (`src/**/*.test.ts`)                                 |
-| `pnpm check`                             | lint + typecheck + format check + unit tests                           |
-| `pnpm db:start` / `pnpm db:stop`         | Local Supabase                                                         |
-| `pnpm db:reset`                          | Re-apply all migrations and the seed                                   |
-| `pnpm db:test`                           | pgTAP tests for RLS, finance rules and concurrency (`supabase/tests/`) |
-| `pnpm db:types`                          | Regenerate `src/types/database.ts` from the local schema               |
+| Command                                  | What it does                                                                   |
+| ---------------------------------------- | ------------------------------------------------------------------------------ |
+| `pnpm dev` / `pnpm build` / `pnpm start` | Next.js                                                                        |
+| `pnpm lint`                              | ESLint                                                                         |
+| `pnpm typecheck`                         | Route type generation + `tsc --noEmit`                                         |
+| `pnpm format` / `pnpm format:check`      | Prettier                                                                       |
+| `pnpm test`                              | Vitest unit tests (`src/**/*.test.ts`)                                         |
+| `pnpm check`                             | lint + typecheck + format check + unit tests                                   |
+| `pnpm db:start` / `pnpm db:stop`         | Local Supabase                                                                 |
+| `pnpm db:reset`                          | Re-apply all migrations and the seed                                           |
+| `pnpm db:test`                           | pgTAP tests for RLS, finance, architecture and concurrency (`supabase/tests/`) |
+| `pnpm db:types`                          | Regenerate `src/types/database.ts` from the local schema                       |
 
 ## Continuous integration
 
@@ -96,10 +98,11 @@ src/
     (public)/login/         sign in (password or emailed link)
     auth/confirm/           verifies invitation / sign-in / recovery links server-side
     account/set-password/   first password after accepting an invitation
-    (internal)/internal/    TPLCo workspace: dashboard, organizations, engagements, finance, settings
-    (client)/portal/        client environment: engagement overview, billing, invoices
+    (internal)/internal/    TPLCo workspace: dashboard, organizations, engagements (architecture domains,
+                            intelligence, evidence, reviews, baselines), finance, settings
+    (client)/portal/        client environment: overview, architecture, decisions, billing, invoices
   components/ui/            design-system primitives
-  components/…              feature components (forms, team controls, shell)
+  components/…              feature components (architecture, finance, portal, shell)
   domain/                   business logic, schemas (Zod), queries and server actions — no React
   lib/                      Supabase clients, auth/viewer helpers, env, formatting
   proxy.ts                  session refresh + signed-out redirects (Next.js 16 "Proxy")
@@ -122,6 +125,7 @@ docs/
 - Access is invite-only; the service-role key is used only to create invited accounts ([ADR-0005](docs/architecture-decisions/0005-invite-only-authentication.md)).
 - Every change to organizations, memberships, engagements and teams is recorded in an append-only activity log.
 - Finances: money is stored in integer minor units with its currency, and business dates use `BUSINESS_TIME_ZONE` (America/Chicago) ([ADR-0010](docs/architecture-decisions/0010-money-and-business-dates.md)). Price, billing and cash are separate records; payments count against an invoice only through explicit allocations ([ADR-0011](docs/architecture-decisions/0011-allocations-credit-notes-refunds.md)). Money moves only through database operations that lock the contract and re-check every invariant; nobody writes cash records directly ([ADR-0012](docs/architecture-decisions/0012-finance-operations-and-integrity.md), [finance.md](docs/database/finance.md)). DSA OS stores no card or bank credentials; payment links are HTTPS references to an external provider.
+- Architecture: working copies are internal; clients read only published, immutable snapshots of client-visible elements, and approval never gates visibility ([ADR-0014](docs/architecture-decisions/0014-publication-is-the-client-boundary.md)). Drafting, publishing, viewing and approving are separate capabilities; System Administrators hold none of them by default ([ADR-0024](docs/architecture-decisions/0024-architecture-capabilities.md)). Method lineage is internal only, and no architecture table references finance ([architecture.md](docs/database/architecture.md)).
 
 ## Deploying (when ready)
 
