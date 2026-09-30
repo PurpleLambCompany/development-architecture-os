@@ -78,7 +78,11 @@ export const getEscalations = cache(async (engagementId: string | null, openOnly
   let query = supabase
     .from("intelligence_escalations")
     .select(
-      "*, architecture_elements(id, kind, reference_code, title), engagements(slug, title), client_actions(id, reference_code, status)",
+      `*, architecture_elements!intelligence_escalations_element_fk(id, kind, reference_code, title, engagements(slug, title)),
+       client_actions!intelligence_escalations_action_fk(id, reference_code, status),
+       raiser:profiles!intelligence_escalations_raised_by_fkey(first_name, last_name, email),
+       acknowledger:profiles!intelligence_escalations_acknowledged_by_fkey(first_name, last_name, email),
+       resolver:profiles!intelligence_escalations_resolved_by_fkey(first_name, last_name, email)`,
     )
     .order("raised_at", { ascending: false });
   if (engagementId) query = query.eq("engagement_id", engagementId);

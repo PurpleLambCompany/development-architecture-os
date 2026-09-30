@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import type { LoadedArchitecture, LoadedElement } from "@/domain/architecture/queries";
 import { RECORD_KIND_LABELS, type RecordKind } from "@/domain/architecture/catalog";
 import { RELATIONSHIP_TYPES } from "@/domain/architecture/vocabulary";
@@ -26,7 +27,7 @@ import type {
   StewardshipRow,
 } from "@/domain/intelligence/queries";
 import { isActiveRecord, type RegisterRow } from "@/domain/intelligence/register";
-import { formatDate, formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime, personName } from "@/lib/format";
 import { ElementLink, ReferenceCode } from "@/components/architecture/badges";
 import { recordStatusValue } from "@/components/architecture/element-fields";
 import { ActionButton, ActionForm } from "@/components/ui/action-form";
@@ -180,8 +181,12 @@ export function EscalationItem({
   escalation: LoadedEscalation;
   canPublish: boolean;
   nameOf: (id: string | null) => string;
-  subject?: React.ReactNode;
+  subject?: ReactNode;
 }) {
+  const who = (
+    profile: Parameters<typeof personName>[0] | undefined,
+    id: string | null,
+  ) => (profile ? personName(profile) : nameOf(id));
   return (
     <div className="rounded-sm border border-rule px-4 py-3 text-sm">
       <p className="flex flex-wrap items-center gap-2">
@@ -198,12 +203,12 @@ export function EscalationItem({
       </p>
       <p className="mt-1 text-ink-muted">{x.reason}</p>
       <p className="mt-1 text-xs text-ink-subtle">
-        Raised by {nameOf(x.raised_by)} {formatDateTime(x.raised_at)}
+        Raised by {who(x.raiser, x.raised_by)} {formatDateTime(x.raised_at)}
         {x.acknowledged_at
-          ? ` · acknowledged by ${nameOf(x.acknowledged_by)} ${formatDateTime(x.acknowledged_at)}`
+          ? ` · acknowledged by ${who(x.acknowledger, x.acknowledged_by)} ${formatDateTime(x.acknowledged_at)}`
           : ""}
         {x.resolved_at
-          ? ` · resolved by ${nameOf(x.resolved_by)} ${formatDateTime(x.resolved_at)}: ${x.resolution_note}`
+          ? ` · resolved by ${who(x.resolver, x.resolved_by)} ${formatDateTime(x.resolved_at)}: ${x.resolution_note}`
           : ""}
       </p>
       {canPublish && !x.resolved_at ? (

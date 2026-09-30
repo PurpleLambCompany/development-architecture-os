@@ -6,6 +6,8 @@ import { formatDateTime } from "@/lib/format";
 import { ArchitectureNav } from "@/components/architecture/architecture-nav";
 import { ApprovalTag, ElementLink, LifecycleTag } from "@/components/architecture/badges";
 import { elementTypeLabel } from "@/components/architecture/relationships-panel";
+import { getEscalations, getSignals } from "@/domain/intelligence/queries";
+import { EscalationsPanel } from "@/components/intelligence/escalations-panel";
 import { ActionForm } from "@/components/ui/action-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState, Panel } from "@/components/ui/panel";
@@ -21,10 +23,12 @@ export default async function ReviewsPage({
 }: PageProps<"/internal/engagements/[slug]/reviews">) {
   const { slug } = await params;
   const { engagement, canPublish } = await getInternalArchitectureContext(slug);
-  const [architecture, queue, baselines] = await Promise.all([
+  const [architecture, queue, baselines, escalations, signals] = await Promise.all([
     loadArchitecture(engagement.id),
     getReviewQueue(),
     listBaselines(engagement.id),
+    getEscalations(engagement.id, true),
+    getSignals(engagement.id),
   ]);
   const nameOf = memberNames(engagement);
   const inReview = architecture.elements.filter((e) => e.lifecycle === "in_review");
@@ -47,6 +51,15 @@ export default async function ReviewsPage({
         description="Internal review before publication, and client responses to published versions."
       />
       <ArchitectureNav slug={slug} current="reviews" />
+      <EscalationsPanel
+        escalations={escalations}
+        canPublish={() => canPublish}
+        nameOf={nameOf}
+        signals={{
+          count: signals.filter((s) => !s.dismissed).length,
+          href: `/internal/engagements/${slug}/intelligence/signals`,
+        }}
+      />
 
       <Panel
         title="In review"
