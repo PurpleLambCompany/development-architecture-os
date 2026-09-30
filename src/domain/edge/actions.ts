@@ -9,7 +9,10 @@ import { requireViewer } from "@/lib/auth/viewer";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createRecord } from "@/domain/architecture/actions";
 import { createReview } from "@/domain/reviews/actions";
-import type { RecordKind } from "@/domain/architecture/catalog";
+import { proposeCriterion } from "@/domain/methodology/actions";
+import type { ElementKind, RecordKind } from "@/domain/architecture/catalog";
+import { internalElementHref } from "@/domain/architecture/links";
+import type { PromotionTargetKind } from "./promotion";
 import { judgmentSchema, markBriefedSchema, type EdgeItemRef } from "./schemas";
 
 /**
@@ -80,12 +83,15 @@ export async function judgeEdgeEvent(
 
 /**
  * Promote: create the governed record through its own operation (which checks
- * its own capability), and only once it exists record the promotion (§15.3).
- * The item is re-checked first, so a stale promotion creates nothing.
+ * its own capability and rules), and only once it exists record the promotion
+ * with its governed promotion target, a closed kind and the record's id
+ * (§15.3, ADR-0056). The item is re-checked first, so a stale promotion
+ * creates nothing.
  */
 async function promote(
   engagementId: string,
   item: EdgeItemRef,
+  targetKind: PromotionTargetKind,
   create: () => Promise<ActionResult<unknown>>,
 ): Promise<ActionResult<string>> {
   await requireViewer();
@@ -106,8 +112,8 @@ async function promote(
   }
   const created = await create();
   if (!created.ok) return created;
-  const elementId = created.data;
-  if (typeof elementId !== "string")
+  const targetId = created.data;
+  if (typeof targetId !== "string")
     return fail("The record was created, but its id was not returned.");
   const { error } = await supabase.rpc("record_edge_judgment", {
     p_engagement_id: engagementId,
@@ -116,11 +122,12 @@ async function promote(
     p_subject_id: item.subjectId,
     p_fingerprint: item.fingerprint,
     p_kind: "promoted",
-    p_promoted_element_id: elementId,
+    p_promotion_target_kind: targetKind,
+    p_promotion_target_id: targetId,
   });
   if (error) return fromDatabaseError(error);
   refresh();
-  return ok(elementId);
+  return ok(targetId);
 }
 
 /** Promote into a new Project Intelligence record (a Risk or a Decision). */
@@ -131,7 +138,10 @@ export async function promoteEdgeItem(
   item: EdgeItemRef,
   input: Record<string, unknown>,
 ): Promise<ActionResult<unknown>> {
-  const result = await promote(engagementId, item, () => createRecord(engagementId, kind, input));
+  if (kind !== "risk" && kind !== "decision") return fail("Promote only to a Risk or a Decision.");
+  const result = await promote(engagementId, item, kind, () =>
+    createRecord(engagementId, kind, input),
+  );
   if (!result.ok) return result;
   redirect(
     `/internal/engagements/${encodeURIComponent(slug)}/architecture/elements/${result.data}`,
@@ -145,9 +155,33 @@ export async function promoteToReview(
   item: EdgeItemRef,
   input: Record<string, unknown>,
 ): Promise<ActionResult<unknown>> {
-  const result = await promote(engagementId, item, () => createReview(engagementId, input));
+  const result = await promote(engagementId, item, "review", () =>
+    createReview(engagementId, input),
+  );
   if (!result.ok) return result;
   redirect(`/internal/engagements/${encodeURIComponent(slug)}/reviews/${result.data}`);
+}
+
+/**
+ * Promote by proposing an acceptance criterion on the item's own subject,
+ * through the ordinary proposal operation. The criterion is only proposed:
+ * agreement stays the separate governed act it always was.
+ */
+export async function promoteToCriterion(
+  engagementId: string,
+  slug: string,
+  elementKind: ElementKind,
+  item: EdgeItemRef,
+  input: Record<string, unknown>,
+): Promise<ActionResult<unknown>> {
+  if (item.subjectType !== "element") return fail("A criterion is proposed on a governed element.");
+  const result = await promote(engagementId, item, "acceptance_criterion", () =>
+    proposeCriterion(item.subjectId, input),
+  );
+  if (!result.ok) return result;
+  redirect(
+    `${internalElementHref(encodeURIComponent(slug), elementKind, item.subjectId)}#criteria`,
+  );
 }
 
 /** Set the viewer's own briefing mark. Only this explicit act moves it. */

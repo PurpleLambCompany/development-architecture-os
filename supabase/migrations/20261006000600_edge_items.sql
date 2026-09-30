@@ -46,21 +46,22 @@ returns table (
   judgment_reason      text,
   judgment_expires_on  date,
   judgment_source      text,
-  promoted_element_id  uuid
+  promotion_target_kind text,
+  promotion_target_id  uuid
 )
 language sql
 stable
 set search_path = ''
 as $$
   select case when d.expires_on is null then 'not_material' else 'deferred' end, d.dismissed_by, d.dismissed_at,
-         d.reason, d.expires_on, 'signal_dismissal', null::uuid
+         d.reason, d.expires_on, 'signal_dismissal', null::text, null::uuid
   from public.intelligence_signal_dismissals d
   where d.engagement_id = p_engagement_id and d.rule_key = p_rule_key and d.fingerprint = p_fingerprint
     and ((p_subject_type = 'element' and d.element_id = p_subject_id)
          or (p_subject_type = 'client_action' and d.client_action_id = p_subject_id))
   union all
   select case when d.expires_on is null then 'not_material' else 'deferred' end, d.dismissed_by, d.dismissed_at,
-         d.reason, d.expires_on, 'implementation_dismissal', null::uuid
+         d.reason, d.expires_on, 'implementation_dismissal', null::text, null::uuid
   from public.implementation_signal_dismissals d
   where d.engagement_id = p_engagement_id and d.rule_key = p_rule_key and d.fingerprint = p_fingerprint
     and p_subject_type = 'element' and d.element_id = p_subject_id
@@ -111,7 +112,9 @@ returns table (
   judgment_reason         text,
   judgment_expires_on     date,
   judgment_source         text,
-  promoted_element_id     uuid,
+  promotion_target_kind   text,
+  promotion_target_id     uuid,
+  promotion_target_code   text,
   judged                  boolean
 )
 language sql
@@ -347,7 +350,12 @@ as $$
       'reference_code', coalesce(x.s_code, x.t_code)
     )),
     j.judgment_kind, j.judged_by, private.person_name(j.judged_by), j.judged_at, j.judgment_reason,
-    j.judgment_expires_on, j.judgment_source, j.promoted_element_id,
+    j.judgment_expires_on, j.judgment_source, j.promotion_target_kind, j.promotion_target_id,
+    case when j.promotion_target_kind = 'acceptance_criterion'
+         then (select ac.reference_code from public.acceptance_criteria ac where ac.id = j.promotion_target_id)
+         when j.promotion_target_id is not null
+         then (select ae.reference_code from public.architecture_elements ae where ae.id = j.promotion_target_id)
+    end,
     coalesce(j.judgment_kind in ('not_material', 'disagree', 'promoted')
              or (j.judgment_kind = 'deferred' and (j.judgment_expires_on is null or j.judgment_expires_on > p.as_of)),
              false)

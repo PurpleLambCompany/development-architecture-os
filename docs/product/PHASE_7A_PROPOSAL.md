@@ -2,6 +2,8 @@
 
 **Status:** Revision 2, **approved and implementation-ready**. Kerrick approved the proposal on 2026-09-30 and decided OD-1 to OD-10 (§29), with five clarifications (§29.2). This revision records those decisions. OD-7 changed the recommendation: a held Review's examined set is now closed (§11.4). Nothing in this proposal has been built: no migration, schema, table, function, enum value, ADR, domain code, seed data, test or UI. Names are proposed until implementation.
 
+**Amended after implementation (2026-09-30, Kerrick's decision on criterion promotion):** §15.1 to §15.3 now describe the **governed promotion target**. A promotion records a typed reference to the governed record it produced, from the closed vocabulary Risk, Decision, Review and acceptance criterion, instead of assuming every promotion creates an element. An Edge item can be promoted into a _proposed_ acceptance criterion through the ordinary proposal operation; agreement is unchanged. ADR-0056 records the model. Nothing else in the approved design changed.
+
 **Changed in Revision 2:** §1, §10.6, §11, §12.2, §13.2, §14.2, §17.1, §19, §21, §22, §23, §24, §25, §26, §28, §29 and §30. Sections changed because of OD-7 are §11.1 to §11.4, §19, §21, §22, §23, §24.1, §25, §26 and §28 (AC-32).
 
 **Governing direction:**
@@ -700,33 +702,37 @@ Page views, time on page, last visit, last sign-in use, which items a user opene
 | `not_material`  | "This does not need action", with a reason                                                                                                   | Leaves the list until its fingerprint changes                                        | Reason required                |
 | `deferred`      | "Not now"                                                                                                                                    | Leaves the list until `expires_on` (business date) or a fingerprint change           | Reason and future `expires_on` |
 | `disagree`      | "The rule is wrong for this case": rule feedback, not a claim that the fact is false                                                         | Leaves the list until its fingerprint changes; retained as internal rule-tuning data | Reason required                |
-| `promoted`      | A person completed a governed operation prompted by the item (created a Risk, recorded a Decision, scheduled a Review, proposed a criterion) | Leaves the list until its fingerprint changes; the item links to the record          | The created element's id       |
+| `promoted`      | A person completed a governed operation prompted by the item (created a Risk, recorded a Decision, scheduled a Review, proposed a criterion) | Leaves the list until its fingerprint changes; the item links to the record          | The governed promotion target  |
 
 The latest judgment for a (rule, subject, fingerprint) is the current one. A correction is a new judgment. Nothing is edited or deleted.
+
+The **governed promotion target** is a typed reference to the governed record the promotion produced, never an assumption that it is an element. Its kind is one of a closed vocabulary covering the approved destinations: `risk`, `decision`, `review` (elements of exactly that kind) and `acceptance_criterion` (an `acceptance_criteria` row, recorded only while proposed). There is no generic link to arbitrary tables.
 
 ### 15.2 Storage
 
 Proposed table `public.edge_judgments`, append-only:
 
-| Column                                                                               | Notes                                                             |
-| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
-| `id`, `engagement_id`                                                                |                                                                   |
-| `rule_key`                                                                           | Text, checked against the catalog                                 |
-| `element_id`, `client_action_id`, `method_application_id`, `acceptance_criterion_id` | Exactly one non-null (the subject); composite same-engagement FKs |
-| `fingerprint`                                                                        | ≤ 1000 characters                                                 |
-| `trigger_key`                                                                        | So an event-level judgment can be read back as one act            |
-| `judgment_kind`                                                                      | Text with a check constraint (§5.1: no enum)                      |
-| `reason`, `expires_on`, `promoted_element_id`                                        | As required by the kind                                           |
-| `judged_by`, `judged_at`                                                             | `auth.uid()`, `clock_timestamp()`                                 |
+| Column                                                                                  | Notes                                                                                                                                                                                                  |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`, `engagement_id`                                                                   |                                                                                                                                                                                                        |
+| `rule_key`                                                                              | Text, checked against the catalog                                                                                                                                                                      |
+| `element_id`, `client_action_id`, `method_application_id`, `acceptance_criterion_id`    | Exactly one non-null (the subject); composite same-engagement FKs                                                                                                                                      |
+| `fingerprint`                                                                           | ≤ 1000 characters                                                                                                                                                                                      |
+| `trigger_key`                                                                           | So an event-level judgment can be read back as one act                                                                                                                                                 |
+| `judgment_kind`                                                                         | Text with a check constraint (§5.1: no enum)                                                                                                                                                           |
+| `reason`, `expires_on`                                                                  | As required by the kind                                                                                                                                                                                |
+| `promotion_target_kind`, `promotion_target_element_id`, `promotion_target_criterion_id` | The governed promotion target: a closed kind and exactly the matching typed reference, present only for `promoted`; same-engagement FKs (a Risk, Decision or Review FK also checks the element's kind) |
+| `judged_by`, `judged_at`                                                                | `auth.uid()`, `clock_timestamp()`                                                                                                                                                                      |
 
 Guard triggers refuse update and delete. The table is recorded in `activity_log` like the existing dismissals, because a judgment is professional record-keeping, attributed by design (Q4).
 
 ### 15.3 Operations and capability
 
-- `record_edge_judgment(p_engagement_id, p_rule_key, p_subject_type, p_subject_id, p_fingerprint, p_kind, p_reason, p_expires_on, p_promoted_element_id)`.
+- `record_edge_judgment(p_engagement_id, p_rule_key, p_subject_type, p_subject_id, p_fingerprint, p_kind, p_reason, p_expires_on, p_promotion_target_kind, p_promotion_target_id)`.
 - `record_edge_event_judgment(p_engagement_id, p_trigger_key, p_kind, p_reason, p_expires_on)` records one judgment per item currently in the event, in one transaction, and returns how many.
 - Both require **`edit_architecture`**, the capability both existing dismissal operations already require. The operation re-evaluates the item and refuses a fingerprint that no longer matches the current facts (23514), so a stale screen cannot judge a changed item.
-- **Promote** never creates anything itself. The UI opens the existing creation or governance operation, pre-filled from the item, and that operation checks its own capability. Only after the governed record exists does the UI record `promoted` with its id. The record's provenance follows Q18: `architect_judgment` by default, because the rule prompted and the architect judged.
+- **Promote** never creates anything itself. The UI opens the existing creation or governance operation, pre-filled from the item, and that operation checks its own capability. Only after the governed record exists does the UI record `promoted` with its governed promotion target (kind and id). The record's provenance follows Q18: `architect_judgment` by default, because the rule prompted and the architect judged.
+- **Promote into an acceptance criterion** is offered when the item's subject can carry criteria (a core object or an Implementation Initiative). The Edge prefills the ordinary proposal form on that subject; the person completes the ordinary governed operation; the criterion is created `proposed`, never agreed, and existing agreement and authority rules are unchanged. Once it exists it is recorded as the promotion target, and the originating Edge item stays linked from both sides.
 
 ### 15.4 The 11 existing rules
 
@@ -825,17 +831,17 @@ Other obligations:
 
 ### 21.1 New ADRs (proposed numbers)
 
-| ADR      | Title                                                    | Decides                                                                                                                                                       |
-| -------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ADR-0051 | The Development Edge envelope and rule catalog           | Computed items; one envelope; epistemic statuses; catalog attributes; mirrored catalog; homes; existing signals consumed unchanged; no enums                  |
-| ADR-0052 | One triggering change, one primary Edge event            | Trigger keys; grouping rules; coalescing revisions; subject grouping for standing conditions; grouping is presentation, never stored                          |
-| ADR-0053 | Substantive revision                                     | The definition; the type-aware excluded-path list; read-time computation; `change_summary` never parsed; first publication is not a revision                  |
-| ADR-0054 | Review examined-version capture                          | Captured by `hold_review`; immutable; version-exact; the examined set closes at hold; not a baseline or second baseline system; no backfill                   |
-| ADR-0055 | Relationship impact matrix and impact trace              | The governed matrix; four recursive walks at depth ≤ 2; terminal hops; never-traversed links; two modes; `impact_trace` authoritative; old traces legacy only |
-| ADR-0056 | Edge judgments                                           | Kinds; append-only; fingerprint and return; `edit_architecture`; event-level judgment; promotion only through governed operations; no per-person aggregation  |
-| ADR-0057 | Development change read model and the briefing watermark | Curated classification over `activity_log` without exposing it; system time; user-private, unlogged watermark set only explicitly                             |
-| ADR-0058 | Deterministic-first ordering and Edge tiers              | Tiers; human-only top tier and its name; lexicographic keys; explanations; 14-day horizon constant; nothing scored                                            |
-| ADR-0059 | Practice Intelligence in Phase 7A                        | In-engagement practice rules; counts with n always shown; proportions from n ≥ 5, not a significance claim; no free text; no scoring                          |
+| ADR      | Title                                                    | Decides                                                                                                                                                                                            |
+| -------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ADR-0051 | The Development Edge envelope and rule catalog           | Computed items; one envelope; epistemic statuses; catalog attributes; mirrored catalog; homes; existing signals consumed unchanged; no enums                                                       |
+| ADR-0052 | One triggering change, one primary Edge event            | Trigger keys; grouping rules; coalescing revisions; subject grouping for standing conditions; grouping is presentation, never stored                                                               |
+| ADR-0053 | Substantive revision                                     | The definition; the type-aware excluded-path list; read-time computation; `change_summary` never parsed; first publication is not a revision                                                       |
+| ADR-0054 | Review examined-version capture                          | Captured by `hold_review`; immutable; version-exact; the examined set closes at hold; not a baseline or second baseline system; no backfill                                                        |
+| ADR-0055 | Relationship impact matrix and impact trace              | The governed matrix; four recursive walks at depth ≤ 2; terminal hops; never-traversed links; two modes; `impact_trace` authoritative; old traces legacy only                                      |
+| ADR-0056 | Edge judgments                                           | Kinds; append-only; fingerprint and return; `edit_architecture`; event-level judgment; promotion only through governed operations, to a typed governed promotion target; no per-person aggregation |
+| ADR-0057 | Development change read model and the briefing watermark | Curated classification over `activity_log` without exposing it; system time; user-private, unlogged watermark set only explicitly                                                                  |
+| ADR-0058 | Deterministic-first ordering and Edge tiers              | Tiers; human-only top tier and its name; lexicographic keys; explanations; 14-day horizon constant; nothing scored                                                                                 |
+| ADR-0059 | Practice Intelligence in Phase 7A                        | In-engagement practice rules; counts with n always shown; proportions from n ≥ 5, not a significance claim; no free text; no scoring                                                               |
 
 ### 21.2 Amendment notes on existing ADRs
 

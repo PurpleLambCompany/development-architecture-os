@@ -92,6 +92,7 @@ import {
 } from "@/components/architecture/phase5-panels";
 import { ElementRequestsPanel } from "@/components/intelligence/element-requests";
 import { CriteriaPanel } from "@/components/methodology/criteria-panel";
+import { criterionPromotionFor } from "@/domain/edge/promotion";
 import { PracticePanel } from "@/components/methodology/practice-panel";
 import { ActionButton, ActionForm } from "@/components/ui/action-form";
 import { ButtonLink } from "@/components/ui/button";
@@ -557,6 +558,12 @@ export default async function ElementPage({
           canEdit={editable}
           canPublish={canPublish && !frozen}
           evidenceOptions={evidenceOptions}
+          promotion={criterionPromotionFor(query, edgeItems, {
+            engagementId: engagement.id,
+            slug,
+            elementId: element.id,
+            elementKind: element.kind,
+          })}
         />
       ) : null}
 

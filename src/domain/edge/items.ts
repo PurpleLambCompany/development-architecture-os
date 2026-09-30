@@ -103,7 +103,10 @@ export type EdgeItem = {
   judgment_reason: string | null;
   judgment_expires_on: string | null;
   judgment_source: string | null;
-  promoted_element_id: string | null;
+  /** The governed promotion target (ADR-0056): a closed kind and the record's id and code. */
+  promotion_target_kind: string | null;
+  promotion_target_id: string | null;
+  promotion_target_code: string | null;
   judged: boolean;
 };
 

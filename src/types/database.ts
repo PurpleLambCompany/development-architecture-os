@@ -2398,7 +2398,10 @@ export type Database = {
           judged_by: string;
           judgment_kind: string;
           method_application_id: string | null;
-          promoted_element_id: string | null;
+          promotion_target_criterion_id: string | null;
+          promotion_target_element_id: string | null;
+          promotion_target_element_kind: Database["public"]["Enums"]["element_kind"] | null;
+          promotion_target_kind: string | null;
           reason: string | null;
           rule_key: string;
           subject_type: string;
@@ -2416,7 +2419,10 @@ export type Database = {
           judged_by: string;
           judgment_kind: string;
           method_application_id?: string | null;
-          promoted_element_id?: string | null;
+          promotion_target_criterion_id?: string | null;
+          promotion_target_element_id?: string | null;
+          promotion_target_element_kind?: never;
+          promotion_target_kind?: string | null;
           reason?: string | null;
           rule_key: string;
           subject_type: string;
@@ -2434,7 +2440,10 @@ export type Database = {
           judged_by?: string;
           judgment_kind?: string;
           method_application_id?: string | null;
-          promoted_element_id?: string | null;
+          promotion_target_criterion_id?: string | null;
+          promotion_target_element_id?: string | null;
+          promotion_target_element_kind?: never;
+          promotion_target_kind?: string | null;
           reason?: string | null;
           rule_key?: string;
           subject_type?: string;
@@ -2484,11 +2493,22 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "edge_judgments_promoted_fk";
-            columns: ["promoted_element_id", "engagement_id"];
+            foreignKeyName: "edge_judgments_promotion_criterion_fk";
+            columns: ["promotion_target_criterion_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "acceptance_criteria";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "edge_judgments_promotion_element_fk";
+            columns: [
+              "promotion_target_element_id",
+              "engagement_id",
+              "promotion_target_element_kind",
+            ];
             isOneToOne: false;
             referencedRelation: "architecture_elements";
-            referencedColumns: ["id", "engagement_id"];
+            referencedColumns: ["id", "engagement_id", "kind"];
           },
         ];
       };
@@ -7039,7 +7059,9 @@ export type Database = {
           lens: string;
           order_facts: Json;
           producer: string;
-          promoted_element_id: string;
+          promotion_target_code: string;
+          promotion_target_id: string;
+          promotion_target_kind: string;
           resolving_act: string;
           rule_key: string;
           subject_id: string;
@@ -7600,7 +7622,8 @@ export type Database = {
           p_expires_on?: string;
           p_fingerprint: string;
           p_kind: string;
-          p_promoted_element_id?: string;
+          p_promotion_target_id?: string;
+          p_promotion_target_kind?: string;
           p_reason?: string;
           p_rule_key: string;
           p_subject_id: string;

@@ -4,7 +4,7 @@
 -- =============================================================================
 begin;
 
-select plan(27);
+select plan(44);
 
 create function pg_temp.act_as(user_email text) returns void language plpgsql as $$
 begin
@@ -100,12 +100,108 @@ select ok(exists (select 1 from public.edge_items(:H, current_date + 8) where ru
                     and subject_id = pg_temp.h('IMP-001')),
   'and returns once the date passes');
 
--- Promote names a governed record created on this engagement.
+-- Promote names a governed promotion target: a closed kind (Risk, Decision,
+-- Review, acceptance criterion) and a record of exactly that kind created on
+-- this engagement.
 select throws_ok(format($$ select public.record_edge_judgment(%L, 'decision_not_reflected', 'element', %L, %L,
-                                                             'promoted', null, null, %L) $$,
+                                                             'promoted', null, null, 'risk', %L) $$,
                         'e0000000-0000-4000-8000-000000000003', pg_temp.h('DEC-001'),
                         pg_temp.fp(:H, 'decision_not_reflected', pg_temp.h('DEC-001')), pg_temp.m('RSK-001')),
   '23514', null, 'a promotion cannot name another engagement''s record');
+select throws_ok(format($$ select public.record_edge_judgment(%L, 'decision_not_reflected', 'element', %L, %L,
+                                                             'promoted', null, null, 'deliverable', %L) $$,
+                        'e0000000-0000-4000-8000-000000000003', pg_temp.h('DEC-001'),
+                        pg_temp.fp(:H, 'decision_not_reflected', pg_temp.h('DEC-001')), pg_temp.h('DLV-001')),
+  '23514', 'Promote only to a Risk, a Decision, a Review or an acceptance criterion',
+  'the promotion target vocabulary is closed');
+select throws_ok(format($$ select public.record_edge_judgment(%L, 'decision_not_reflected', 'element', %L, %L,
+                                                             'promoted', null, null, 'risk', %L) $$,
+                        'e0000000-0000-4000-8000-000000000003', pg_temp.h('DEC-001'),
+                        pg_temp.fp(:H, 'decision_not_reflected', pg_temp.h('DEC-001')), pg_temp.h('REV-001')),
+  '23514', 'Promote only to a governed record of that kind created on this engagement',
+  'the target must be a record of the named kind');
+select throws_ok(format($$ select public.record_edge_judgment(%L, 'decision_not_reflected', 'element', %L, %L,
+                                                             'promoted') $$,
+                        'e0000000-0000-4000-8000-000000000003', pg_temp.h('DEC-001'),
+                        pg_temp.fp(:H, 'decision_not_reflected', pg_temp.h('DEC-001'))),
+  '23514', null, 'a promotion must name its target');
+select throws_ok(format($$ select public.record_edge_judgment(%L, 'decision_not_reflected', 'element', %L, %L,
+                                                             'investigating', null, null, 'review', %L) $$,
+                        'e0000000-0000-4000-8000-000000000003', pg_temp.h('DEC-001'),
+                        pg_temp.fp(:H, 'decision_not_reflected', pg_temp.h('DEC-001')), pg_temp.h('REV-001')),
+  '23514', 'Only a promotion names a governed target', 'and only a promotion names one');
+
+-- Promotion into a Risk: the Risk was recorded by its own operation.
+select lives_ok(format($$ select public.record_edge_judgment(%L, 'conflict_unresolved', 'element', %L, %L,
+                                                            'promoted', null, null, 'risk', %L) $$,
+                       'e0000000-0000-4000-8000-000000000001', pg_temp.m('APP-003'),
+                       pg_temp.fp(:M, 'conflict_unresolved', pg_temp.m('APP-003')), pg_temp.m('RSK-003')),
+  'an item is promoted to a Risk');
+select is((select promotion_target_kind || ':' || promotion_target_code from public.edge_items(:M, null, null, null, true)
+           where rule_key = 'conflict_unresolved' and subject_id = pg_temp.m('APP-003')),
+  'risk:RSK-003', 'the item reads back its typed promotion target');
+select throws_ok($$ delete from public.architecture_elements where id = pg_temp.m('RSK-003') $$,
+  '23503', null, 'a promotion target is kept, even while it is a draft');
+
+-- Promotion into an acceptance criterion: the criterion is proposed through
+-- the ordinary operation, and promotion records it; nothing agrees it.
+select throws_ok(format($$ select public.record_edge_judgment(%L, 'implemented_element_revised', 'element', %L, %L,
+                                                             'promoted', null, null, 'acceptance_criterion', %L) $$,
+                        'e0000000-0000-4000-8000-000000000003', pg_temp.h('IMP-003'),
+                        pg_temp.fp(:H, 'implemented_element_revised', pg_temp.h('IMP-003')),
+                        (select id from public.acceptance_criteria where reference_code = 'ACR-001'
+                           and engagement_id = 'e0000000-0000-4000-8000-000000000003')),
+  '23514', 'Promote only to a proposed criterion created on this engagement',
+  'a promotion never names an agreed criterion');
+select lives_ok(format($$ select public.record_edge_judgment(%L, 'implemented_element_revised', 'element', %L, %L,
+                                                            'promoted', null, null, 'acceptance_criterion',
+                                                            public.propose_acceptance_criterion(%L,
+                                                              'Raised from the Development Edge: the revised object is still met.')) $$,
+                       'e0000000-0000-4000-8000-000000000003', pg_temp.h('IMP-003'),
+                       pg_temp.fp(:H, 'implemented_element_revised', pg_temp.h('IMP-003')), pg_temp.h('IMP-003')),
+  'a criterion proposed through the ordinary operation is recorded as the promotion target');
+select is((select state::text || ':' || coalesce(agreed_with, '-') from public.acceptance_criteria
+           where id = (select promotion_target_criterion_id from public.edge_judgments
+                       where promotion_target_kind = 'acceptance_criterion')),
+  'proposed:-', 'the promoted criterion stays proposed: promotion never agrees it');
+select is((select promotion_target_kind || ':' || promotion_target_code || ':' || judged::text
+           from public.edge_items(:H, null, null, null, true)
+           where rule_key = 'implemented_element_revised' and subject_id = pg_temp.h('IMP-003')),
+  'acceptance_criterion:' || (select reference_code from public.acceptance_criteria
+                              where governed_element_id = pg_temp.h('IMP-003') and state = 'proposed'
+                              order by created_at desc limit 1) || ':true',
+  'the item reads "promoted to" the criterion''s code, with the originating rule and fingerprint kept');
+select ok(not pg_temp.listed(:H, 'implemented_element_revised', pg_temp.h('IMP-003')), 'and leaves the list');
+select throws_ok(format($$ select public.delete_acceptance_criterion(%L) $$,
+                        (select promotion_target_criterion_id from public.edge_judgments
+                         where promotion_target_kind = 'acceptance_criterion')),
+  '23503', null, 'the promoted proposal is kept as the promotion''s record');
+
+-- The table itself holds the typed reference: the kind column is enforced by
+-- the foreign keys, not only by the operation.
+reset role;
+select set_config('dsa.edge_judgment', 'on', true);
+select set_config('request.jwt.claims', json_build_object('sub', '10000000-0000-4000-8000-000000000003')::text, true);
+select throws_ok(format($$ insert into public.edge_judgments (engagement_id, rule_key, subject_type, element_id,
+                             fingerprint, judgment_kind, promotion_target_kind, promotion_target_element_id)
+                           values (%L, 'conflict_unresolved', 'element', %L, 'x', 'promoted', 'risk', %L) $$,
+                        'e0000000-0000-4000-8000-000000000003', pg_temp.h('APP-001'), pg_temp.h('DEC-001')),
+  '23503', null, 'a Risk target that is really a Decision is refused by the foreign key');
+select throws_ok(format($$ insert into public.edge_judgments (engagement_id, rule_key, subject_type, element_id,
+                             fingerprint, judgment_kind, promotion_target_kind, promotion_target_element_id)
+                           values (%L, 'conflict_unresolved', 'element', %L, 'x', 'promoted', 'acceptance_criterion', %L) $$,
+                        'e0000000-0000-4000-8000-000000000003', pg_temp.h('APP-001'), pg_temp.h('APP-001')),
+  '23514', null, 'a criterion target must use the criterion reference');
+select set_config('dsa.edge_judgment', 'off', true);
+
+-- Clients never see or make promotions.
+select pg_temp.act_as('sponsor@harbor.test');
+select is((select count(*)::int from public.edge_judgments), 0, 'a client reads no judgments or promotion targets');
+select throws_ok(format($$ select public.record_edge_judgment(%L, 'decision_not_reflected', 'element', %L, 'x',
+                                                             'promoted', null, null, 'decision', %L) $$,
+                        'e0000000-0000-4000-8000-000000000003', pg_temp.h('DEC-001'), pg_temp.h('DEC-001')),
+  'P0002', null, 'and cannot promote');
+select pg_temp.act_as('architect@tplco.test');
 
 -- S7: judge the APP-001 event as a whole.
 select is(public.record_edge_event_judgment(:H,
@@ -118,7 +214,7 @@ select is(public.record_edge_event_judgment(:H,
 select is((select count(*)::int from public.edge_items(:H) where trigger_type = 'substantive_revision'
              and trigger_subject_id = pg_temp.h('APP-001')), 0, 'S7: all of its items leave the list');
 select is((select count(distinct (reason, trigger_key))::int from public.edge_judgments
-           where trigger_key like 'rev:' || pg_temp.h('APP-001') || ':%'),
+           where trigger_key like 'rev:' || pg_temp.h('APP-001') || ':%' and judgment_kind = 'not_material'),
   1, 'S7: read back as one act with one reason');
 
 select pg_temp.act_as('architect@tplco.test');

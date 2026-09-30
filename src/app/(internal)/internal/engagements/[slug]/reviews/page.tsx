@@ -10,6 +10,7 @@ import { getEscalations, getSignals } from "@/domain/intelligence/queries";
 import { EscalationsPanel } from "@/components/intelligence/escalations-panel";
 import { createReview } from "@/domain/reviews/actions";
 import { promoteToReview } from "@/domain/edge/actions";
+import { promotionFromQuery } from "@/domain/edge/promotion";
 import { edgeRuleLabel } from "@/domain/edge/rules";
 import { REVIEW_TYPES, REVIEW_TYPE_LABELS, reviewStatus } from "@/domain/reviews/catalog";
 import { getReviewRegister } from "@/domain/reviews/queries";
@@ -43,20 +44,7 @@ export default async function ReviewsPage({
   const nameOf = memberNames(engagement);
   // Promotion from the Development Edge (ADR-0056): scheduling the Review is
   // the governed operation; the Edge item is then judged "promoted" to it.
-  const param = (key: string) => (typeof query[key] === "string" ? (query[key] as string) : null);
-  const promoting =
-    canManageReviews &&
-    param("promoteRule") &&
-    param("promoteType") &&
-    param("promoteId") &&
-    param("promoteFp")
-      ? {
-          ruleKey: param("promoteRule")!,
-          subjectType: param("promoteType")!,
-          subjectId: param("promoteId")!,
-          fingerprint: param("promoteFp")!,
-        }
-      : null;
+  const promoting = canManageReviews ? promotionFromQuery(query) : null;
   const promotedFrom = promoting
     ? [edgeRuleLabel(promoting.ruleKey), architecture.byId.get(promoting.subjectId)?.reference_code]
         .filter(Boolean)

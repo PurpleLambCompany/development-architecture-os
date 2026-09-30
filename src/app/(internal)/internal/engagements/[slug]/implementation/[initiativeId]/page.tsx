@@ -63,6 +63,7 @@ import { VersionsPanel } from "@/components/architecture/versions-panel";
 import { ActivityList } from "@/components/architecture/activity-list";
 import { escalateFields, requiredNoteFields, triageFields } from "@/components/intelligence/fields";
 import { CriteriaPanel } from "@/components/methodology/criteria-panel";
+import { criterionPromotionFor } from "@/domain/edge/promotion";
 import { PracticePanel } from "@/components/methodology/practice-panel";
 import { ActionButton, ActionForm, type FieldSpec } from "@/components/ui/action-form";
 import { PageHeader } from "@/components/ui/page-header";
@@ -96,8 +97,10 @@ function publishFields(subject: string): FieldSpec[] {
 
 export default async function InitiativeDetailPage({
   params,
+  searchParams,
 }: PageProps<"/internal/engagements/[slug]/implementation/[initiativeId]">) {
   const { slug, initiativeId } = await params;
+  const query = await searchParams;
   const { engagement, canEdit, canPublish, canManageImplementation } =
     await getInternalArchitectureContext(slug);
   const [
@@ -690,6 +693,12 @@ export default async function InitiativeDetailPage({
               governedHref: internalElementHref(slug, "object", c.governed_element_id),
             };
           })}
+        promotion={criterionPromotionFor(query, edgeItems, {
+          engagementId: engagement.id,
+          slug,
+          elementId: element.id,
+          elementKind: element.kind,
+        })}
       />
 
       <ContextualEdgePanel

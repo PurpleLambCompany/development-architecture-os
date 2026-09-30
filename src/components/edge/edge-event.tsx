@@ -11,6 +11,7 @@ import {
   type JudgmentKind,
 } from "@/domain/edge/items";
 import { describeOrderFacts } from "@/domain/edge/ordering";
+import { PROMOTION_LABELS, promotionHref, promotionTargetsFor } from "@/domain/edge/promotion";
 import {
   EDGE_LENS_LABELS,
   EPISTEMIC_LABELS,
@@ -25,13 +26,6 @@ import { ActionForm } from "@/components/ui/action-form";
 import { StatusTag } from "@/components/ui/status-tag";
 import { judgmentFields } from "./judgment-fields";
 import { edgeSubjectHref } from "./links";
-
-/** The governed operations an item may be promoted into (§15.1, Q6). Each yields an element. */
-const PROMOTIONS = [
-  { key: "risk", label: "Record a Risk" },
-  { key: "decision", label: "Record a Decision" },
-  { key: "review", label: "Schedule a Review" },
-] as const;
 
 function labels(event: EdgeEvent): string {
   const lenses = event.lenses.map((l) => EDGE_LENS_LABELS[l as EdgeLens] ?? l).join(", ");
@@ -67,24 +61,20 @@ function whyLines(event: EdgeEvent): string[] {
   return [...lines, ...describeOrderFacts(facts)];
 }
 
-/** Reference codes of records items were promoted to, when the surface has them. */
-type PromotedCodes = Record<string, string | null>;
-
 function str(item: EdgeItem, key: string): string | undefined {
   const v = item.details?.[key];
   return typeof v === "string" && v ? v : undefined;
 }
 
-function JudgmentLine({ item, promotedCodes }: { item: EdgeItem; promotedCodes?: PromotedCodes }) {
+function JudgmentLine({ item }: { item: EdgeItem }) {
   if (!item.judgment_kind) return null;
   const label = JUDGMENT_LABELS[item.judgment_kind as JudgmentKind] ?? item.judgment_kind;
   const who = item.judged_by_name ?? "a colleague";
   const when = item.judged_at ? formatDate(item.judged_at.slice(0, 10)) : null;
   if (item.judgment_kind === "promoted") {
-    const code = item.promoted_element_id ? promotedCodes?.[item.promoted_element_id] : null;
     return (
       <p className="mt-1 text-xs text-ink-muted">
-        Promoted to {code ?? "a governed record"} by {who}
+        Promoted to {item.promotion_target_code ?? "a governed record"} by {who}
         {when ? ` on ${when}` : ""}
         {item.judgment_reason ? `: ${item.judgment_reason}` : ""}
       </p>
@@ -105,29 +95,17 @@ function ConsequenceRow({
   engagementId,
   line,
   canJudge,
-  promotedCodes,
   sharedJudgment = false,
 }: {
   slug: string;
   engagementId: string;
   line: EdgeConsequence;
   canJudge: boolean;
-  promotedCodes?: PromotedCodes;
   /** The event shows one judgment act for all its items; don't repeat it per line. */
   sharedJudgment?: boolean;
 }) {
   const item = line.primary;
-  const promoteHref = (kind: string) => {
-    const params = {
-      promoteRule: item.rule_key,
-      promoteType: item.subject_type,
-      promoteId: item.subject_id,
-      promoteFp: item.fingerprint,
-    };
-    return kind === "review"
-      ? `/internal/engagements/${slug}/reviews?${new URLSearchParams(params).toString()}`
-      : `/internal/engagements/${slug}/intelligence?${new URLSearchParams({ new: kind, ...params }).toString()}`;
-  };
+  const promotions = promotionTargetsFor(item);
   return (
     <li className="py-2">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -172,11 +150,7 @@ function ConsequenceRow({
             .join("; ")}
         </p>
       ) : null}
-      {sharedJudgment
-        ? null
-        : line.items.map((i) => (
-            <JudgmentLine key={i.item_key} item={i} promotedCodes={promotedCodes} />
-          ))}
+      {sharedJudgment ? null : line.items.map((i) => <JudgmentLine key={i.item_key} item={i} />)}
       {canJudge && !item.judged ? (
         <div className="mt-2 flex flex-wrap items-start gap-2">
           <ActionForm
@@ -191,16 +165,19 @@ function ConsequenceRow({
             })}
             submitLabel="Record judgment"
           />
-          {item.subject_type === "element" || item.subject_type === "client_action" ? (
+          {promotions.length > 0 ? (
             <details className="text-sm">
               <summary className="cursor-pointer rounded-sm border border-rule px-2 py-1 text-ink-muted hover:text-ink">
                 Promote
               </summary>
               <ul className="mt-2 space-y-1">
-                {PROMOTIONS.map((p) => (
-                  <li key={p.key}>
-                    <Link href={promoteHref(p.key)} className="text-ink-muted hover:underline">
-                      {p.label}
+                {promotions.map((kind) => (
+                  <li key={kind}>
+                    <Link
+                      href={promotionHref(slug, item, kind)}
+                      className="text-ink-muted hover:underline"
+                    >
+                      {PROMOTION_LABELS[kind]}
                     </Link>
                   </li>
                 ))}
@@ -220,7 +197,6 @@ export function EdgeEventCard({
   event,
   canJudge,
   compact = false,
-  promotedCodes,
   eventJudgment = true,
 }: {
   slug: string;
@@ -228,7 +204,6 @@ export function EdgeEventCard({
   event: EdgeEvent;
   canJudge: boolean;
   compact?: boolean;
-  promotedCodes?: PromotedCodes;
   /**
    * Offer judging the whole event. Off on contextual panels, which show only
    * the lines bearing on one record: judging the event there would judge
@@ -294,7 +269,7 @@ export function EdgeEventCard({
           <p className="text-xs tracking-wide text-ink-subtle uppercase">
             Judged as one event, all {event.items.length} items
           </p>
-          <JudgmentLine item={first} promotedCodes={promotedCodes} />
+          <JudgmentLine item={first} />
         </div>
       ) : null}
       {compact ? (
@@ -313,7 +288,7 @@ export function EdgeEventCard({
                 engagementId={engagementId}
                 line={line}
                 canJudge={canJudge}
-                promotedCodes={promotedCodes}
+
                 sharedJudgment={sharedJudgment}
               />
             ))}
@@ -332,7 +307,7 @@ export function EdgeEventCard({
                     engagementId={engagementId}
                     line={line}
                     canJudge={canJudge}
-                    promotedCodes={promotedCodes}
+
                     sharedJudgment={sharedJudgment}
                   />
                 ))}

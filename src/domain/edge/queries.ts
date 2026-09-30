@@ -103,3 +103,27 @@ export async function getReviewCapture(reviewElementId: string) {
   if (error) throw error;
   return data ?? [];
 }
+
+/**
+ * The Edge items acceptance criteria were promoted from (ADR-0056): the
+ * originating rule, subject and when, keyed by criterion. Internal only; a
+ * client reads no judgments.
+ */
+export async function getCriterionPromotions(
+  criterionIds: string[],
+): Promise<Map<string, { ruleKey: string; judgedAt: string }>> {
+  if (criterionIds.length === 0) return new Map();
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("edge_judgments")
+    .select("promotion_target_criterion_id, rule_key, judged_at")
+    .eq("promotion_target_kind", "acceptance_criterion")
+    .in("promotion_target_criterion_id", criterionIds);
+  if (error) throw error;
+  return new Map(
+    (data ?? []).map((j) => [
+      j.promotion_target_criterion_id!,
+      { ruleKey: j.rule_key, judgedAt: j.judged_at },
+    ]),
+  );
+}

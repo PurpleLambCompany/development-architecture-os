@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createRecord } from "@/domain/architecture/actions";
 import { promoteEdgeItem } from "@/domain/edge/actions";
+import { promotionFromQuery } from "@/domain/edge/promotion";
 import { edgeRuleLabel } from "@/domain/edge/rules";
 import { RECORD_KIND_LABELS, type RecordKind } from "@/domain/architecture/catalog";
 import { getInternalArchitectureContext, memberNames } from "@/domain/architecture/context";
@@ -55,20 +56,7 @@ export default async function IntelligencePage({
       : null;
   // Promotion from the Development Edge (ADR-0056): the new record is an
   // ordinary governed record; the Edge item is judged "promoted" to it.
-  const param = (key: string) => (typeof query[key] === "string" ? (query[key] as string) : null);
-  const promoting =
-    creating &&
-    param("promoteRule") &&
-    param("promoteType") &&
-    param("promoteId") &&
-    param("promoteFp")
-      ? {
-          ruleKey: param("promoteRule")!,
-          subjectType: param("promoteType")!,
-          subjectId: param("promoteId")!,
-          fingerprint: param("promoteFp")!,
-        }
-      : null;
+  const promoting = creating ? promotionFromQuery(query) : null;
   const promotedFrom = promoting
     ? [edgeRuleLabel(promoting.ruleKey), architecture.byId.get(promoting.subjectId)?.reference_code]
         .filter(Boolean)

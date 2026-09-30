@@ -40,7 +40,9 @@ export function edgeItem(
     judgment_reason: null,
     judgment_expires_on: null,
     judgment_source: null,
-    promoted_element_id: null,
+    promotion_target_kind: null,
+    promotion_target_id: null,
+    promotion_target_code: null,
     judged: false,
   };
   return { ...base, ...overrides };

@@ -16,7 +16,10 @@
 -- are stored here for those rules.
 --
 -- Promotion never creates anything: the governed record is created by its
--- own operation first, and only then is `promoted` recorded with its id.
+-- own operation first, and only then is `promoted` recorded with a typed
+-- reference to it, the governed promotion target. The target vocabulary is
+-- closed (risk, decision, review, acceptance_criterion) and every target has
+-- a real same-engagement foreign key; there is no free polymorphic link.
 -- No read model aggregates judgments by person.
 -- =============================================================================
 
@@ -45,7 +48,21 @@ create table public.edge_judgments (
                                                                    'disagree', 'promoted')),
   reason                   text check (char_length(reason) <= 2000),
   expires_on               date,
-  promoted_element_id      uuid,
+  -- The governed promotion target: a closed kind and one typed reference.
+  -- A Risk, Decision or Review is an element of exactly that kind (the
+  -- generated kind column makes the foreign key check it); an acceptance
+  -- criterion is an acceptance_criteria row. Both on this engagement.
+  promotion_target_kind         text check (promotion_target_kind in ('risk', 'decision', 'review',
+                                                                      'acceptance_criterion')),
+  promotion_target_element_id   uuid,
+  promotion_target_criterion_id uuid,
+  promotion_target_element_kind public.element_kind generated always as (
+    case promotion_target_kind
+      when 'risk' then 'risk'::public.element_kind
+      when 'decision' then 'decision'::public.element_kind
+      when 'review' then 'review'::public.element_kind
+    end
+  ) stored,
   judged_by                uuid not null references public.profiles (id) on delete restrict,
   judged_at                timestamptz not null default clock_timestamp(),
   -- Exactly one subject reference, matching the subject type. An
@@ -68,7 +85,15 @@ create table public.edge_judgments (
     judgment_kind in ('investigating', 'promoted') or char_length(btrim(coalesce(reason, ''))) >= 1
   ),
   constraint edge_judgments_expiry check ((judgment_kind = 'deferred') = (expires_on is not null)),
-  constraint edge_judgments_promoted check ((judgment_kind = 'promoted') = (promoted_element_id is not null)),
+  constraint edge_judgments_promoted check ((judgment_kind = 'promoted') = (promotion_target_kind is not null)),
+  constraint edge_judgments_promotion_target check (
+    case
+      when promotion_target_kind is null then num_nonnulls(promotion_target_element_id, promotion_target_criterion_id) = 0
+      when promotion_target_kind = 'acceptance_criterion' then promotion_target_criterion_id is not null
+                                                              and promotion_target_element_id is null
+      else promotion_target_element_id is not null and promotion_target_criterion_id is null
+    end
+  ),
   constraint edge_judgments_element_fk foreign key (element_id, engagement_id)
     references public.architecture_elements (id, engagement_id) on delete restrict,
   constraint edge_judgments_client_action_fk foreign key (client_action_id, engagement_id)
@@ -77,8 +102,11 @@ create table public.edge_judgments (
     references public.method_applications (id, engagement_id) on delete restrict,
   constraint edge_judgments_criterion_fk foreign key (acceptance_criterion_id, engagement_id)
     references public.acceptance_criteria (id, engagement_id) on delete restrict,
-  constraint edge_judgments_promoted_fk foreign key (promoted_element_id, engagement_id)
-    references public.architecture_elements (id, engagement_id) on delete restrict
+  constraint edge_judgments_promotion_element_fk
+    foreign key (promotion_target_element_id, engagement_id, promotion_target_element_kind)
+    references public.architecture_elements (id, engagement_id, kind) on delete restrict,
+  constraint edge_judgments_promotion_criterion_fk foreign key (promotion_target_criterion_id, engagement_id)
+    references public.acceptance_criteria (id, engagement_id) on delete restrict
 );
 create index edge_judgments_lookup_idx
   on public.edge_judgments (engagement_id, rule_key, fingerprint, judged_at desc);
@@ -133,7 +161,8 @@ returns table (
   judgment_reason      text,
   judgment_expires_on  date,
   judgment_source      text,
-  promoted_element_id  uuid
+  promotion_target_kind text,
+  promotion_target_id  uuid
 )
 language sql
 stable
@@ -141,19 +170,20 @@ set search_path = ''
 as $$
   select * from (
     select case when d.expires_on is null then 'not_material' else 'deferred' end, d.dismissed_by, d.dismissed_at,
-           d.reason, d.expires_on, 'signal_dismissal', null::uuid
+           d.reason, d.expires_on, 'signal_dismissal', null::text, null::uuid
     from public.intelligence_signal_dismissals d
     where d.engagement_id = p_engagement_id and d.rule_key = p_rule_key and d.fingerprint = p_fingerprint
       and ((p_subject_type = 'element' and d.element_id = p_subject_id)
            or (p_subject_type = 'client_action' and d.client_action_id = p_subject_id))
     union all
     select case when d.expires_on is null then 'not_material' else 'deferred' end, d.dismissed_by, d.dismissed_at,
-           d.reason, d.expires_on, 'implementation_dismissal', null::uuid
+           d.reason, d.expires_on, 'implementation_dismissal', null::text, null::uuid
     from public.implementation_signal_dismissals d
     where d.engagement_id = p_engagement_id and d.rule_key = p_rule_key and d.fingerprint = p_fingerprint
       and p_subject_type = 'element' and d.element_id = p_subject_id
     union all
-    select j.judgment_kind, j.judged_by, j.judged_at, j.reason, j.expires_on, 'edge_judgment', j.promoted_element_id
+    select j.judgment_kind, j.judged_by, j.judged_at, j.reason, j.expires_on, 'edge_judgment',
+           j.promotion_target_kind, coalesce(j.promotion_target_element_id, j.promotion_target_criterion_id)
     from public.edge_judgments j
     where j.engagement_id = p_engagement_id and j.rule_key = p_rule_key and j.fingerprint = p_fingerprint
       and j.subject_type = p_subject_type
@@ -165,7 +195,7 @@ as $$
             else p_subject_id = p_engagement_id
           end
   ) x (judgment_kind, judged_by, judged_at, judgment_reason, judgment_expires_on, judgment_source,
-       promoted_element_id)
+       promotion_target_kind, promotion_target_id)
   order by x.judged_at desc
   limit 1;
 $$;
@@ -182,7 +212,8 @@ create function private.record_edge_judgment_row(
   p_kind text,
   p_reason text,
   p_expires_on date,
-  p_promoted_element_id uuid
+  p_promotion_target_kind text,
+  p_promotion_target_id uuid
 )
 returns uuid
 language plpgsql
@@ -206,13 +237,26 @@ begin
     raise exception 'Only a deferral has a date' using errcode = '23514';
   end if;
   if p_kind = 'promoted' then
-    if p_promoted_element_id is null or not exists (
-      select 1 from public.architecture_elements
-      where id = p_promoted_element_id and engagement_id = p_engagement_id) then
-      raise exception 'Promote only to a governed record created on this engagement' using errcode = '23514';
+    if p_promotion_target_kind is null
+       or p_promotion_target_kind not in ('risk', 'decision', 'review', 'acceptance_criterion') then
+      raise exception 'Promote only to a Risk, a Decision, a Review or an acceptance criterion' using errcode = '23514';
     end if;
-  elsif p_promoted_element_id is not null then
-    raise exception 'Only a promotion names a created record' using errcode = '23514';
+    if p_promotion_target_kind = 'acceptance_criterion' then
+      -- The criterion was proposed through the ordinary operation; promotion
+      -- never agrees it, so it is recorded only while it is still a proposal.
+      if p_promotion_target_id is null or not exists (
+        select 1 from public.acceptance_criteria
+        where id = p_promotion_target_id and engagement_id = p_engagement_id and state = 'proposed') then
+        raise exception 'Promote only to a proposed criterion created on this engagement' using errcode = '23514';
+      end if;
+    elsif p_promotion_target_id is null or not exists (
+      select 1 from public.architecture_elements
+      where id = p_promotion_target_id and engagement_id = p_engagement_id
+        and kind = p_promotion_target_kind::public.element_kind) then
+      raise exception 'Promote only to a governed record of that kind created on this engagement' using errcode = '23514';
+    end if;
+  elsif p_promotion_target_kind is not null or p_promotion_target_id is not null then
+    raise exception 'Only a promotion names a governed target' using errcode = '23514';
   end if;
 
   select * into c from private.edge_rules() r where r.rule_key = p_rule_key;
@@ -231,15 +275,18 @@ begin
   perform set_config('dsa.edge_judgment', 'on', true);
   insert into public.edge_judgments (
     engagement_id, rule_key, subject_type, element_id, client_action_id, method_application_id,
-    acceptance_criterion_id, fingerprint, trigger_key, judgment_kind, reason, expires_on, promoted_element_id,
-    judged_by
+    acceptance_criterion_id, fingerprint, trigger_key, judgment_kind, reason, expires_on,
+    promotion_target_kind, promotion_target_element_id, promotion_target_criterion_id, judged_by
   ) values (
     p_engagement_id, p_rule_key, p_subject_type,
     case when p_subject_type = 'element' then p_subject_id end,
     case when p_subject_type = 'client_action' then p_subject_id end,
     case when p_subject_type = 'method_application' then p_subject_id end,
     case when p_subject_type = 'acceptance_criterion' then p_subject_id end,
-    p_fingerprint, p_trigger_key, p_kind, nullif(btrim(p_reason), ''), p_expires_on, p_promoted_element_id,
+    p_fingerprint, p_trigger_key, p_kind, nullif(btrim(p_reason), ''), p_expires_on,
+    p_promotion_target_kind,
+    case when p_promotion_target_kind in ('risk', 'decision', 'review') then p_promotion_target_id end,
+    case when p_promotion_target_kind = 'acceptance_criterion' then p_promotion_target_id end,
     auth.uid()
   )
   returning id into judgment_id;
@@ -260,7 +307,8 @@ create function public.record_edge_judgment(
   p_kind text,
   p_reason text default null,
   p_expires_on date default null,
-  p_promoted_element_id uuid default null
+  p_promotion_target_kind text default null,
+  p_promotion_target_id uuid default null
 )
 returns uuid
 language plpgsql
@@ -282,12 +330,12 @@ begin
   end if;
   return private.record_edge_judgment_row(p_engagement_id, p_rule_key, p_subject_type, p_subject_id,
                                           p_fingerprint, item.trigger_key, p_kind, p_reason, p_expires_on,
-                                          p_promoted_element_id);
+                                          p_promotion_target_kind, p_promotion_target_id);
 end;
 $$;
 
 -- Judge a whole event: one judgment per item currently listed in it, in one
--- transaction. Promotion is per item, because it names one created record.
+-- transaction. Promotion is per item, because it names one governed target.
 create function public.record_edge_event_judgment(
   p_engagement_id uuid,
   p_trigger_key text,
@@ -315,7 +363,7 @@ begin
   loop
     perform private.record_edge_judgment_row(p_engagement_id, item.rule_key, item.subject_type, item.subject_id,
                                              item.fingerprint, item.trigger_key, p_kind, p_reason, p_expires_on,
-                                             null);
+                                             null, null);
     n := n + 1;
   end loop;
   if n = 0 then
@@ -327,11 +375,11 @@ $$;
 
 revoke all on function private.is_edge_rule_key(text) from public, anon, authenticated;
 revoke all on function private.guard_edge_judgment() from public, anon, authenticated;
-revoke all on function private.record_edge_judgment_row(uuid, text, text, uuid, text, text, text, text, date, uuid)
+revoke all on function private.record_edge_judgment_row(uuid, text, text, uuid, text, text, text, text, date, text, uuid)
   from public, anon, authenticated;
-revoke all on function public.record_edge_judgment(uuid, text, text, uuid, text, text, text, date, uuid)
+revoke all on function public.record_edge_judgment(uuid, text, text, uuid, text, text, text, date, text, uuid)
   from public, anon;
 revoke all on function public.record_edge_event_judgment(uuid, text, text, text, date) from public, anon;
-grant execute on function public.record_edge_judgment(uuid, text, text, uuid, text, text, text, date, uuid)
+grant execute on function public.record_edge_judgment(uuid, text, text, uuid, text, text, text, date, text, uuid)
   to authenticated;
 grant execute on function public.record_edge_event_judgment(uuid, text, text, text, date) to authenticated;
