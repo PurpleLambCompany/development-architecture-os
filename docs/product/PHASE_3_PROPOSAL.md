@@ -1,6 +1,6 @@
 # Phase 3 — Architecture Core: Proposal
 
-**Status:** Revision 2. Direction approved 2026-09-30 with revisions (§16). The §4 object vocabulary is awaiting final review. No migrations or application code until it is approved.
+**Status:** Revision 3. Direction approved 2026-09-30 with revisions (§16). The §4 object vocabulary and §9 relationship vocabulary are awaiting final review. No migrations or application code until implementation is approved.
 **Branch:** `phase-3-architecture-core` · **Date:** 2026-09-30
 **Builds on:** Phase 1 (engagements, roles, capabilities, RLS) and Phase 2 (commercial engagement), both merged.
 **Governing documents:** `DSA_OS_MASTER_BUILD_SPEC.md` §3, §5.2, §6, §8, §14–§15, §18–§20, §26–§27; ADR-0008 (engagement capabilities); ADR-0009 (provenance).
@@ -9,7 +9,7 @@ Phase 3 turns the Development Architecture Method into structured software. It c
 
 - the four architecture domains and their objects;
 - the connections between them;
-- the Project Intelligence records that explain and qualify them: assumptions, risks, dependencies, decisions and recommendations;
+- the Project Intelligence records that explain and qualify them: assumptions, risks, constraints, dependencies, decisions and recommendations;
 - the evidence system they cite.
 
 Every element carries its provenance, a lifecycle, a client-visibility setting and a version history. Every domain object also carries a maturity.
@@ -54,7 +54,7 @@ That chain is what citations, uploads, research and later analysis will build on
 - The four domain workspaces: Knowledge, Capability, Strategic Model and Application.
 - Core architecture objects from the §4 type catalog, with typed attributes.
 - Typed relationships between elements, with allowed pairings enforced by the database.
-- The underlying Project Intelligence records: assumptions, risks, dependencies, decisions (with options) and recommendations.
+- The underlying Project Intelligence records: assumptions, risks, constraints, dependencies, decisions (with options) and recommendations.
 - The evidence system: evidence sources, and explicit evidence links from statements and elements. Evidence is recorded by reference, and the model is ready for files to be attached later.
 - Material statements inside elements, each with its own provenance, evidence links and visibility.
 - Provenance (ADR-0009) and IP classification (spec §15) on every element.
@@ -97,10 +97,10 @@ That chain is what citations, uploads, research and later analysis will build on
 
 Everything in the architecture workspace that can be connected, evidenced, versioned, published or approved is an **element**. There are two families:
 
-| Family                           | Kinds                                                            | Domain rule                                                                   |
-| -------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| **Core architecture objects**    | `object`, typed by the §4 catalog                                | Exactly one of Knowledge, Capability, Strategic Model or Application          |
-| **Project Intelligence records** | `assumption`, `risk`, `dependency`, `decision`, `recommendation` | Zero, one or several domains; specific elements; or the engagement as a whole |
+| Family                           | Kinds                                                                          | Domain rule                                                                   |
+| -------------------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| **Core architecture objects**    | `object`, typed by the §4 catalog                                              | Exactly one of Knowledge, Capability, Strategic Model or Application          |
+| **Project Intelligence records** | `assumption`, `risk`, `constraint`, `dependency`, `decision`, `recommendation` | Zero, one or several domains; specific elements; or the engagement as a whole |
 
 Evidence sources are **not** elements. They are a separate source and evidence system that elements and statements cite through explicit evidence links.
 
@@ -122,7 +122,7 @@ The alternatives were rejected:
 A Project Intelligence record states its scope in up to three ways, which can be combined:
 
 - **Domains:** zero or more rows in `intelligence_record_domains` (for example, the risk "Leadership succession failure" relates to Capability and Application).
-- **Specific elements:** typed relationships such as `threatens`, `assumes`, `affects` and `addresses` (§9).
+- **Specific elements:** the Project Intelligence relationships `underpins`, `threatens`, `constrains`, `mitigates`, `affects` and `addresses` (§9.4).
 - **Engagement-wide:** `engagement_wide = true` when the record concerns the development as a whole.
 
 A record must use at least one of the three, so nothing floats without scope. Core architecture objects never use `intelligence_record_domains`: their single domain comes from their type.
@@ -133,67 +133,69 @@ A record must use at least one of the three, so nothing floats without scope. Co
 
 **For final review before implementation.** These names become database keys, reference-code prefixes and, in software, the vocabulary of the Development Architecture Method. Renaming one after data exists means a migration and a rewrite of stored history, so they should be settled now.
 
+There are **27 core architecture object types**: Knowledge 8, Capability 5, Strategic Model 5 and Application 9. Revision 2 had 28; moving Constraint out of Knowledge Architecture (§4.5) leaves 27. No type has been added to replace it.
+
+There are also **six Project Intelligence record kinds**: Assumption, Risk, Constraint, Dependency, Decision and Recommendation.
+
 ### 4.0 Naming rules
 
 - **Architecture, not work.** Every type names something that is part of the development system: an ability, a structure, a condition, a logic, a measure. No type names a task, a deliverable, a meeting or a status.
 - **Singular nouns.** Each type has a permanent database key (`snake_case`) and a display label. The label can be reworded later without a migration; the key cannot.
 - **Definitions say what the type is not,** where there is a nearby concept it could drift into.
 - **Readiness is not maturity.**
-  - **Maturity** (Undefined → Operationalized) describes how well the **architecture** of an object is defined. It applies to every object.
-  - **Readiness** describes whether the **client organization currently has** a capability. It is a Capability attribute only.
+  - **Maturity** (Undefined → Operationalized) describes how well the **architecture** of an object is defined. It applies to every object. Domain maturity is a separate, dated judgment per domain.
+  - **Capability readiness** describes whether the **client organization currently has** a capability. It is a Capability attribute only, and never feeds object or domain maturity.
+- **Outcomes are not measures.** An Intended Outcome (Strategic Model) is the desired condition. A Metric (Application) is how it is measured. The two are connected by a relationship (§9), never merged.
 - **Features the spec lists that are views** (domain map, concept hierarchy, capability map, role-to-skill mapping, model library) are built from objects and relationships and are not types.
-- **Reference codes use a three-letter prefix per domain or record kind:**
+- **Reference codes use a permanent three-letter prefix per domain or record kind:**
   - `KNW`, `CAP`, `STR`, `APP` for the four domains;
-  - `ASM`, `RSK`, `DEP`, `DEC`, `REC` for Project Intelligence records.
-  - Examples: `CAP-004`, `RSK-012`. Codes stay stable even if a type is later renamed or split.
+  - `ASM` (Assumption), `RSK` (Risk), `CNS` (Constraint), `DEP` (Dependency), `DEC` (Decision), `REC` (Recommendation) for Project Intelligence records;
+  - examples: `CAP-004`, `CNS-002`. Codes stay stable even if a type is later renamed or split.
 
-### 4.1 Knowledge Architecture: what must be understood
+### 4.1 Knowledge Architecture: what must be understood (8 types)
 
-| Key                  | Label              | Definition                                                                                                                                                  | Key attributes                                                                                                                   |
-| -------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `knowledge_area`     | Knowledge Area     | A defined field of understanding that the development depends on, such as a market, a discipline or a policy field. Not a document or a source              | Scope statement; criticality (foundational, significant, contextual)                                                             |
-| `concept`            | Concept            | A term or idea within a knowledge area that the architecture relies on, with an agreed meaning and boundary                                                 | Definition; what it excludes                                                                                                     |
-| `research_question`  | Research Question  | A question whose answer the architecture needs, stated precisely enough to be answered. Not a research task                                                 | Question; why it matters; status (open, answered, set aside); answer summary                                                     |
-| `knowledge_gap`      | Knowledge Gap      | Something the architecture needs to know but does not yet, with the consequence of not knowing it                                                           | What is unknown; consequence if unresolved; closure approach                                                                     |
-| `regulatory_factor`  | Regulatory Factor  | A law, regulation, licence condition or policy obligation that bounds the development                                                                       | Jurisdiction; instrument; obligation; binding (mandatory, conditional)                                                           |
-| `competitive_factor` | Competitive Factor | An actor, alternative or market force the development must be positioned against                                                                            | Actor or force; current position; implication                                                                                    |
-| `constraint`         | Constraint         | A given condition the architecture must work within: financial, physical, contractual, political or temporal. Not a risk: a risk may occur, a constraint is | Category; source; negotiable (yes, no)                                                                                           |
-| `system_boundary`    | System Boundary    | The defined edge of the development system: what is inside, what is outside, and the interfaces between them                                                | Inside; outside; interfaces                                                                                                      |
-| `stakeholder`        | Stakeholder        | A person, group or institution whose interests, authority or influence shape the development. Not a user account                                            | Kind (individual, group, institution); interest; influence (low, moderate, high); stance (supportive, neutral, opposed, unknown) |
+| Key                  | Label              | Definition                                                                                                                                             | Key attributes                                                                                                                   |
+| -------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `knowledge_area`     | Knowledge Area     | A defined field of understanding that the development depends on, such as a market, a discipline or a policy field. Not a document or a source         | Scope statement; criticality (foundational, significant, contextual)                                                             |
+| `concept`            | Concept            | A term or idea within a knowledge area that the architecture relies on, with an agreed meaning and boundary                                            | Definition; what it excludes                                                                                                     |
+| `research_question`  | Research Question  | A question whose answer the architecture needs, stated precisely enough to be answered. Not a research task                                            | Question; why it matters; status (open, answered, set aside); answer summary                                                     |
+| `knowledge_gap`      | Knowledge Gap      | Something the architecture needs to know but does not yet, with the consequence of not knowing it                                                      | What is unknown; consequence if unresolved; closure approach                                                                     |
+| `regulatory_factor`  | Regulatory Factor  | A law, regulation, licence condition or policy obligation that is part of the development's context. The limits it imposes are recorded as Constraints | Jurisdiction; instrument; obligation; binding (mandatory, conditional)                                                           |
+| `competitive_factor` | Competitive Factor | An actor, alternative or market force the development must be positioned against                                                                       | Actor or force; current position; implication                                                                                    |
+| `system_boundary`    | System Boundary    | The defined edge of the development system: what is inside, what is outside, and the interfaces between them                                           | Inside; outside; interfaces                                                                                                      |
+| `stakeholder`        | Stakeholder        | A person, group or institution whose interests, authority or influence shape the development. Not a user account                                       | Kind (individual, group, institution); interest; influence (low, moderate, high); stance (supportive, neutral, opposed, unknown) |
 
-Views: the **domain map** and **concept hierarchy** are built from `part_of` and `broader_than` relationships among knowledge areas and concepts.
+Views: the **domain map** and **concept hierarchy** are built from `part_of` and `specializes` relationships among knowledge areas and concepts.
 
-### 4.2 Capability Architecture: what the organization must be able to do
+### 4.2 Capability Architecture: what the organization must be able to do (5 types)
 
 | Key              | Label                 | Definition                                                                                                                                                | Key attributes                                                                                                                                                              |
 | ---------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `capability`     | Capability            | A durable ability the organization must have to achieve its development objective, independent of who performs it or how. Not a team, a role or a project | Tier (strategic, core, enabling); leadership capability (yes, no); current readiness (absent, emerging, partial, established); ownership model (internal, external, shared) |
-| `skill`          | Skill                 | A specific proficiency that people must hold for a capability to function                                                                                 | Skill family; proficiency required (foundational, proficient, expert)                                                                                                       |
+| `skill`          | Skill                 | A specific proficiency that people must hold for a capability to function                                                                                 | Skill family; baseline proficiency (foundational, proficient, expert)                                                                                                       |
 | `role`           | Role                  | A defined position of responsibility that brings skills together to deliver capabilities. Describes the position, never a named person                    | Purpose; sourcing (internal, external, shared); leadership role (yes, no); indicative capacity                                                                              |
 | `capability_gap` | Capability Gap        | The difference between the capability the organization has and the capability it requires, stated so that it can be closed                                | Current state; required state; closure approach (develop, hire, partner, acquire, outsource)                                                                                |
 | `talent_stage`   | Talent Sequence Stage | A stage in the order in which people and capabilities are brought into the development, with the condition that triggers it                               | Sequence; trigger condition                                                                                                                                                 |
 
-Views: the **capability map** (capabilities through `part_of`) and the **role-to-skill matrix** (`role requires skill`, with the proficiency on the relationship).
+Views: the **capability map** (capabilities through `part_of`) and the **role-to-skill matrix** (`role requires skill`, with the proficiency that role needs carried as the relationship's qualifier, §9.1).
 
-### 4.3 Strategic Model Architecture: the logic by which the development succeeds
+### 4.3 Strategic Model Architecture: the logic by which the development succeeds (5 types)
 
-| Key                     | Label                   | Definition                                                                                                                                                                      | Key attributes                                               |
-| ----------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `intended_outcome`      | Intended Outcome        | A result the development is designed to produce, stated so that it can later be measured. Not a milestone or a task                                                             | Outcome statement; horizon (near, medium, long); beneficiary |
-| `strategic_model`       | Applied Strategic Model | A strategic model applied to this engagement: how it applies here and where it stops applying. The model itself belongs to the internal Method Library; this is its application | Model name; application; applicability limits                |
-| `structural_leverage`   | Structural Leverage     | A feature of the system's structure that, when used, produces a disproportionate effect                                                                                         | Lever; mechanism; expected effect (qualitative)              |
-| `differentiation_logic` | Differentiation Logic   | The reasoning for why this development will be distinct and defensible against the alternatives                                                                                 | Basis of difference; defensibility; conditions it relies on  |
-| `strategic_implication` | Strategic Implication   | A consequence of the chosen strategy that the rest of the architecture must accommodate                                                                                         | Implication; horizon                                         |
+| Key                     | Label                   | Definition                                                                                                                                                                                           | Key attributes                                               |
+| ----------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `intended_outcome`      | Intended Outcome        | The desired condition or result that the architecture is intended to produce. Not a KPI, measurement, deliverable, activity or task. How it is measured belongs to Application Architecture (Metric) | Desired condition; horizon (near, medium, long); beneficiary |
+| `strategic_model`       | Applied Strategic Model | A strategic model applied to this engagement: how it applies here and where it stops applying. The model itself belongs to the internal Method Library; this is its application                      | Model name; application; applicability limits                |
+| `structural_leverage`   | Structural Leverage     | A feature of the system's structure that, when used, produces a disproportionate effect                                                                                                              | Lever; mechanism; expected effect (qualitative)              |
+| `differentiation_logic` | Differentiation Logic   | The reasoning for why this development will be distinct and defensible against the alternatives                                                                                                      | Basis of difference; defensibility; conditions it relies on  |
+| `strategic_implication` | Strategic Implication   | A consequence of the chosen strategy that the rest of the architecture must accommodate                                                                                                              | Implication; horizon                                         |
 
 Covered without a type of its own:
 
 - **Model library:** the internal Method Library (Phase 6). An applied model may link to its Method asset through internal-only lineage (§6.9).
-- **Model assumptions:** assumption records linked with `assumes`.
-- **Risk implications:** risk records linked with `threatens`.
+- **Model assumptions:** Assumption records linked with `underpins`.
+- **Risk implications:** Risk records linked with `threatens`.
 
-`intended_outcome` is an addition to the spec's list. Outcomes give metrics something to measure against and give later coherence checks their "metrics ↔ intended outcomes" pairing (spec §19).
-
-### 4.4 Application Architecture: how the architecture is put into operation
+### 4.4 Application Architecture: how the architecture is put into operation (9 types)
 
 | Key                      | Label                  | Definition                                                                                                                                     | Key attributes                                                                                                                                    |
 | ------------------------ | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -201,23 +203,28 @@ Covered without a type of its own:
 | `application_format`     | Application Format     | A concrete organizational form through which capabilities are put to work (spec §3). Covers the spec's program structure and product structure | Format kind (program, product line, team, unit, venture, partnership, initiative, other); purpose; participants or audience; cadence or life span |
 | `governance_body`        | Governance Body        | A body that holds authority over part of the development, such as a board, committee, council or steering group                                | Mandate; membership; cadence; escalation route                                                                                                    |
 | `decision_right`         | Decision Right         | The allocation of authority over a class of decisions: who decides, who is consulted, who may veto, who is informed. Not a single decision     | Decision class; decides; consulted; veto; informed                                                                                                |
-| `workflow`               | Workflow               | A repeatable sequence by which work moves through the development, from trigger to output. Not a task list                                     | Trigger; stages summary; outputs; accountable role                                                                                                |
+| `workflow`               | Workflow               | A repeatable sequence by which work moves through the development, from trigger to output. Not a task list                                     | Trigger; stages summary; outputs                                                                                                                  |
 | `delivery_mechanism`     | Delivery Mechanism     | The channel or means through which the development's value reaches its beneficiaries                                                           | Channel; form; reach                                                                                                                              |
-| `metric`                 | Metric                 | A defined measure of whether an outcome, capability or operation is performing as designed                                                     | Definition; unit; direction (increase, decrease, maintain); target; cadence; data source                                                          |
+| `metric`                 | Metric                 | A defined measure of whether an intended outcome, capability or operation is performing as designed. The measure, not the outcome itself       | Definition; unit; direction (increase, decrease, maintain); target; cadence; data source                                                          |
 | `scaling_stage`          | Scaling Stage          | A stage in the planned growth of the development, with the conditions to enter and leave it                                                    | Sequence; entry condition; exit condition                                                                                                         |
-| `documentation_protocol` | Documentation Protocol | The rule for how a body of architectural or operating knowledge is recorded, owned and kept current                                            | Artifact; owner role; update rule; audience                                                                                                       |
+| `documentation_protocol` | Documentation Protocol | The rule for how a body of architectural or operating knowledge is recorded, owned and kept current                                            | Artifact; update rule; audience                                                                                                                   |
 
 Views: the **operating model outline**, the **decision-rights matrix** (governance bodies × decision classes), the **measurement system** (metric → what it measures) and the **scaling sequence**.
 
-### 4.5 Project Intelligence records (not domain objects)
+Who is accountable for a workflow or a documentation protocol is a relationship to a Role (`accountable_for`, §9), not a text attribute, so it can be traced.
 
-| Kind             | Label          | Definition                                                                                          |
-| ---------------- | -------------- | --------------------------------------------------------------------------------------------------- |
-| `assumption`     | Assumption     | Something treated as true that the architecture depends on, with the consequence if it proves false |
-| `risk`           | Risk           | An uncertain event or condition that could undermine the architecture or its application            |
-| `dependency`     | Dependency     | A condition in which one element cannot proceed, hold or succeed without another                    |
-| `decision`       | Decision       | A choice that must be made, with its options, TPLCo's recommendation and the outcome                |
-| `recommendation` | Recommendation | TPLCo's recommended course of action, for the client to consider and respond to                     |
+### 4.5 Project Intelligence records (cross-domain; not core objects)
+
+Each record may relate to the engagement as a whole, to one or more domains, and/or to specific elements (§3.2).
+
+| Kind             | Prefix | Label          | Definition                                                                                                                                                                                                            | Key fields                                                                                                                                          |
+| ---------------- | ------ | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `assumption`     | `ASM`  | Assumption     | Something treated as true that the architecture depends on, with the consequence if it proves false. Not a fact: facts are statements with evidence                                                                   | Category; confidence (low, medium, high); validation status (unvalidated, validating, validated, invalidated); impact if false                      |
+| `risk`           | `RSK`  | Risk           | An uncertain event or condition that could undermine the architecture or its application. Not a constraint: a risk may or may not occur                                                                               | Category; probability (1–5); impact (1–5); severity (calculated); mitigation; status (open, mitigating, accepted, closed)                           |
+| `constraint`     | `CNS`  | Constraint     | A given condition the architecture must work within: regulatory, financial, physical, contractual, political or temporal. Not a risk: a constraint already applies. Not a preference: it cannot simply be chosen away | Category; source; negotiable (yes, no); status (in force, relaxed, lifted)                                                                          |
+| `dependency`     | `DEP`  | Dependency     | A condition in which one element cannot proceed, hold or succeed without another                                                                                                                                      | From element; to element; type (requires, sequenced after, informs, funds, external); blocking (yes, no); status (open, satisfied, at risk, broken) |
+| `decision`       | `DEC`  | Decision       | A choice that must be made, with its options, TPLCo's recommendation and the outcome. Not a Decision Right, which allocates authority over a class of decisions                                                       | Context; options; recommended option; chosen option; decided by, when and how; status (open, recommended, decided, deferred, superseded)            |
+| `recommendation` | `REC`  | Recommendation | TPLCo's recommended course of action, for the client to consider and respond to. Always `architect_judgment` provenance                                                                                               | Rationale; priority (critical, important, advisable)                                                                                                |
 
 ### 4.6 Deliberately not object types
 
@@ -226,13 +233,13 @@ Views: the **operating model outline**, the **decision-rights matrix** (governan
 - **Deliverable** and **Implementation Action:** Phase 5.
 - **Method asset** and **Pattern:** Phase 6, internal only.
 
-### 4.7 Vocabulary points to confirm
+### 4.7 Vocabulary decisions (confirmed 2026-09-30)
 
-1. **Application Format** as one type with a format kind, instead of separate Program and Product types.
-2. **Intended Outcome** added to Strategic Model Architecture.
-3. **Constraint** placed in Knowledge Architecture, rather than as a Project Intelligence record.
-4. The **Capability** attribute scales: tier (strategic, core, enabling) and readiness (absent, emerging, partial, established).
-5. The **reference prefixes** in §4.0.
+1. **Application Format** is one type with a format kind.
+2. **Intended Outcome** belongs to Strategic Model Architecture, defined strictly as the desired condition or result. It is never a KPI, measurement, deliverable, activity or task.
+3. **Constraint** is a cross-domain Project Intelligence record (`CNS`), not a Knowledge Architecture object.
+4. **Capability tier and capability readiness** are approved, and readiness stays distinct from maturity.
+5. **Reference prefixes:** `KNW`, `CAP`, `STR`, `APP`; `ASM`, `RSK`, `CNS`, `DEP`, `DEC`, `REC`.
 
 Attribute schemas are Zod definitions in `src/domain/architecture/object-types.ts`, versioned with the type.
 
@@ -241,8 +248,6 @@ Attribute schemas are Zod definitions in `src/domain/architecture/object-types.t
 - **Changing a type:**
   - it can gain optional attributes without a migration;
   - renaming or removing an attribute needs a migration that rewrites stored rows.
-
-The relationship names in §9 are also permanent vocabulary and are open to the same review.
 
 ---
 
@@ -293,7 +298,7 @@ The naming and mechanics follow Phase 1 and Phase 2:
 | `architecture_domain`        | Exists (Phase 1): `knowledge`, `capability`, `strategic_model`, `application`                                                                              |
 | `ip_classification`          | Exists (Phase 1)                                                                                                                                           |
 | `provenance_type` (ADR-0009) | `client_source`, `public_source`, `architect_observation`, `architect_judgment`, `client_decision`, `ai_analysis`, `methodology_derived`, `system_derived` |
-| `element_kind`               | `object`, `assumption`, `risk`, `dependency`, `decision`, `recommendation`                                                                                 |
+| `element_kind`               | `object`, `assumption`, `risk`, `constraint`, `dependency`, `decision`, `recommendation`                                                                   |
 | `element_lifecycle`          | `draft`, `in_review`, `published`, `superseded`, `retired`                                                                                                 |
 | `maturity_state`             | `undefined`, `emerging`, `defined`, `structured`, `operationalized`                                                                                        |
 | `client_visibility`          | `internal`, `client`                                                                                                                                       |
@@ -311,7 +316,7 @@ Object types and relationship types are reference tables rather than enums (§6.
 - **`architecture_object_types`:**
   - columns: `key` (pk), `domain`, `label`, `definition`, `attribute_schema_version`, `sort_order`;
   - unique on `(domain, key)`, so objects reference `(domain, object_type)` together.
-- **`relationship_types`:** `key`, `label`, `inverse_label`, `definition`, `client_label`.
+- **`relationship_types`:** `key`, `label`, `inverse_label`, `definition`, `symmetric`.
 - **`relationship_rules`:**
   - columns: `relationship_type`, `source_kind`, `source_object_type` (null = any object), `target_kind`, `target_object_type` (null = any);
   - a relationship is accepted only if a rule matches (§9).
@@ -332,9 +337,10 @@ Object types and relationship types are reference tables rather than enums (§6.
 | `owner_user_id`                                                      | The accountable person (internal or client member of the engagement). Not an assignee queue       |
 | `methodology_version`                                                | Copied from the engagement at creation (spec §20)                                                 |
 | `latest_version_id`                                                  | The most recent published version; maintained by operations                                       |
-| `superseded_by_element_id`                                           | Same-engagement FK, set when superseded                                                           |
 | `ai_review_state`, `ai_reviewed_by`, `ai_reviewed_at`                | Must be `accepted` before an `ai_analysis` element can be published                               |
 | `created_by`, `created_at`, `updated_by`, `updated_at`, `retired_at` |                                                                                                   |
+
+Supersession is recorded by the `supersedes` relationship (§9.5), written only by the `supersede_element` operation.
 
 The domain is not on the spine. It lives on `architecture_objects` (exactly one) and in `intelligence_record_domains` (zero or more).
 
@@ -383,6 +389,11 @@ The domain is not on the spine. It lives on `architecture_objects` (exactly one)
 - **`decision_options`:**
   - `id`, `decision_element_id` (same-engagement FK), `title`, `description`, `tradeoffs`, `sort_order`;
   - editable only while the decision is open.
+- **`constraints`:**
+  - `category` (`regulatory`, `financial`, `physical`, `contractual`, `political`, `temporal`, `other`);
+  - `source` (where the constraint comes from; a Regulatory Factor can be linked with `subject_to` or `informs`);
+  - `negotiable`, a boolean;
+  - `constraint_status` (`in_force`, `relaxed`, `lifted`).
 - **`recommendations`:**
   - `rationale`;
   - `priority` (`critical`, `important`, `advisable`).
@@ -410,6 +421,7 @@ Every change to a statement's provenance is written to the activity log with the
 | `id`, `engagement_id`                           |                                                                                                                                              |
 | `source_element_id`, `target_element_id`        | Same-engagement composite FKs; not equal; unique with `relationship_type` while active                                                       |
 | `relationship_type`                             | FK to `relationship_types`; must match a `relationship_rules` row                                                                            |
+| `required_proficiency`                          | Only for Role **requires** Skill (§9.1); null otherwise                                                                                      |
 | `description`, `provenance`, `source_reference` |                                                                                                                                              |
 | `client_visibility`                             | Default `internal`                                                                                                                           |
 | `published_at`, `retired_at`                    | Immutable once published. Changing a published relationship means retiring it and creating a new one, so baselines can cite relationship ids |
@@ -479,14 +491,14 @@ Phase 3 builds a `compare_baselines(a, b)` read model. The same comparison works
 
 ### 6.11 `architecture_approvals`
 
-| Column                                                                                   | Notes                                                                                            |
-| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `id`, `engagement_id`                                                                    |                                                                                                  |
-| `element_version_id` or `baseline_id`                                                    | Exactly one. An approval always concerns an exact immutable published version or frozen baseline |
-| `requested_by`, `requested_at`, `request_note`                                           | Set when TPLCo asks for a response                                                               |
-| `response` (`approved`, `changes_requested`), `comment`, `responded_by`, `responded_at`  | Approver, decision, timestamp and comment. Written once by the response operation; immutable     |
-| `approval_source` (`portal`, `external`)                                                 |                                                                                                  |
-| `external_approver_name`, `external_approval_method`, `external_evidence`, `recorded_by` | Required when external; the same rules as Phase 2 change-order approvals                         |
+| Column                                                                                                                          | Notes                                                                                                                                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`, `engagement_id`                                                                                                           |                                                                                                                                                                                      |
+| `element_version_id` or `baseline_id`                                                                                           | Exactly one. An approval always concerns an exact immutable published version or frozen baseline                                                                                     |
+| `requested_by`, `requested_at`, `request_note`                                                                                  | Set when TPLCo asks for a response                                                                                                                                                   |
+| `response` (`approved`, `changes_requested`), `comment`, `responded_by`, `responded_at`                                         | Approver, decision, timestamp and comment. Written once by the response operation; immutable                                                                                         |
+| `approval_source` (`portal`, `external`)                                                                                        |                                                                                                                                                                                      |
+| `external_approver_name`, `external_approved_on`, `external_approval_method`, `external_evidence`, `recorded_by`, `recorded_at` | Required when external: the client's approver, the approval date and method, the evidence reference, the TPLCo user who recorded it and when. Shown distinctly from portal approvals |
 
 A newer published version does not alter an approval of an older one. The older approval remains true of the version it names.
 
@@ -628,7 +640,9 @@ Direct writes are limited to working content, under column-limited grants. Only 
 
 ---
 
-## 9. How the four domains connect without collapsing into one system
+## 9. Relationship vocabulary: how the four domains connect without collapsing into one system
+
+**For final review before implementation.** Relationship keys are permanent in the same way as object types. The database accepts only the pairings listed here (`relationship_rules`).
 
 The domains stay distinct by construction:
 
@@ -638,46 +652,104 @@ The domains stay distinct by construction:
   - Capability: the capability map, the role-to-skill matrix and gaps.
   - Strategic Model: intended outcomes and applied models, with their assumptions and implications.
   - Application: the operating model outline, the decision-rights matrix and the measurement system.
-- There is no shared "items" list across domains.
+- **There is no shared "items" list across domains.**
 - **Maturity is judged per domain.**
-- **Project Intelligence records sit across the domains** rather than inside one, and say which domains and objects they concern (§3.2).
+- **Project Intelligence records sit across the domains** rather than inside one, and name the domains and elements they concern (§3.2).
+- **Domains meet only through the typed relationships below.** Each relationship carries a specific meaning in the Method. None is a generic "related to" link.
 
-The domains connect through a controlled set of relationship types. The main connections follow the Method's flow:
+### 9.1 Conventions
 
-| Relationship               | Typical source → target                                            | Meaning                                  |
-| -------------------------- | ------------------------------------------------------------------ | ---------------------------------------- |
-| `informs`                  | Knowledge → Strategic Model, Capability, Decision                  | Understanding shapes design              |
-| `shapes`                   | Strategic Model → Capability, Application                          | Strategy determines what is built        |
-| `serves`                   | Capability, Application object → Intended Outcome                  | What a structure exists to achieve       |
-| `requires`                 | Capability → Skill, Role, Knowledge Area; Application → Capability | What something cannot exist without      |
-| `implemented_through`      | Capability → Application object                                    | How a capability becomes operational     |
-| `measured_by`              | Intended Outcome, Capability, Application object → Metric          | How success is observed                  |
-| `governed_by`              | Application object, Capability → Governance Body, Decision Right   | Who holds authority                      |
-| `bounded_by`               | Any object → Constraint, Regulatory Factor, System Boundary        | What limits it                           |
-| `part_of` / `broader_than` | Within a domain                                                    | Hierarchies (domain map, capability map) |
-| `precedes`                 | Talent sequence stages, scaling stages                             | Sequencing                               |
-| `assumes`                  | Any object → Assumption                                            | What it depends on being true            |
-| `threatens`                | Risk → any element                                                 | What could undermine it                  |
-| `addresses`                | Recommendation, Capability → Capability Gap, Knowledge Gap, Risk   | What a response resolves                 |
-| `affects`                  | Decision → any element                                             | What a decision changes                  |
-| `supersedes`               | Element → element of the same kind                                 | Replacement                              |
+- **Direction.** Every relationship is directional and reads as a sentence: _source_ **label** _target_. For example: Capability "Commercial Acquisition" **is measured by** Metric "Qualified Acquisitions / Month". The target's page shows the inverse label: Metric **measures** Capability. One type, `conflicts_with`, is symmetric.
+- **Allowed pairings only.** Each type lists its allowed sources and targets. The database refuses any other pairing, any link to the same element, and any link across engagements.
+- **Shorthand in the tables:**
+  - "Knowledge object", "Capability object", "Strategic Model object" and "Application object" mean any core type of that domain.
+  - "Core object" means any of the 27 core types.
+  - "Record" means any Project Intelligence record.
+  - "Element" means any core object or record.
+- **Each relationship carries** its own provenance, description, client visibility and publication state (§6.7).
+- **One qualifier.** The only relationship with an attribute is Role **requires** Skill, which carries the proficiency that role needs (foundational, proficient, expert). That attribute feeds the role-to-skill matrix. Every other relationship is the link alone.
+- **Things that are deliberately not relationships:**
+  - evidence links (§6.8), which have stance and locator;
+  - Dependency records (§6.5), which have their own from, to, blocking and status;
+  - domain scope of records (`intelligence_record_domains`);
+  - Method lineage (§6.9, internal only).
 
-For example, the spec §3 chain:
+### 9.2 Structure within a domain (5 types)
 
-1. Capability "Commercial Acquisition" `requires` Skill "Property Underwriting".
-2. Knowledge Area "Commercial Real Estate Market" `informs` it.
-3. Risk "Capital Availability" `threatens` it.
-4. It is `measured_by` Metric "Qualified Acquisitions / Month".
-5. It is `implemented_through` Application Format "Acquisition Team".
+| Key            | Reads (inverse)                   | Allowed source → target                                                                                                                                                                                                                  | Definition                                                                                     |
+| -------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `part_of`      | is part of (includes)             | Knowledge Area → Knowledge Area; Concept → Concept, Knowledge Area; Capability → Capability; Application Format → Application Format, Operating Model; Workflow → Operating Model, Application Format; Governance Body → Governance Body | Composition: the source is a component of the target. Builds the domain map and capability map |
+| `specializes`  | is a kind of (has kinds)          | Concept → Concept                                                                                                                                                                                                                        | Classification: the source is a more specific form of the target. Builds the concept hierarchy |
+| `precedes`     | precedes (follows)                | Talent Sequence Stage → Talent Sequence Stage; Scaling Stage → Scaling Stage                                                                                                                                                             | Planned order: the source comes before the target                                              |
+| `gap_in`       | is a gap in (has gap)             | Capability Gap → Capability; Knowledge Gap → Knowledge Area, Concept                                                                                                                                                                     | The source describes a shortfall in the target                                                 |
+| `investigates` | investigates (is investigated by) | Research Question → Knowledge Gap, Knowledge Area, Concept, Assumption                                                                                                                                                                   | The question, once answered, closes the gap or tests the assumption                            |
 
-The chain is expressed exactly, and the database refuses pairings the Method does not define, such as a Metric that `requires` a Stakeholder.
+### 9.3 Design flow across domains (18 types)
 
-A **trace view** on every object walks these relationships:
+The main path of the Method: understanding (Knowledge) shapes the logic of success (Strategic Model), which determines what the organization must be able to do (Capability), which is put into operation (Application) and measured against intended outcomes.
 
-- **upstream:** why this object exists (evidence, knowledge, strategy, outcomes);
+| Key                   | Reads (inverse)                               | Allowed source → target                                                                                                            | Definition                                                                                  |
+| --------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `informs`             | informs (is informed by)                      | Knowledge object → Strategic Model object, Capability object, Application object, record                                           | Understanding in the source is used to design or justify the target                         |
+| `serves`              | serves (is served by)                         | Strategic Model object (other than Intended Outcome), Capability object, Application object → Intended Outcome                     | The source exists to bring about the target outcome                                         |
+| `shapes`              | shapes (is shaped by)                         | Applied Strategic Model, Structural Leverage, Differentiation Logic, Strategic Implication → Capability object, Application object | The strategic logic in the source determines the form of the target                         |
+| `implies`             | implies (follows from)                        | Applied Strategic Model, Differentiation Logic, Structural Leverage → Strategic Implication                                        | The target is a consequence of the source                                                   |
+| `exploits`            | exploits (is exploited by)                    | Applied Strategic Model, Differentiation Logic, Application object → Structural Leverage                                           | The source deliberately uses the lever                                                      |
+| `positioned_against`  | is positioned against (is the reference for)  | Differentiation Logic, Applied Strategic Model, Application Format, Delivery Mechanism → Competitive Factor                        | The source is designed to be distinct from the target                                       |
+| `requires`            | requires (is required by)                     | Capability → Capability, Skill, Role, Knowledge Area; Role → Skill (with proficiency); Application object → Capability, Role       | The source cannot exist or function without the target                                      |
+| `implemented_through` | is implemented through (implements)           | Capability → Operating Model, Application Format, Workflow, Delivery Mechanism                                                     | The target is how the capability is put into operation                                      |
+| `delivered_through`   | is delivered through (delivers)               | Operating Model, Application Format → Delivery Mechanism                                                                           | The target is the channel through which the source's value reaches beneficiaries            |
+| `measured_by`         | is measured by (measures)                     | Intended Outcome, Capability, Application object (other than Metric) → Metric                                                      | The metric is how performance of the source is observed. Keeps outcome and measure separate |
+| `governed_by`         | is governed by (governs)                      | Capability, Application object (other than Governance Body and Decision Right) → Governance Body, Decision Right                   | The target holds or allocates authority over the source                                     |
+| `holds`               | holds (is held by)                            | Governance Body, Role → Decision Right                                                                                             | The source is the holder named by the decision right                                        |
+| `accountable_for`     | is accountable for (is the accountability of) | Role, Governance Body → Capability, Application Format, Workflow, Documentation Protocol, Metric, Scaling Stage                    | The source answers for the target's design and performance. Not a task assignment           |
+| `introduces`          | introduces (is introduced at)                 | Talent Sequence Stage → Role, Capability; Scaling Stage → Role, Capability, Application Format, Delivery Mechanism                 | The target enters the development at the source stage                                       |
+| `bounded_by`          | operates within (bounds)                      | Core object (other than System Boundary) → System Boundary                                                                         | The source sits inside the defined edge of the system                                       |
+| `subject_to`          | is subject to (applies to)                    | Core object (other than Regulatory Factor), record → Regulatory Factor                                                             | The regulatory factor applies to the source                                                 |
+| `documented_by`       | is documented by (documents)                  | Core object (other than Documentation Protocol) → Documentation Protocol                                                           | The protocol governs how knowledge about the source is recorded and kept current            |
+| `has_stake_in`        | has a stake in (has as stakeholder)           | Stakeholder → element (other than Stakeholder)                                                                                     | The stakeholder's interests, authority or influence bear on the target                      |
+
+### 9.4 Project Intelligence relationships (6 types)
+
+Records point at the elements they concern. Together with the record's domains and `engagement_wide` flag, these relationships make up its scope (§3.2).
+
+| Key          | Reads (inverse)                | Allowed source → target                                                | Definition                                                                     |
+| ------------ | ------------------------------ | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `underpins`  | underpins (rests on)           | Assumption → core object, Decision, Recommendation, Constraint         | The target holds only if the assumption is true                                |
+| `threatens`  | threatens (is threatened by)   | Risk → element (other than Risk)                                       | If the risk occurs, the target is undermined                                   |
+| `constrains` | constrains (is constrained by) | Constraint → core object, Decision, Recommendation                     | The target must be designed within the constraint                              |
+| `mitigates`  | mitigates (is mitigated by)    | Capability object, Application object, Decision, Recommendation → Risk | The source reduces the probability or impact of the risk                       |
+| `affects`    | affects (is affected by)       | Decision → element (other than itself)                                 | The decision's outcome changes the target                                      |
+| `addresses`  | addresses (is addressed by)    | Recommendation → element (other than Recommendation)                   | The recommendation responds to the target: a gap, risk, constraint or decision |
+
+### 9.5 Lineage and tension (2 types)
+
+| Key              | Reads (inverse)               | Allowed source → target                                                          | Definition                                                                                                                                                                                                                      |
+| ---------------- | ----------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `supersedes`     | supersedes (is superseded by) | Element → element of the same kind (and, for core objects, the same object type) | The source replaces the target, which moves to `superseded`. Written only by the `supersede_element` operation                                                                                                                  |
+| `conflicts_with` | conflicts with (symmetric)    | Element ↔ element                                                                | An architect has recognized a tension between the two, for example a Decision Right that contradicts a Governance Body's mandate. Recorded explicitly so it is resolved deliberately, and later available to coherence analysis |
+
+**In total: 31 relationship types**: 5 structural, 18 design flow, 6 Project Intelligence and 2 lineage and tension.
+
+### 9.6 Worked example (spec §3)
+
+1. Capability "Commercial Acquisition" **requires** Skill "Property Underwriting".
+2. Knowledge Area "Commercial Real Estate Market" **informs** Capability "Commercial Acquisition".
+3. Risk "Capital Availability" **threatens** Capability "Commercial Acquisition".
+4. Capability "Commercial Acquisition" **is measured by** Metric "Qualified Acquisitions / Month".
+5. Capability "Commercial Acquisition" **is implemented through** Application Format "Acquisition Team".
+6. Capability "Commercial Acquisition" **serves** Intended Outcome "A self-sustaining commercial property portfolio".
+
+The database refuses pairings the Method does not define: a Metric that **requires** a Stakeholder, an Intended Outcome that **is measured by** another Intended Outcome, or a Risk that **informs** a Capability.
+
+### 9.7 Trace view
+
+Every element page has a **trace view** that walks these relationships:
+
+- **upstream:** why this exists (evidence, knowledge, strategy, outcomes);
 - **downstream:** what depends on it (capabilities, application, metrics).
 
-It shows provenance at each step. This is the structural backbone that coherence analysis will use later, and it needs no graph canvas.
+It shows provenance at each step. It is the structural backbone that coherence analysis will use later, and it needs no graph canvas.
 
 ---
 
@@ -690,7 +762,7 @@ The Architecture menu becomes live: Knowledge, Capability, Strategic Models and 
   - the maturity distribution of its objects, labeled "Calculated";
   - counts of working copies awaiting review, published versions awaiting a client response, and open decisions.
 - **Domain workspace, one per domain, with views built for that domain:**
-  - **Knowledge:** an indented domain map (knowledge areas and concepts), research questions by status, knowledge gaps, constraints and the system boundary.
+  - **Knowledge:** an indented domain map (knowledge areas and concepts), research questions by status, knowledge gaps and the system boundary.
   - **Capability:** a capability map with tier, readiness and ownership columns, a role-to-skill matrix, gaps and the talent sequence.
   - **Strategic Model:** intended outcomes and applied models, each with its linked assumptions, implications, leverage and differentiation logic.
   - **Application:** the operating model outline, application formats, a decision-rights matrix (governance bodies × decision classes), the measurement system (metric → what it measures) and the scaling sequence.
@@ -705,7 +777,7 @@ The Architecture menu becomes live: Knowledge, Capability, Strategic Models and 
   - Versions and approvals; activity.
   - **Preview as client:** shows exactly the `client_snapshot` that publishing would produce.
 - **Project Intelligence records:**
-  - assumptions, risks (with a probability × impact grid), dependencies (blocking first), decisions (options, recommendation, outcome) and recommendations;
+  - assumptions, risks (with a probability × impact grid), constraints, dependencies (blocking first), decisions (options, recommendation, outcome) and recommendations;
   - each record shows its domains, the elements it concerns, or "Engagement-wide".
   - Phase 3 keeps these as plain structured lists. Triage and filtering depth is Phase 4.
 - **Evidence library:** sources with type, provenance, date, publisher or author, citation, and the statements and elements that cite them.
@@ -886,7 +958,7 @@ Each will get an ADR (0013 onward) with the build.
 
 ### 16.1 Approved 2026-09-30 (revision 2 applies them)
 
-1. **Scope:** build the underlying assumption, risk, dependency, decision, recommendation and evidence records in Phase 3. Phase 4 builds the fuller Project Intelligence experience. Evidence stays a source system; statements connect to it through explicit evidence links.
+1. **Scope:** build the underlying assumption, risk, constraint, dependency, decision, recommendation and evidence records in Phase 3. Phase 4 builds the fuller Project Intelligence experience. Evidence stays a source system; statements connect to it through explicit evidence links.
 2. **Client visibility:** publication, not approval, is the boundary. Executive Sponsor, Client Project Lead, Client Contributor and Client Viewer see published, client-visible architecture. Only approvers approve. Client Finance sees high-level published domain states plus their financial environment.
 3. **Publishing authority:** `publish_architecture` defaults to Principal Architect and Architect only. Researchers, Project Administrators, Finance Administrators and System Administrators do not publish by default. Checks use capabilities, not role names.
 4. **Client approval:** the existing `approve_architecture` capability, held by default by Executive Sponsor and Client Project Lead. Each approval references an exact immutable published version, and records approver, version, timestamp and comment. Responses: `approved` and `changes_requested`.
@@ -896,11 +968,16 @@ Each will get an ADR (0013 onward) with the build.
 
 Preserved unchanged: immutable published snapshots, statement-level provenance, human review of AI-derived content, dated architect maturity judgments and one-way finance-to-architecture linking.
 
-### 16.2 Awaiting review
+### 16.2 Approved 2026-09-30 (revision 3 applies them)
 
-1. **§4 object vocabulary** and the points in §4.7. No migration is written until it is approved.
-2. **`edit_architecture`** as an internal capability (Principal Architect, Architect and Researcher by default). It follows from decision 3.
-3. **External approvals** recorded by `publish_architecture` holders. Phase 2 limited external change-order approvals to executive roles; here authority follows the capability instead.
+1. **`edit_architecture`:** approved as proposed (Principal Architect, Architect and Researcher by default).
+2. **External approvals:** recorded by holders of `publish_architecture`, preserving the external approver, approval date and method, evidence reference, recording user and recorded timestamp.
+3. **Vocabulary:** Application Format as one type with a format kind; Intended Outcome in Strategic Model Architecture, defined strictly as the desired condition or result; capability tier and readiness, with readiness distinct from maturity; prefixes `KNW`, `CAP`, `STR`, `APP`, `ASM`, `RSK`, `DEP`, `DEC`, `REC`.
+4. **Constraint** moves from Knowledge Architecture to a cross-domain Project Intelligence record, prefix `CNS`. The core catalog is now 27 types.
+
+### 16.3 Awaiting review
+
+1. **§4** (27 core object types and six Project Intelligence record kinds) and **§9** (31 relationship types, with direction, allowed pairings and definitions). These are the remaining vocabulary reviews before implementation approval. No migration is written until they are approved.
 
 ---
 
