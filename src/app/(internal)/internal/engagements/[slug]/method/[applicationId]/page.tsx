@@ -372,7 +372,7 @@ export default async function MethodApplicationPage({
         items={edgeItems}
         canJudge={canEdit}
         title="Practice conditions"
-        description="Conditions on this application from the Method Library and the architecture it touched: a superseded method basis, stages without a recorded treatment, examined elements revised since. Internal only."
+        description="Conditions on this application from the Method Library and the architecture it touched: a Method version or DAM release that has moved on, declared outputs not recorded, and Instruments with no gathered evidence. Internal only."
         empty="No practice conditions on this application."
       />
 

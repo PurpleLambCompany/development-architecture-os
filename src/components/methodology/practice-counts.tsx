@@ -7,6 +7,8 @@ const TREATMENT_LABELS: Record<string, string> = {
   skipped: "skipped",
 };
 
+const TREATMENT_ORDER = ["followed", "adapted", "skipped"];
+
 /** "3 of 7 (43%)" when n reaches the minimum; otherwise the count and n only (OD-5). */
 function countWords(row: PracticeCountRow): string {
   const base = `${row.count} of ${row.n}`;
@@ -72,6 +74,11 @@ export function PracticeCountsPanel({ rows }: { rows: PracticeCountRow[] }) {
                           <span className="text-ink">{stage.stage_title}</span>
                           {stages
                             .filter((r) => r.stage_key === stage.stage_key)
+                            .sort(
+                              (a, b) =>
+                                TREATMENT_ORDER.indexOf(a.treatment ?? "") -
+                                TREATMENT_ORDER.indexOf(b.treatment ?? ""),
+                            )
                             .map((r) => (
                               <span key={r.treatment} className="text-xs text-ink-muted">
                                 {TREATMENT_LABELS[r.treatment ?? ""] ?? r.treatment} {countWords(r)}

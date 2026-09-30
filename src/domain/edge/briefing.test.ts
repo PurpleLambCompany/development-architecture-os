@@ -24,7 +24,7 @@ describe("Since You Were Away", () => {
   it("starts at the user's own mark when one exists", () => {
     const w = briefingWindow("2026-10-10T09:30:00Z", now);
     expect(w).toEqual({
-      since: "2026-10-10T09:30:00.000Z",
+      since: "2026-10-10T09:30:00Z",
       until: now.toISOString(),
       isDefault: false,
     });
@@ -38,8 +38,16 @@ describe("Since You Were Away", () => {
         "2026-10-13T08:00:00Z",
         "2026-10-11T00:00:00Z",
       ]),
-    ).toBe("2026-10-13T08:00:00.000Z");
+    ).toBe("2026-10-13T08:00:00Z");
     expect(markThroughFor([])).toBeNull();
+  });
+
+  it("keeps microseconds so the mark covers the newest change exactly", () => {
+    expect(
+      markThroughFor(["2026-10-13T08:00:00.040100+00:00", "2026-10-13T08:00:00.040123+00:00"]),
+    ).toBe("2026-10-13T08:00:00.040123+00:00");
+    const mark = "2026-10-13T08:00:00.040123+00:00";
+    expect(briefingWindow(mark, now).since).toBe(mark);
   });
 
   it("treats only items with a trigger time after the mark as new", () => {

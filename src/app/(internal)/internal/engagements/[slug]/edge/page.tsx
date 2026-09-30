@@ -13,6 +13,7 @@ import {
 import { ArchitectureNav } from "@/components/architecture/architecture-nav";
 import { BriefingPanel } from "@/components/edge/briefing";
 import { EdgeEventCard } from "@/components/edge/edge-event";
+import { loadArchitecture } from "@/domain/architecture/queries";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState, Panel } from "@/components/ui/panel";
 import { cn } from "@/lib/utils";
@@ -35,11 +36,19 @@ export default async function EdgePage({
       : null;
   const judgedView = query.view === "judged";
 
-  const [items, mark] = await Promise.all([
+  const [items, mark, architecture] = await Promise.all([
     getEdgeItems(engagement.id, { includeJudged: judgedView }),
     getBriefingMark(engagement.id),
+    judgedView ? loadArchitecture(engagement.id) : null,
   ]);
   const window = briefingWindow(mark, new Date());
+  const promotedIds = items.map((i) => i.promoted_element_id).filter((id): id is string => !!id);
+  const promotedCodes =
+    promotedIds.length > 0
+      ? Object.fromEntries(
+          promotedIds.map((id) => [id, architecture?.byId.get(id)?.reference_code ?? null]),
+        )
+      : undefined;
   const changes = judgedView
     ? []
     : await getDevelopmentChanges(engagement.id, { since: window.since, limit: 200 });
@@ -52,8 +61,9 @@ export default async function EdgePage({
   );
   const events = groupEdgeItems(filtered);
   const listed = judgedView ? events : eventsForList(events);
-  const flagged = listed.filter((e) => e.tier === "human_flagged");
-  const rest = listed.filter((e) => e.tier !== "human_flagged");
+  // The judged view is one list: a judged item is no longer asking for attention.
+  const flagged = judgedView ? [] : listed.filter((e) => e.tier === "human_flagged");
+  const rest = judgedView ? listed : listed.filter((e) => e.tier !== "human_flagged");
   const ambientOnly = events.length - eventsForList(events).length;
   const newEvents = judgedView
     ? []
@@ -140,6 +150,7 @@ export default async function EdgePage({
                 engagementId={engagement.id}
                 event={event}
                 canJudge={canEdit && !judgedView}
+                promotedCodes={promotedCodes}
               />
             </div>
           ))}
@@ -166,6 +177,7 @@ export default async function EdgePage({
                 engagementId={engagement.id}
                 event={event}
                 canJudge={canEdit && !judgedView}
+                promotedCodes={promotedCodes}
               />
             </div>
           ))

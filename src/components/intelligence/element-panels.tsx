@@ -433,8 +433,10 @@ export function BearingPanel({
       }
     >
       <div className="space-y-4">
-        {servesOutcomes >= 2 ? (
-          <p className="text-sm text-ink-muted">Serves {servesOutcomes} Intended Outcomes.</p>
+        {servesOutcomes > 0 ? (
+          <p className="text-sm text-ink-muted">
+            Serves {servesOutcomes} Intended {servesOutcomes === 1 ? "Outcome" : "Outcomes"}.
+          </p>
         ) : null}
         {active.length === 0 ? (
           <EmptyState title="Nothing open bears on it" />
@@ -466,6 +468,7 @@ export function BearingPanel({
             </p>
             {events.map((event) => (
               <EdgeEventCard
+                eventJudgment={false}
                 key={event.key}
                 slug={slug}
                 engagementId={engagementId}

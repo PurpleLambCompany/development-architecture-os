@@ -219,6 +219,7 @@ export default async function EvidencePage({
                         </p>
                         {events.map((event) => (
                           <EdgeEventCard
+                            eventJudgment={false}
                             key={event.key}
                             slug={slug}
                             engagementId={engagement.id}

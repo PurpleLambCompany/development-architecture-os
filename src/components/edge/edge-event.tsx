@@ -2,6 +2,7 @@ import Link from "next/link";
 import { judgeEdgeEvent, judgeEdgeItem } from "@/domain/edge/actions";
 import { eventHeading, type EdgeConsequence, type EdgeEvent } from "@/domain/edge/grouping";
 import {
+  CHANGE_REACHES_KEY,
   EDGE_TIER_LABELS,
   JUDGMENT_LABELS,
   TIER_REASON_LABELS,
@@ -17,7 +18,7 @@ import {
   type EdgeLens,
   type EpistemicStatus,
 } from "@/domain/edge/rules";
-import { itemLine } from "@/domain/edge/words";
+import { itemLine, linkWords } from "@/domain/edge/words";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { ReferenceCode } from "@/components/architecture/badges";
 import { ActionForm } from "@/components/ui/action-form";
@@ -61,17 +62,35 @@ function whyLines(event: EdgeEvent): string[] {
   return [...lines, ...describeOrderFacts(facts)];
 }
 
-function JudgmentLine({ item }: { item: EdgeItem }) {
+/** Reference codes of records items were promoted to, when the surface has them. */
+type PromotedCodes = Record<string, string | null>;
+
+function str(item: EdgeItem, key: string): string | undefined {
+  const v = item.details?.[key];
+  return typeof v === "string" && v ? v : undefined;
+}
+
+function JudgmentLine({ item, promotedCodes }: { item: EdgeItem; promotedCodes?: PromotedCodes }) {
   if (!item.judgment_kind) return null;
   const label = JUDGMENT_LABELS[item.judgment_kind as JudgmentKind] ?? item.judgment_kind;
+  const who = item.judged_by_name ?? "a colleague";
+  const when = item.judged_at ? formatDate(item.judged_at.slice(0, 10)) : null;
+  if (item.judgment_kind === "promoted") {
+    const code = item.promoted_element_id ? promotedCodes?.[item.promoted_element_id] : null;
+    return (
+      <p className="mt-1 text-xs text-ink-muted">
+        Promoted to {code ?? "a governed record"} by {who}
+        {when ? ` on ${when}` : ""}
+        {item.judgment_reason ? `: ${item.judgment_reason}` : ""}
+      </p>
+    );
+  }
   return (
     <p className="mt-1 text-xs text-ink-muted">
-      {item.judgment_kind === "investigating" ? "Being examined" : label} by{" "}
-      {item.judged_by_name ?? "a colleague"}
-      {item.judged_at ? ` since ${formatDate(item.judged_at.slice(0, 10))}` : ""}
+      {item.judgment_kind === "investigating" ? "Being examined" : label} by {who}
+      {when ? ` since ${when}` : ""}
       {item.judgment_expires_on ? `, until ${formatDate(item.judgment_expires_on)}` : ""}
       {item.judgment_reason ? `: ${item.judgment_reason}` : ""}
-      {item.promoted_element_id ? " (promoted to a governed record)" : ""}
     </p>
   );
 }
@@ -81,11 +100,16 @@ function ConsequenceRow({
   engagementId,
   line,
   canJudge,
+  promotedCodes,
+  sharedJudgment = false,
 }: {
   slug: string;
   engagementId: string;
   line: EdgeConsequence;
   canJudge: boolean;
+  promotedCodes?: PromotedCodes;
+  /** The event shows one judgment act for all its items; don't repeat it per line. */
+  sharedJudgment?: boolean;
 }) {
   const item = line.primary;
   const promoteHref = (kind: string) =>
@@ -122,16 +146,29 @@ function ConsequenceRow({
       <p className="mt-0.5 text-sm text-ink-muted">{itemLine(item)}</p>
       {line.items.length > 1 ? (
         <p className="mt-0.5 text-xs text-ink-subtle">
-          Also reached through the impact matrix:{" "}
+          {line.items.every((i) => i === item || i.rule_key === CHANGE_REACHES_KEY)
+            ? "Also on the impact trace: "
+            : "Also: "}
           {line.items
             .filter((i) => i !== item)
-            .map((i) => itemLine(i))
+            .map((i) =>
+              i.rule_key === CHANGE_REACHES_KEY
+                ? linkWords(
+                    str(i, "link_key"),
+                    str(i, "direction"),
+                    i.trigger_reference_code ?? "it",
+                  )
+                : itemLine(i),
+            )
+            .filter(Boolean)
             .join("; ")}
         </p>
       ) : null}
-      {line.items.map((i) => (
-        <JudgmentLine key={i.item_key} item={i} />
-      ))}
+      {sharedJudgment
+        ? null
+        : line.items.map((i) => (
+            <JudgmentLine key={i.item_key} item={i} promotedCodes={promotedCodes} />
+          ))}
       {canJudge && !item.judged ? (
         <div className="mt-2 flex flex-wrap items-start gap-2">
           <ActionForm
@@ -175,12 +212,21 @@ export function EdgeEventCard({
   event,
   canJudge,
   compact = false,
+  promotedCodes,
+  eventJudgment = true,
 }: {
   slug: string;
   engagementId: string;
   event: EdgeEvent;
   canJudge: boolean;
   compact?: boolean;
+  promotedCodes?: PromotedCodes;
+  /**
+   * Offer judging the whole event. Off on contextual panels, which show only
+   * the lines bearing on one record: judging the event there would judge
+   * lines the reader cannot see.
+   */
+  eventJudgment?: boolean;
 }) {
   const heading = eventHeading(event);
   const triggerHref = event.triggerSubjectId
@@ -189,6 +235,19 @@ export function EdgeEventCard({
   const acts = [...new Set(event.items.map((i) => i.resolving_act))];
   const why = whyLines(event);
   const open = event.items.filter((i) => !i.judged);
+  // The same person judged every item the same way at once (an event judgment): show it once.
+  const first = event.items[0]!;
+  const sharedJudgment =
+    event.items.length > 1 &&
+    event.items.every(
+      (i) =>
+        i.judgment_kind !== null &&
+        i.judgment_kind === first.judgment_kind &&
+        i.judged_by === first.judged_by &&
+        // One transaction writes an event judgment; clock times differ by milliseconds.
+        Math.abs(Date.parse(i.judged_at ?? "") - Date.parse(first.judged_at ?? "")) < 60_000 &&
+        i.judgment_reason === first.judgment_reason,
+    );
   return (
     <article className="border-b border-rule py-4 last:border-b-0">
       <header className="flex flex-wrap items-baseline justify-between gap-2">
@@ -222,6 +281,14 @@ export function EdgeEventCard({
           </span>
         </p>
       ) : null}
+      {sharedJudgment ? (
+        <div className="mt-2">
+          <p className="text-xs tracking-wide text-ink-subtle uppercase">
+            Judged as one event, all {event.items.length} items
+          </p>
+          <JudgmentLine item={first} promotedCodes={promotedCodes} />
+        </div>
+      ) : null}
       {compact ? (
         <p className="mt-1 text-sm text-ink-muted">
           {event.items.length === 1
@@ -238,6 +305,8 @@ export function EdgeEventCard({
                 engagementId={engagementId}
                 line={line}
                 canJudge={canJudge}
+                promotedCodes={promotedCodes}
+                sharedJudgment={sharedJudgment}
               />
             ))}
           </ul>
@@ -255,6 +324,8 @@ export function EdgeEventCard({
                     engagementId={engagementId}
                     line={line}
                     canJudge={canJudge}
+                    promotedCodes={promotedCodes}
+                    sharedJudgment={sharedJudgment}
                   />
                 ))}
               </ul>
@@ -273,17 +344,23 @@ export function EdgeEventCard({
               <dt className="text-xs tracking-wide text-ink-subtle uppercase">
                 What would resolve it
               </dt>
-              <dd className="mt-0.5 text-ink-muted">{acts.map(resolvingActLabel).join("; ")}</dd>
+              <dd className="mt-0.5 text-ink-muted">
+                <ul className="space-y-0.5">
+                  {acts.map((act) => (
+                    <li key={act}>{resolvingActLabel(act)}</li>
+                  ))}
+                </ul>
+              </dd>
             </div>
           </dl>
-          {canJudge && open.length > 1 ? (
+          {canJudge && eventJudgment && open.length > 1 ? (
             <div className="mt-3">
               <ActionForm
-                trigger={`Judge all ${open.length}`}
+                trigger="Judge the whole event"
                 fields={judgmentFields}
                 defaultValues={{ kind: "not_material" }}
                 action={judgeEdgeEvent.bind(null, engagementId, event.key)}
-                submitLabel={`Record for all ${open.length}`}
+                submitLabel={`Record for all ${open.length} items`}
               />
             </div>
           ) : null}

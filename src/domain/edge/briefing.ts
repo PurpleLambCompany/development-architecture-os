@@ -21,8 +21,9 @@ export function briefingWindow(
   now: Date,
 ): BriefingWindow {
   const until = now.toISOString();
-  if (briefedThrough)
-    return { since: new Date(briefedThrough).toISOString(), until, isDefault: false };
+  // The mark is kept as the database wrote it: timestamps carry microseconds
+  // and a JavaScript Date would round them away, re-showing the newest change.
+  if (briefedThrough) return { since: briefedThrough, until, isDefault: false };
   const since = new Date(now.getTime() - FIRST_BRIEFING_DAYS * 24 * 60 * 60 * 1000).toISOString();
   return { since, until, isDefault: true };
 }
@@ -33,13 +34,22 @@ export function briefingWindow(
  * skipped (§14.1). Null when the briefing showed nothing new.
  */
 export function markThroughFor(occurredAts: readonly (string | null | undefined)[]): string | null {
-  let newest: number | null = null;
+  // Returned exactly as given (microseconds included), so the mark covers the
+  // newest change rather than falling a fraction of a millisecond short of it.
+  let newest: { t: number; at: string } | null = null;
   for (const at of occurredAts) {
     if (!at) continue;
     const t = Date.parse(at);
-    if (!Number.isNaN(t) && (newest === null || t > newest)) newest = t;
+    if (Number.isNaN(t)) continue;
+    if (newest === null || t > newest.t || (t === newest.t && fraction(at) > fraction(newest.at)))
+      newest = { t, at };
   }
-  return newest === null ? null : new Date(newest).toISOString();
+  return newest?.at ?? null;
+}
+
+/** Sub-second digits of an ISO timestamp, padded so they compare as text. */
+function fraction(at: string): string {
+  return (/\.(\d+)/.exec(at)?.[1] ?? "").padEnd(6, "0");
 }
 
 /** "New on the Edge": items whose trigger time is after the mark. State and date items have none (Q7). */

@@ -26,7 +26,7 @@ import {
   getCriteriaInForce,
   getValidationCriteria,
 } from "@/domain/methodology/queries";
-import { getEdgeItems, getReviewCapture } from "@/domain/edge/queries";
+import { getEdgeItems, getElementRevisions, getReviewCapture } from "@/domain/edge/queries";
 import { ContextualEdgePanel } from "@/components/edge/edge-panel";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { ArchitectureNav } from "@/components/architecture/architecture-nav";
@@ -54,16 +54,25 @@ export default async function ReviewDetailPage({
   const { slug, reviewId } = await params;
   const { engagement, canEdit, canPublish, canManageReviews } =
     await getInternalArchitectureContext(slug);
-  const [architecture, registerRows, participants, detail, evidence, capture, edgeItems] =
-    await Promise.all([
-      loadArchitecture(engagement.id),
-      getReviewRegister(engagement.id),
-      getReviewParticipants(reviewId),
-      getElementDetail(engagement.id, reviewId),
-      listEvidence(engagement.id),
-      getReviewCapture(reviewId),
-      getEdgeItems(engagement.id, { subjectId: reviewId }),
-    ]);
+  const [
+    architecture,
+    registerRows,
+    participants,
+    detail,
+    evidence,
+    capture,
+    edgeItems,
+    revisions,
+  ] = await Promise.all([
+    loadArchitecture(engagement.id),
+    getReviewRegister(engagement.id),
+    getReviewParticipants(reviewId),
+    getElementDetail(engagement.id, reviewId),
+    listEvidence(engagement.id),
+    getReviewCapture(reviewId),
+    getEdgeItems(engagement.id),
+    getElementRevisions(engagement.id),
+  ]);
   const element = architecture.byId.get(reviewId);
   const row = registerRows.find((r) => r.element_id === reviewId);
   if (!element || !row || element.kind !== "review") notFound();
@@ -89,6 +98,12 @@ export default async function ReviewDetailPage({
   // The closed examined set (ADR-0053): the version of each examined element
   // captured when this Review was held. Captures are facts, not a baseline.
   const held = row.review_status === "held";
+  // The Review's own items, and items on what it examines: revisions,
+  // escalations, decisions due and pending approvals on its agenda (§16).
+  const bearing = new Set([reviewId, ...examinedIds]);
+  const reviewItems = edgeItems.filter(
+    (i) => bearing.has(i.subject_id) || (i.basis ?? []).some((ref) => ref.id === reviewId),
+  );
   const capturedVersion = new Map(capture.map((c) => [c.element_id, c.element_version_id]));
   const versionNo = (elementId: string, versionId: string | null | undefined) =>
     architecture.byId.get(elementId)?.versions.find((v) => v.id === versionId)?.version_no ?? null;
@@ -290,7 +305,16 @@ export default async function ReviewDetailPage({
                       {examinedNo === null
                         ? "No published version when held"
                         : currentNo !== null && currentNo > examinedNo
-                          ? `Examined at version ${examinedNo}; now version ${currentNo}`
+                          ? `Examined at version ${examinedNo}; now version ${currentNo}${
+                              revisions.some(
+                                (v) =>
+                                  v.element_id === target.id &&
+                                  v.version_no > examinedNo &&
+                                  v.change_type === "substantive_revision",
+                              )
+                                ? ", revised substantively since"
+                                : ", with status-only publications since"
+                            }`
                           : `Examined at version ${examinedNo}`}
                     </span>
                   ) : null}
@@ -304,7 +328,7 @@ export default async function ReviewDetailPage({
       <ContextualEdgePanel
         slug={slug}
         engagementId={engagement.id}
-        items={edgeItems}
+        items={reviewItems}
         canJudge={canEdit}
         title={held ? "Since this Review was held" : "Before this Review"}
         description={

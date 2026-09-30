@@ -48,6 +48,7 @@ export function ContextualEdgePanel({
         <div>
           {events.map((event) => (
             <EdgeEventCard
+              eventJudgment={false}
               key={event.key}
               slug={slug}
               engagementId={engagementId}

@@ -53,7 +53,13 @@ function str(item: EdgeItem, key: string): string | null {
 }
 
 /** One line for a consequence or condition: what holds, in the item's own facts. */
+/** One consequence in plain words, sentence-cased. */
 export function itemLine(item: EdgeItem): string {
+  const line = itemWords(item);
+  return line.charAt(0).toUpperCase() + line.slice(1);
+}
+
+function itemWords(item: EdgeItem): string {
   const trigger = item.trigger_reference_code ?? "the revised element";
   switch (item.rule_key) {
     case CHANGE_REACHES_KEY: {
@@ -62,7 +68,9 @@ export function itemLine(item: EdgeItem): string {
         str(item, "direction") ?? undefined,
         trigger,
       );
-      const reason = str(item, "reason");
+      // An off-spine link's words already say why; the matrix reason would repeat them.
+      const linkKey = str(item, "link_key");
+      const reason = linkKey && OFF_SPINE_WORDS[linkKey] ? null : str(item, "reason");
       return [words, reason].filter(Boolean).join(". ");
     }
     case "implemented_element_revised":

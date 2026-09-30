@@ -15,6 +15,63 @@ import { edgeSubjectHref } from "./links";
  * Since you last reviewed (§14.2): a document, not a feed. No unread counts,
  * badges or per-item seen state. The mark moves only when the user says so.
  */
+/** Records shown before folding; each shows its latest changes first. */
+const SHOWN_RECORDS = 8;
+const SHOWN_CHANGES = 2;
+
+function ChangeLine({ c }: { c: DevelopmentChangeRow }) {
+  return (
+    <li>
+      {CHANGE_TYPE_WORDS[c.change_type] ?? c.change_type}
+      {c.version_no ? ` (v${c.version_no})` : ""}
+      {c.related_reference_code ? `, ${c.related_reference_code}` : ""}
+      <span className="text-xs text-ink-subtle">
+        {" "}
+        · {formatDateTime(c.occurred_at)}
+        {c.actor_name ? ` · ${c.actor_name}` : ""}
+      </span>
+    </li>
+  );
+}
+
+function ChangeGroup({ slug, rows }: { slug: string; rows: DevelopmentChangeRow[] }) {
+  const head = rows[0]!;
+  return (
+    <li className="py-2">
+      <Link
+        href={edgeSubjectHref(slug, {
+          type: head.subject_type,
+          id: head.subject_id,
+          kind: head.subject_kind,
+          referenceCode: head.reference_code,
+        })}
+        className="group inline-flex items-baseline gap-2"
+      >
+        <ReferenceCode code={head.reference_code} />
+        <span className="text-ink group-hover:underline">{head.title}</span>
+      </Link>
+      <ul className="mt-1 space-y-0.5 text-ink-muted">
+        {rows.slice(0, SHOWN_CHANGES).map((c, i) => (
+          <ChangeLine key={i} c={c} />
+        ))}
+      </ul>
+      {rows.length > SHOWN_CHANGES ? (
+        <details className="mt-0.5 text-ink-muted">
+          <summary className="cursor-pointer text-xs text-ink-subtle">
+            {rows.length - SHOWN_CHANGES} earlier{" "}
+            {rows.length - SHOWN_CHANGES === 1 ? "change" : "changes"}
+          </summary>
+          <ul className="mt-0.5 space-y-0.5">
+            {rows.slice(SHOWN_CHANGES).map((c, i) => (
+              <ChangeLine key={i} c={c} />
+            ))}
+          </ul>
+        </details>
+      ) : null}
+    </li>
+  );
+}
+
 export function BriefingPanel({
   slug,
   engagementId,
@@ -77,40 +134,31 @@ export function BriefingPanel({
           <section>
             <h3 className="text-xs tracking-wide text-ink-subtle uppercase">What changed</h3>
             <ul className="mt-2 divide-y divide-rule text-sm">
-              {groups.map((rows) => {
-                const head = rows[0]!;
-                return (
-                  <li key={`${head.subject_type}:${head.subject_id}`} className="py-2">
-                    <Link
-                      href={edgeSubjectHref(slug, {
-                        type: head.subject_type,
-                        id: head.subject_id,
-                        kind: head.subject_kind,
-                        referenceCode: head.reference_code,
-                      })}
-                      className="group inline-flex items-baseline gap-2"
-                    >
-                      <ReferenceCode code={head.reference_code} />
-                      <span className="text-ink group-hover:underline">{head.title}</span>
-                    </Link>
-                    <ul className="mt-1 space-y-0.5 text-ink-muted">
-                      {rows.map((c, i) => (
-                        <li key={i}>
-                          {CHANGE_TYPE_WORDS[c.change_type] ?? c.change_type}
-                          {c.version_no ? ` (v${c.version_no})` : ""}
-                          {c.related_reference_code ? `, ${c.related_reference_code}` : ""}
-                          <span className="text-xs text-ink-subtle">
-                            {" "}
-                            · {formatDateTime(c.occurred_at)}
-                            {c.actor_name ? ` · ${c.actor_name}` : ""}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </li>
-                );
-              })}
+              {groups.slice(0, SHOWN_RECORDS).map((rows) => (
+                <ChangeGroup
+                  key={`${rows[0]!.subject_type}:${rows[0]!.subject_id}`}
+                  slug={slug}
+                  rows={rows}
+                />
+              ))}
             </ul>
+            {groups.length > SHOWN_RECORDS ? (
+              <details className="mt-2 text-sm">
+                <summary className="cursor-pointer text-ink-muted">
+                  {groups.length - SHOWN_RECORDS} more{" "}
+                  {groups.length - SHOWN_RECORDS === 1 ? "record" : "records"} changed
+                </summary>
+                <ul className="mt-1 divide-y divide-rule">
+                  {groups.slice(SHOWN_RECORDS).map((rows) => (
+                    <ChangeGroup
+                      key={`${rows[0]!.subject_type}:${rows[0]!.subject_id}`}
+                      slug={slug}
+                      rows={rows}
+                    />
+                  ))}
+                </ul>
+              </details>
+            ) : null}
           </section>
           <section>
             <h3 className="text-xs tracking-wide text-ink-subtle uppercase">New on the Edge</h3>
