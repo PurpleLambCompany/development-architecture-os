@@ -185,3 +185,15 @@ export async function getEvidenceFiles(engagementId: string): Promise<Engagement
   if (error) throw error;
   return data ?? [];
 }
+
+/** Statements of an engagement, for citing client words as evidence (internal only by RLS). */
+export const getStatementOptions = cache(async (engagementId: string) => {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("architecture_statements")
+    .select("id, element_id, body, sort_order")
+    .eq("engagement_id", engagementId)
+    .order("sort_order");
+  if (error) throw error;
+  return data ?? [];
+});

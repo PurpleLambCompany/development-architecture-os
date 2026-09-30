@@ -1,7 +1,13 @@
 import "server-only";
+import type { AppRole } from "@/domain/roles/roles";
+import {
+  effectiveCapabilities,
+  type EngagementCapability,
+} from "@/domain/capabilities/catalog";
+import { listCapabilityOverrides } from "@/domain/capabilities/queries";
 import { loadArchitecture } from "@/domain/architecture/queries";
 import { RECORD_KINDS } from "@/domain/architecture/vocabulary";
-import { DEFAULT_BUSINESS_TIME_ZONE, businessDate } from "@/domain/finance/business-date";
+import { getBusinessToday } from "@/domain/finance/queries";
 import { getRegister, getSignals } from "./queries";
 import {
   assumptionsUnderpinningPublished,
@@ -14,7 +20,7 @@ import {
 
 /** Today in the business time zone. */
 export function businessToday(): string {
-  return businessDate(new Date(), DEFAULT_BUSINESS_TIME_ZONE);
+  return getBusinessToday();
 }
 
 /**
@@ -73,4 +79,34 @@ export async function loadEngagementRegister(engagementId: string, filters: Regi
     recordIds,
     dependencyEnds,
   };
+}
+
+type EngagementMembers = {
+  engagement_members: {
+    id: string;
+    side: string;
+    role: string;
+    status: string;
+    user_id: string;
+  }[];
+};
+
+/**
+ * Active client members holding every one of `capabilities`, from role
+ * defaults and overrides. Only decides which people a form offers: the
+ * database checks the addressee again.
+ */
+export async function clientMembersWith(
+  engagement: EngagementMembers & { id: string },
+  capabilities: readonly EngagementCapability[],
+) {
+  const overrides = await listCapabilityOverrides(engagement.id);
+  return engagement.engagement_members.filter((m) => {
+    if (m.side !== "client" || m.status !== "active") return false;
+    const effective = effectiveCapabilities(
+      m.role as AppRole,
+      overrides.filter((o) => o.engagement_member_id === m.id),
+    );
+    return capabilities.every((c) => effective.includes(c));
+  });
 }

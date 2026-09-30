@@ -38,6 +38,19 @@ import {
 } from "@/domain/architecture/queries";
 import type { ObjectTypeKey } from "@/domain/architecture/rules";
 import { getBusinessToday } from "@/domain/finance/queries";
+import {
+  getClientActions,
+  getContributions,
+  getEscalations,
+  getImpact,
+  getRecordHistory,
+  getRegister,
+  getStatementOptions,
+  getStewardship,
+} from "@/domain/intelligence/queries";
+import { recordsBearingOn } from "@/domain/intelligence/register";
+import { clientMembersWith } from "@/domain/intelligence/views";
+import { RECORD_KINDS } from "@/domain/architecture/vocabulary";
 import { ActivityList } from "@/components/architecture/activity-list";
 import { ArchitectureNav } from "@/components/architecture/architecture-nav";
 import {
@@ -51,6 +64,7 @@ import {
 import { DecisionPanel } from "@/components/architecture/decision-panel";
 import {
   elementDefaults,
+  isResolvedRecord,
   objectFields,
   recordFields,
   spineFields,
@@ -64,6 +78,13 @@ import {
 import { SnapshotView } from "@/components/architecture/snapshot-view";
 import { StatementsPanel } from "@/components/architecture/statements-panel";
 import { VersionsPanel, publicationLine } from "@/components/architecture/versions-panel";
+import {
+  BearingPanel,
+  HistoryPanel,
+  ImpactPanel,
+  StewardshipPanel,
+} from "@/components/intelligence/element-panels";
+import { ElementRequestsPanel } from "@/components/intelligence/element-requests";
 import { ActionButton, ActionForm } from "@/components/ui/action-form";
 import { ButtonLink } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
@@ -75,15 +96,41 @@ export default async function ElementPage({
 }: PageProps<"/internal/engagements/[slug]/architecture/elements/[elementId]">) {
   const { slug, elementId } = await params;
   const query = await searchParams;
-  const { engagement, canEdit, canPublish } = await getInternalArchitectureContext(slug);
+  const { engagement, canEdit, canPublish, canManageRequests } =
+    await getInternalArchitectureContext(slug);
   const architecture = await loadArchitecture(engagement.id);
   const element = architecture.byId.get(elementId);
   if (!element) notFound();
 
-  const [detail, evidence, methodAssets] = await Promise.all([
+  const isRecord = !element.object;
+  const [
+    detail,
+    evidence,
+    methodAssets,
+    stewardship,
+    history,
+    impact,
+    escalations,
+    register,
+    actions,
+    contributions,
+    statements,
+    respondents,
+    executives,
+  ] = await Promise.all([
     getElementDetail(engagement.id, element.id),
     listEvidence(engagement.id),
     listMethodAssets(),
+    isRecord ? getStewardship(element.id) : null,
+    isRecord ? getRecordHistory(element.id) : [],
+    getImpact(element.id),
+    isRecord ? getEscalations(engagement.id) : [],
+    isRecord ? [] : getRegister(engagement.id),
+    getClientActions(engagement.id),
+    getContributions(engagement.id, element.id),
+    getStatementOptions(engagement.id),
+    clientMembersWith(engagement, ["view_architecture", "respond_to_client_actions"]),
+    clientMembersWith(engagement, ["view_architecture", "approve_architecture"]),
   ]);
   const preview = query.preview === "1" ? await previewClientSnapshot(element.id) : null;
   const versionId = typeof query.version === "string" ? query.version : null;
@@ -112,6 +159,32 @@ export default async function ElementPage({
   const supersedes = architecture.relationships.filter(
     (r) => r.relationship_type === "supersedes" && r.source_element_id === element.id,
   );
+  const bearing = isRecord
+    ? new Set<string>()
+    : recordsBearingOn(
+        element.id,
+        architecture.relationships,
+        new Set(
+          architecture.elements
+            .filter((e) => (RECORD_KINDS as readonly string[]).includes(e.kind))
+            .map((e) => e.id),
+        ),
+        architecture.elements.flatMap((e) =>
+          e.record?.kind === "dependency"
+            ? [
+                {
+                  element_id: e.id,
+                  from_element_id: e.record.row.from_element_id,
+                  to_element_id: e.record.row.to_element_id,
+                },
+              ]
+            : [],
+        ),
+      );
+  const member = (m: { id: string; user_id: string }) => ({
+    value: m.id,
+    label: nameOf(m.user_id),
+  });
 
   return (
     <div className="space-y-8">
@@ -319,6 +392,7 @@ export default async function ElementPage({
                       ...recordFields(
                         element.kind as RecordKind,
                         liveOthers.map((e) => ({ value: e.id, label: elementOptionLabel(e) })),
+                        { resolved: isResolvedRecord(element) },
                       ),
                     ]
               }
@@ -334,6 +408,26 @@ export default async function ElementPage({
           ) : null}
         </div>
       </Panel>
+
+      {isRecord ? (
+        <StewardshipPanel
+          element={element}
+          stewardship={stewardship}
+          escalations={escalations.filter((x) => x.element_id === element.id)}
+          canEdit={canEdit}
+          canPublish={canPublish}
+          executives={executives.map(member)}
+          nameOf={nameOf}
+          today={today}
+        />
+      ) : (
+        <BearingPanel
+          slug={slug}
+          elementId={element.id}
+          rows={register.filter((r) => bearing.has(r.element_id))}
+          today={today}
+        />
+      )}
 
       <DecisionPanel
         element={element}
@@ -362,6 +456,24 @@ export default async function ElementPage({
         canPublish={canPublish}
         frozen={frozen}
       />
+
+      <ElementRequestsPanel
+        slug={slug}
+        engagementId={engagement.id}
+        element={element}
+        architecture={architecture}
+        actions={actions.filter((a) => a.subjects.includes(element.id))}
+        contributions={contributions}
+        statements={statements.filter((s) => s.element_id === element.id)}
+        addressees={respondents.map(member)}
+        canEdit={canEdit}
+        canManageRequests={canManageRequests}
+        nameOf={nameOf}
+        today={today}
+      />
+
+      {isRecord ? <HistoryPanel history={history} /> : null}
+      <ImpactPanel slug={slug} impact={impact} architecture={architecture} />
 
       <VersionsPanel
         slug={slug}
