@@ -1249,4 +1249,205 @@ from public.architecture_elements e
 where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'implementation_initiative'
   and e.title = 'Third-region governance ratification';
 
+
+-- -----------------------------------------------------------------------------
+-- Phase 6: Method Library demo (clearly fictional content, seed only; §32)
+--
+-- Through the same operations as the app, as the people who would perform
+-- them: four Development Contexts; the legacy Capability Readiness Diagnostic
+-- adopted as a Method (1.0 and 1.1 published, 1.2 drafted from what Harbor
+-- learned); an Instrument, a Standard and a Template; DAM 1.1 published and a
+-- DAM 1.2 draft; a completed Diagnostic application on Harbor and one in
+-- progress on Meridian; two agreed acceptance criteria on a Harbor
+-- initiative, one informed by the Standard. No new elements are created.
+-- -----------------------------------------------------------------------------
+create temporary table demo (key text primary key, id uuid) on commit drop;
+create function pg_temp.d(p_key text) returns uuid language sql as $$ select id from demo where key = p_key; $$;
+
+-- Contexts (Principal Architect: publish_methodology) ----------------------------------------------
+select pg_temp.act_as('10000000-0000-4000-8000-000000000002');
+insert into demo values
+  ('ctx_college', public.create_development_context('institutional_capability', 'Institutional capability development (college)',
+    'Building a durable organizational capability inside an institution such as a college.')),
+  ('ctx_cluster', public.create_development_context('regional_industry_cluster', 'Regional industry cluster development',
+    'Growing a regional concentration of related firms, institutions and talent around shared advantages.')),
+  ('ctx_district', public.create_development_context('real_estate_district', 'Real-estate district development',
+    'Planning and delivering a mixed-use district through land, capital and phased development.')),
+  ('ctx_community', public.create_development_context('community_service', 'Community service development',
+    'Extending a community organization''s services into new places or populations.'));
+
+-- The Diagnostic: adopt the legacy asset as a Method --------------------------------------------------
+insert into demo values ('diag', (select id from public.method_assets where key = 'capability-readiness-diagnostic'));
+insert into demo values ('diag_v1', public.adopt_legacy_method_asset(pg_temp.d('diag'), 'method', 'diagnostic_frameworks'));
+
+-- The Architect authors (author_methodology) --------------------------------------------------------
+select pg_temp.act_as('10000000-0000-4000-8000-000000000003');
+select public.update_method_asset_version(pg_temp.d('diag_v1'), jsonb_build_object(
+  'architectural_question', 'Which capabilities are ready to carry the strategy, and which are not?',
+  'summary', 'A structured diagnosis of capability readiness across people, process, resources and governance.',
+  'applicability', 'Engagements where a strategy depends on organizational capabilities whose readiness is unknown.',
+  'exclusions', 'Pure market or land studies with no organizational capability in question.',
+  'expected_inputs', 'The capability set in scope, leadership access and existing self-assessments.',
+  'evidence_expectations', 'Leadership interviews and a document review for each capability in scope.',
+  'practitioner_roles', 'Lead architect; one interviewer per three capabilities.',
+  'completion_criteria', 'Every in-scope capability has a dated readiness judgement with cited evidence.',
+  'practitioner_instructions', 'Work capability by capability. Record adaptations; never score a capability without evidence.',
+  'modes', jsonb_build_array('discover', 'assess'),
+  'identity_disclosure', 'may_be_named',
+  'disclosable_name', 'Capability Readiness Diagnostic™',
+  'change_summary', 'Adopted from the pre-Phase 6 library as a Method.'));
+select public.set_method_version_domains(pg_temp.d('diag_v1'), array['capability']::public.architecture_domain[]);
+select public.set_method_version_contexts(pg_temp.d('diag_v1'), array[pg_temp.d('ctx_college'), pg_temp.d('ctx_community')]);
+select public.set_method_version_stages(pg_temp.d('diag_v1'), '[
+  {"key": "frame", "title": "Frame the capabilities", "purpose": "Agree which capabilities are in scope and why.", "guidance": "One working session with the sponsor."},
+  {"key": "interview", "title": "Interview leadership", "purpose": "Hear how each capability actually works today.", "guidance": "Individual interviews using the interview guide."},
+  {"key": "review", "title": "Review the record", "purpose": "Test what was heard against documents and data.", "guidance": "Cite every document relied on."},
+  {"key": "judge", "title": "Judge readiness", "purpose": "Reach a dated readiness judgement per capability.", "guidance": "Use the readiness scale; state the evidence."}
+]'::jsonb);
+select public.set_method_version_outputs(pg_temp.d('diag_v1'),
+  '[{"output_kind": "object", "object_type_key": "capability_gap"}, {"output_kind": "recommendation"}, {"output_kind": "risk"}]'::jsonb);
+
+-- Instrument, Standard and Template (Architect) ------------------------------------------------------
+insert into demo values ('guide', public.create_method_asset('leadership-capability-interview-guide',
+  'Leadership Capability Interview Guide', 'instrument', 'question_libraries'));
+insert into demo select 'guide_v1', id from public.method_asset_versions where asset_id = pg_temp.d('guide');
+select public.update_method_asset_version(pg_temp.d('guide_v1'), jsonb_build_object(
+  'architectural_question', 'How does this capability work today, in the words of those who lead it?',
+  'summary', 'Twelve questions for a leader responsible for one capability.',
+  'applicability', 'Leadership interviews within a capability readiness diagnosis.',
+  'exclusions', 'Frontline staff surveys.',
+  'practitioner_instructions', 'Ask every question; record answers verbatim where possible; cite the interview as evidence.',
+  'change_summary', 'First published version.'));
+select public.set_method_version_domains(pg_temp.d('guide_v1'), array['capability']::public.architecture_domain[]);
+select public.set_instrument_version_evidence_types(pg_temp.d('guide_v1'), array['interview']::public.evidence_source_type[]);
+
+insert into demo values ('scale', public.create_method_asset('capability-readiness-scale',
+  'Capability Readiness Scale', 'standard', 'measurement_frameworks'));
+insert into demo select 'scale_v1', id from public.method_asset_versions where asset_id = pg_temp.d('scale');
+select public.update_method_asset_version(pg_temp.d('scale_v1'), jsonb_build_object(
+  'architectural_question', 'Is this capability ready to carry what the strategy asks of it?',
+  'summary', 'Five criteria a capability is judged against. The Standard is never itself a verdict.',
+  'applicability', 'Readiness judgements, reviews and implementation acceptance.',
+  'exclusions', 'Individual performance appraisal.',
+  'change_summary', 'First published version.'));
+select public.set_method_version_domains(pg_temp.d('scale_v1'), array['capability']::public.architecture_domain[]);
+select public.set_standard_version_criteria(pg_temp.d('scale_v1'), '[
+  {"key": "accountable_owner", "statement": "The capability has a named, accountable owner.", "guidance": "", "scale": ""},
+  {"key": "documented_process", "statement": "Its core process is documented and followed.", "guidance": "", "scale": ""},
+  {"key": "resourced", "statement": "It is resourced for the demand the strategy places on it.", "guidance": "", "scale": ""},
+  {"key": "governed", "statement": "Decisions about it are made in a governed forum.", "guidance": "", "scale": ""},
+  {"key": "measured", "statement": "Its performance is measured and reviewed.", "guidance": "", "scale": ""}
+]'::jsonb);
+select public.set_standard_version_judged_in(pg_temp.d('scale_v1'), array['review', 'completion', 'assessment']);
+
+insert into demo values ('map', public.create_method_asset('capability-map-template',
+  'Capability Map', 'template', 'templates'));
+insert into demo select 'map_v1', id from public.method_asset_versions where asset_id = pg_temp.d('map');
+select public.update_method_asset_version(pg_temp.d('map_v1'), jsonb_build_object(
+  'architectural_question', 'What capabilities does the organization have, and how ready is each?',
+  'summary', 'A one-page capability map with a readiness band per capability.',
+  'applicability', 'Capability map deliverables.',
+  'exclusions', 'Detailed process maps.',
+  'change_summary', 'First published version.'));
+select public.set_method_version_domains(pg_temp.d('map_v1'), array['capability']::public.architecture_domain[]);
+select public.set_template_version_spec(pg_temp.d('map_v1'), 'capability_map', '[
+  {"key": "map", "title": "Capability map", "guidance": "Capabilities grouped by value stream."},
+  {"key": "readiness", "title": "Readiness bands", "guidance": "One band per capability, with the date judged."}
+]'::jsonb);
+
+-- Publication (Principal Architect) -----------------------------------------------------------------------
+select pg_temp.act_as('10000000-0000-4000-8000-000000000002');
+select public.publish_method_asset_version(pg_temp.d('guide_v1'), '1.0');
+select public.publish_method_asset_version(pg_temp.d('scale_v1'), '1.0');
+select public.publish_method_asset_version(pg_temp.d('map_v1'), '1.0');
+-- The Diagnostic uses the published guide and scale (Architect).
+select pg_temp.act_as('10000000-0000-4000-8000-000000000003');
+select public.set_method_version_components(pg_temp.d('diag_v1'), jsonb_build_array(
+  jsonb_build_object('component_version_id', pg_temp.d('guide_v1'), 'note', 'For stage 2 interviews'),
+  jsonb_build_object('component_version_id', pg_temp.d('scale_v1'), 'note', 'For stage 4 judgements')));
+select pg_temp.act_as('10000000-0000-4000-8000-000000000002');
+select public.publish_method_asset_version(pg_temp.d('diag_v1'), '1.0');
+
+-- Diagnostic 1.1 (Architect drafts; Principal publishes) ------------------------------------------------
+select pg_temp.act_as('10000000-0000-4000-8000-000000000003');
+insert into demo values ('diag_v2', public.create_method_asset_version(pg_temp.d('diag')));
+select public.update_method_asset_version(pg_temp.d('diag_v2'), jsonb_build_object(
+  'change_summary', 'Stage 3 now requires a document review for every capability, not a sample.'));
+select pg_temp.act_as('10000000-0000-4000-8000-000000000002');
+select public.publish_method_asset_version(pg_temp.d('diag_v2'), '1.1');
+
+-- DAM 1.1 (published) -----------------------------------------------------------------------------------
+insert into demo values ('dam11', public.create_dam_release('1.1', 'Development Architecture Method™ 1.1',
+  'Adds the Capability Readiness Diagnostic as a Method, its interview guide and readiness scale, the capability map template and the anchor-led cluster model.'));
+select public.set_dam_release_member(pg_temp.d('dam11'), v) from (values
+  (pg_temp.d('diag_v2')), (pg_temp.d('guide_v1')), (pg_temp.d('scale_v1')), (pg_temp.d('map_v1')),
+  ((select current_version_id from public.method_assets where key = 'anchor-led-cluster-development-model'))) as m(v);
+select public.publish_dam_release(pg_temp.d('dam11'), 'The first release with governed forms.', current_date);
+
+-- Engagements: release and contexts --------------------------------------------------------------------
+select public.set_engagement_dam_release('e0000000-0000-4000-8000-000000000003', pg_temp.d('dam11'),
+  'Harbor adopts DAM 1.1 for the readiness diagnosis.');
+select pg_temp.act_as('10000000-0000-4000-8000-000000000003');
+select public.set_engagement_development_contexts('e0000000-0000-4000-8000-000000000001',
+  array[pg_temp.d('ctx_district'), pg_temp.d('ctx_cluster')], pg_temp.d('ctx_district'));
+select public.set_engagement_development_contexts('e0000000-0000-4000-8000-000000000003',
+  array[pg_temp.d('ctx_community')], pg_temp.d('ctx_community'));
+
+-- Harbor: a completed Diagnostic application (Architect) --------------------------------------------------
+insert into demo values ('mus_harbor', public.start_method_application('e0000000-0000-4000-8000-000000000003',
+  pg_temp.d('diag_v2'), 'Readiness of the regional expansion capabilities',
+  'The board asked whether the council and the demand research can carry a third region.',
+  'Can the expansion council and the demand research carry a third region?'));
+select public.set_method_application_domains(pg_temp.d('mus_harbor'), array['capability', 'knowledge']::public.architecture_domain[]);
+select public.begin_method_application(pg_temp.d('mus_harbor'));
+select public.set_method_application_asset(pg_temp.d('mus_harbor'), pg_temp.d('guide_v1'));
+select public.set_method_application_asset(pg_temp.d('mus_harbor'), pg_temp.d('scale_v1'));
+select public.set_method_application_stage_note(pg_temp.d('mus_harbor'), s.id,
+  case when s.key = 'interview' then 'adapted' else 'followed' end::public.method_stage_treatment,
+  case when s.key = 'interview' then 'Council members were interviewed together; individual sessions could not be scheduled.' end,
+  '')
+from public.method_version_stages s where s.version_id = pg_temp.d('diag_v2');
+select public.link_method_application_element(pg_temp.d('mus_harbor'), 'b3000000-0000-4000-8000-000000000a01', 'examined', 'The council as it operates today.');
+select public.link_method_application_element(pg_temp.d('mus_harbor'), 'b3000000-0000-4000-8000-000000000a02', 'examined', 'Demand research to date.');
+select public.link_method_application_element(pg_temp.d('mus_harbor'), e.id, 'informed', 'Readiness findings went to the review.')
+from public.architecture_elements e where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'review';
+select public.complete_method_application(pg_temp.d('mus_harbor'),
+  'Both capabilities judged ready for a third region, with the council''s authority still to be ratified.',
+  'The group interview worked for a small council; the guide should allow it.');
+
+-- Diagnostic 1.2 draft, learning from Harbor; DAM 1.2 draft ----------------------------------------------
+insert into demo values ('diag_v3', public.create_method_asset_version(pg_temp.d('diag')));
+select public.update_method_asset_version(pg_temp.d('diag_v3'), jsonb_build_object(
+  'change_summary', 'Stage 2 allows group interviews for small leadership teams.'));
+select public.add_method_version_learning_source(pg_temp.d('diag_v3'), pg_temp.d('mus_harbor'),
+  'Harbor interviewed its council together without loss of candor.');
+select pg_temp.act_as('10000000-0000-4000-8000-000000000002');
+insert into demo values ('dam12', public.create_dam_release('1.2', 'Development Architecture Method™ 1.2',
+  'In preparation.'));
+
+-- Meridian: a Diagnostic application in progress (Architect), outside its DAM 1.0 release --------------
+select pg_temp.act_as('10000000-0000-4000-8000-000000000003');
+insert into demo values ('mus_meridian', public.start_method_application('e0000000-0000-4000-8000-000000000001',
+  pg_temp.d('diag_v2'), 'Readiness of the district operating capabilities',
+  'The district plan assumes operating capabilities no one has yet assessed.',
+  'Which district operating capabilities are ready for the first phase?',
+  'Meridian remains on DAM 1.0; the Diagnostic first appears in 1.1.'));
+select public.set_method_application_domains(pg_temp.d('mus_meridian'), array['capability']::public.architecture_domain[]);
+select public.begin_method_application(pg_temp.d('mus_meridian'));
+select public.link_method_application_element(pg_temp.d('mus_meridian'), 'b3000000-0000-4000-8000-000000000201', 'examined', '');
+
+-- Harbor: two agreed acceptance criteria on the council stand-up -------------------------------------------
+insert into demo select 'imp_harbor', e.id from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'implementation_initiative'
+  and e.title = 'Expansion Council stand-up';
+insert into demo values
+  ('acr1', public.propose_acceptance_criterion(pg_temp.d('imp_harbor'),
+    'The Expansion Council has a named, accountable chair and has met twice with quorum.',
+    pg_temp.d('scale_v1'), 'accountable_owner')),
+  ('acr2', public.propose_acceptance_criterion(pg_temp.d('imp_harbor'),
+    'The council''s charter is signed by all three participating counties.'));
+select pg_temp.act_as('10000000-0000-4000-8000-000000000002');
+select public.agree_acceptance_criterion(pg_temp.d('acr1'), 'Harbor Executive Sponsor', current_date - 7);
+select public.agree_acceptance_criterion(pg_temp.d('acr2'), 'Harbor Executive Sponsor', current_date - 7);
+
 select set_config('request.jwt.claims', '', false);

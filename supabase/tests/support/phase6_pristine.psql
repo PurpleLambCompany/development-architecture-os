@@ -1,0 +1,74 @@
+-- Test support, not a test. Included (\ir) by the Phase 6 suites that build
+-- their own methodology fixtures, right after `begin`, so they run against the
+-- library as the migrations and the pre-demo seed leave it: DAM 1.0 published
+-- from the backfill, both pre-Phase 6 assets legacy, the anchor-led Model 1.0
+-- with its lineage, and no contexts, applications or criteria.
+--
+-- It removes supabase/seed.sql's Phase 6 demo (§32) inside the suite's own
+-- transaction, which rolls back, as the superuser with triggers off: nothing
+-- here is possible through the app, and nothing here outlives the suite.
+-- Suite 28 tests the demo itself.
+set local session_replication_role = replica;
+
+delete from public.validation_criteria;
+delete from public.acceptance_criteria;
+delete from public.method_version_learning_sources;
+delete from public.method_application_addenda;
+delete from public.method_application_stage_notes;
+delete from public.method_application_evidence;
+delete from public.method_application_elements;
+delete from public.method_application_assets;
+delete from public.method_application_practitioners;
+delete from public.method_application_domains;
+delete from public.method_application_contexts;
+delete from public.method_applications;
+delete from public.architecture_reference_counters where prefix in ('MUS', 'ACR');
+
+delete from public.engagement_development_contexts;
+delete from public.method_version_contexts;
+delete from public.development_context_revisions;
+delete from public.development_contexts;
+
+delete from public.dam_release_members
+where release_id in (select id from public.dam_releases where version_label <> '1.0');
+update public.engagements
+set dam_release_id = (select id from public.dam_releases where version_label = '1.0'),
+    methodology_version = 'DAM 1.0';
+delete from public.dam_releases where version_label <> '1.0';
+update public.dam_releases set status = 'published' where version_label = '1.0';
+
+-- The demo's new assets, and every version the Diagnostic gained on adoption.
+create temporary table pristine_versions on commit drop as
+select v.id from public.method_asset_versions v
+join public.method_assets a on a.id = v.asset_id
+where a.key in ('leadership-capability-interview-guide', 'capability-readiness-scale', 'capability-map-template')
+   or (a.key = 'capability-readiness-diagnostic' and not v.legacy);
+update public.method_assets set current_version_id = null
+where current_version_id in (select id from pristine_versions);
+delete from public.method_version_components
+where version_id in (select id from pristine_versions) or component_version_id in (select id from pristine_versions);
+delete from public.method_version_domains where version_id in (select id from pristine_versions);
+delete from public.method_version_stages where version_id in (select id from pristine_versions);
+delete from public.method_version_outputs where version_id in (select id from pristine_versions);
+delete from public.method_version_files where version_id in (select id from pristine_versions);
+delete from public.standard_version_criteria where version_id in (select id from pristine_versions);
+delete from public.standard_version_judged_in where version_id in (select id from pristine_versions);
+delete from public.instrument_version_evidence_types where version_id in (select id from pristine_versions);
+delete from public.template_version_sections where version_id in (select id from pristine_versions);
+delete from public.template_version_specs where version_id in (select id from pristine_versions);
+delete from public.method_asset_versions where id in (select id from pristine_versions);
+delete from public.method_asset_rights_holders
+where asset_id in (select id from public.method_assets
+                   where key in ('leadership-capability-interview-guide', 'capability-readiness-scale', 'capability-map-template'));
+delete from public.method_assets
+where key in ('leadership-capability-interview-guide', 'capability-readiness-scale', 'capability-map-template');
+
+update public.method_asset_versions v set lifecycle = 'published'
+from public.method_assets a
+where a.id = v.asset_id and a.key = 'capability-readiness-diagnostic' and v.legacy;
+update public.method_assets a
+set form = null, status = 'legacy',
+    current_version_id = (select v.id from public.method_asset_versions v where v.asset_id = a.id and v.legacy)
+where a.key = 'capability-readiness-diagnostic';
+
+set local session_replication_role = origin;

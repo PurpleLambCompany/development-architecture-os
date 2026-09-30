@@ -6,6 +6,7 @@
 -- the author/publish split of practice capabilities (D10, D11).
 -- =============================================================================
 begin;
+\ir support/phase6_pristine.psql
 
 select plan(116);
 
@@ -369,7 +370,8 @@ select lives_ok($$ select public.set_engagement_dam_release('e0000000-0000-4000-
 select is((select methodology_version from public.engagements where id = 'e0000000-0000-4000-8000-000000000001'),
   'DAM 1.1', 'and the methodology version follows');
 select pg_temp.reset_actor();
-select is((select metadata_json ->> 'reason' from public.activity_log where action_type = 'dam_release_changed'),
+select is((select metadata_json ->> 'reason' from public.activity_log where action_type = 'dam_release_changed'
+              and entity_id = 'e0000000-0000-4000-8000-000000000001'),
   'Adopting the Method Library', 'the move is logged with its reason');
 insert into public.engagements (client_organization_id, title, slug, engagement_type)
 select client_organization_id, 'New work', 'new-work-under-dam', engagement_type

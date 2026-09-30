@@ -12,6 +12,7 @@
 -- snapshots keep their pre-Phase 6 key set (ADR-0022).
 -- =============================================================================
 begin;
+\ir support/phase6_pristine.psql
 
 select plan(47);
 

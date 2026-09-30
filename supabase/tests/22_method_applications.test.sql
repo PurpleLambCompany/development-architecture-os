@@ -7,6 +7,7 @@
 -- a linked unpublished draft is later deleted, including after closure (D30).
 -- =============================================================================
 begin;
+\ir support/phase6_pristine.psql
 
 select plan(65);
 

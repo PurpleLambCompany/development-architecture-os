@@ -13,10 +13,22 @@
 --      supersede the same criterion twice at once: the second is refused.
 --
 -- The racing sessions COMMIT, so this file removes exactly what they wrote at
--- the end (with triggers disabled for the cleanup only) and restores
--- DAM 1.0 as the published release.
+-- the end (with triggers disabled for the cleanup only) and restores the
+-- releases and reference counters as the seed left them. The seed's DAM draft
+-- is set aside while this file needs to create its own.
 -- =============================================================================
 create temporary table started as select clock_timestamp() as at;
+create temporary table saved_releases as select id, status from public.dam_releases;
+create temporary table saved_draft as select * from public.dam_releases where status = 'draft';
+create temporary table saved_counters as
+  select * from public.architecture_reference_counters
+  where engagement_id = 'e0000000-0000-4000-8000-000000000001' and prefix in ('MUS', 'ACR');
+create temporary table mus_before as
+  select coalesce((select last_value from saved_counters where prefix = 'MUS'), 0) as n;
+begin;
+set local session_replication_role = replica;
+delete from public.dam_releases where id in (select id from saved_draft);
+commit;
 
 -- -----------------------------------------------------------------------------
 -- Committed setup: a published Model and Method, a second Model's draft, a
@@ -46,8 +58,9 @@ select set_config('request.jwt.claims',
   json_build_object('sub', '10000000-0000-4000-8000-000000000002', 'role', 'authenticated')::text, true);  -- Principal Architect
 select public.publish_method_asset_version(:'model_a_v', '1.0');
 select public.publish_method_asset_version(:'method_v', '1.0');
-select public.create_dam_release('1.1', 'Concurrency release', 'Concurrency test') as release_id \gset
+select public.create_dam_release('9.9', 'Concurrency release', 'Concurrency test') as release_id \gset
 select public.set_dam_release_member(:'release_id', :'model_a_v');
+select count(*) as release_members from public.dam_release_members where release_id = :'release_id' \gset
 select public.agree_acceptance_criterion(:'crit_2', 'Executive Sponsor', current_date);
 commit;
 
@@ -137,7 +150,7 @@ select ok(pg_temp.start_and_check_blocked('b', format($sql$
   'a member change waits for the release being published');
 select extensions.dblink_exec('a', 'commit');
 select is(pg_temp.finish_query('b'), 'A published DAM release is frozen', 'and is then refused');
-select is((select count(*)::int from public.dam_release_members where release_id = :'release_id'), 1,
+select is((select count(*)::int from public.dam_release_members where release_id = :'release_id'), :'release_members'::int,
   'the published release has exactly the members it was published with');
 
 -- -----------------------------------------------------------------------------
@@ -159,7 +172,8 @@ select ok(pg_temp.start_and_check_blocked('b', format($sql$
 select extensions.dblink_exec('a', 'commit');
 select is(pg_temp.finish_query('b'), null, 'Session B then succeeds');
 select is((select array_agg(reference_code order by title) from public.method_applications
-  where title like 'Concurrent application %'), array['MUS-001', 'MUS-002'],
+  where title like 'Concurrent application %'),
+  (select array[format('MUS-%s', lpad((n + 1)::text, 3, '0')), format('MUS-%s', lpad((n + 2)::text, 3, '0'))] from mus_before),
   'the two applications get distinct, sequential codes');
 
 -- -----------------------------------------------------------------------------
@@ -206,9 +220,10 @@ delete from public.method_application_domains where application_id in (select id
 delete from public.method_applications where id in (select id from conc_apps);
 delete from public.acceptance_criteria
 where engagement_id = 'e0000000-0000-4000-8000-000000000001' and created_at >= (select at from started);
-delete from public.dam_release_members where release_id in (select id from public.dam_releases where version_label = '1.1');
-delete from public.dam_releases where version_label = '1.1';
-update public.dam_releases set status = 'published' where version_label = '1.0';
+delete from public.dam_release_members where release_id in (select id from public.dam_releases where version_label = '9.9');
+delete from public.dam_releases where version_label = '9.9';
+update public.dam_releases r set status = s.status from saved_releases s where s.id = r.id;
+insert into public.dam_releases select * from saved_draft;
 delete from public.method_version_outputs where version_id in (select id from conc_versions);
 delete from public.method_version_stages where version_id in (select id from conc_versions);
 delete from public.method_version_domains where version_id in (select id from conc_versions);
@@ -218,6 +233,11 @@ delete from public.method_asset_versions where id in (select id from conc_versio
 delete from public.method_assets where key like 'conc-%';
 delete from public.architecture_reference_counters
 where engagement_id = 'e0000000-0000-4000-8000-000000000001' and prefix in ('MUS', 'ACR');
+insert into public.architecture_reference_counters select * from saved_counters;
 delete from public.activity_log where created_at >= (select at from started);
 commit;
 drop table started;
+drop table saved_releases;
+drop table saved_draft;
+drop table saved_counters;
+drop table mus_before;

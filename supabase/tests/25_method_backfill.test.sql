@@ -7,6 +7,7 @@
 -- migration runs, so these results are the migration's results.
 -- =============================================================================
 begin;
+\ir support/phase6_pristine.psql
 
 select plan(27);
 
