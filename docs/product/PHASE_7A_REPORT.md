@@ -1,6 +1,6 @@
 # Phase 7A end-of-phase report: Deterministic Development Edge
 
-Status: implemented on PR #9 (branch `phase-7-conceptual-reconciliation`), verified and browser-accepted by Claude, **awaiting Kerrick's final acceptance. Not merged.** Phase 7B remains on hold.
+Status: **complete and merged.** Kerrick gave final acceptance on 2026-09-30 at head `565f7ce`; PR #9 was squash-merged to `main` as `85ecf13`. Phase 7B has not started and remains on hold.
 
 Kerrick approved [`PHASE_7A_PROPOSAL.md`](PHASE_7A_PROPOSAL.md) Revision 2 and authorized implementation on 2026-09-30, with Q1–Q30 (from [`PHASE_7_CONCEPTUAL_RECONCILIATION.md`](PHASE_7_CONCEPTUAL_RECONCILIATION.md)) and OD-1–OD-10 authoritative. No approved decision was redesigned. Nothing found during implementation was a contradiction, security problem, data-integrity problem or hard-to-reverse architectural requirement, so nothing was escalated; the clarifications made within the approved design are listed in §8.
 
@@ -184,4 +184,4 @@ Confirmed absent: LLM or AI provider integrations, provider SDKs, prompt executi
 
 ## 11. Recommended next step
 
-Kerrick's final acceptance pass over S1–S17 on PR #9, then merge on his explicit approval. Phase 7B stays on hold until he reopens it.
+Done: Kerrick accepted S1–S17 and PR #9 is merged. Phase 7B stays on hold until he explicitly reopens it.

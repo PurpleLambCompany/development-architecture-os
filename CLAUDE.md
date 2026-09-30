@@ -24,9 +24,9 @@ Treat `DSA_OS_MASTER_BUILD_SPEC.md` as the authoritative product specification.
 If code and the specification conflict, surface the conflict before making an expensive architectural change.
 
 ## Current Build Phase
-**Phase 7A — Deterministic Development Edge: implemented on PR #9, awaiting Kerrick's final acceptance; not merged.** See `docs/product/PHASE_7A_PROPOSAL.md` (Revision 2, approved), `docs/product/PHASE_7_CONCEPTUAL_RECONCILIATION.md` and `docs/product/PHASE_7A_REPORT.md`.
+**Phase 7A — Deterministic Development Edge: complete and merged (PR #9, squash `85ecf13`).** See `docs/product/PHASE_7A_PROPOSAL.md` (Revision 2, approved), `docs/product/PHASE_7_CONCEPTUAL_RECONCILIATION.md` and `docs/product/PHASE_7A_REPORT.md`.
 
-Phases 1-6 are complete and merged. Phase 7A adds deterministic intelligence only: no LLM or AI provider, no embeddings, no scoring, no notifications, no productivity data and no cross-engagement recurrence. **Phase 7B (Bounded AI Architecture Intelligence) remains on hold**: do not start it, and do not build Pattern Library, Portfolio Intelligence or client-facing Architecture Intelligence.
+Phases 1-7A are complete and merged. Phase 7A added deterministic intelligence only: no LLM or AI provider, no embeddings, no scoring, no notifications, no productivity data and no cross-engagement recurrence. **Phase 7B (Bounded AI Architecture Intelligence) has not started and remains on hold**: do not start it without Kerrick's explicit instruction, and do not build Pattern Library, Portfolio Intelligence or client-facing Architecture Intelligence.
 
 Only build the currently approved phase unless explicitly instructed otherwise.
 
