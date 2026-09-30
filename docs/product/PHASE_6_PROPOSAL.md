@@ -1,5 +1,7 @@
 # Phase 6 — Method Library: Proposal
 
+**Revision 2 (2026-09-30):** revised after Kerrick's final review. D10, D11, D13, D20, D28 and D30 changed; D33 and D34 added; §15 and §27 rewritten. All other decisions are approved as written.
+
 **Status:** This is a proposal only. Nothing has been built for Phase 6: no migrations, schema, enum values, ADRs, domain code, seed data or UI. Enum values and table names below are _proposed_. None of them is permanent until Kerrick approves the decisions in §37.
 
 **Governing question:** how does DSA OS govern the disciplined practice by which TPLCo performs architectural work, and how does it record each use of that practice so that both the architecture and the Method can learn?
@@ -26,7 +28,7 @@
   4. How it relates to Architecture.
   5. How it preserves provenance for learning.
 - **§23–§32:** the build surface: schema, tables, operations, read models, capabilities, RLS, UX, tests and seed data.
-- **§33–§40:** worked examples, migration and backfill, ADRs, difficult-to-reverse decisions, **D1–D32 for approval**, build order, risks, and the definition of done.
+- **§33–§40:** worked examples, migration and backfill, ADRs, difficult-to-reverse decisions, **D1–D34 for approval**, build order, risks, and the definition of done.
 
 ---
 
@@ -117,9 +119,9 @@ Method Asset / DAM Release → Method Application → Architectural Work → Out
    - a Template is _produced from_;
    - a Standard is _judged against_.
 5. **Development Context.** A governed, extensible vocabulary recorded on engagements and snapshotted onto Method Applications.
-6. **Acceptance criteria.** Engagement-specific, consultatively agreed criteria, recorded as a new statement kind on the architecture they govern and agreed through the existing version approval (§15). This answers "validated against what?".
+6. **Acceptance criteria.** Engagement-specific, agreed criteria as a lightweight engagement-governance record with durable identity, fixed agreed text and capture at validation (§15). This answers "validated against what?".
 7. **Approach statements.** A new statement kind for authored, client-visible descriptions of how work was approached. It is the only channel through which a client may learn a method's identity (§17).
-8. **Practice capabilities.** A new, organization-level capability mechanism for methodology authority (`author_methodology`, `publish_methodology`), because every existing capability is engagement-scoped (§27).
+8. **Practice capabilities.** Methodology authority (`author_methodology`, `publish_methodology`) held through TPLCo organization membership: the same capability model as engagements, in a second membership scope, because every existing capability is engagement-scoped (§27).
 9. **Backfill** of the two existing Method Assets, their lineage rows and the `methodology_version` text on engagements (§34).
 10. **Internal UX:**
     - Method Library;
@@ -128,7 +130,7 @@ Method Asset / DAM Release → Method Application → Architectural Work → Out
     - Apply a Method;
     - Method Application workspace;
     - contextual panels on element, Review, Implementation and Deliverable pages.
-11. **Client UX:** approach statements in published snapshots, and the engagement's DAM release name. Nothing else.
+11. **Client UX:** approach statements in published snapshots, agreed acceptance criteria on client-visible architecture, and the engagement's DAM release name. Nothing else.
 
 ### 3.2 Why Phase 6
 
@@ -385,7 +387,7 @@ The category is **independent of form**. A "diagnostic framework" asset can be a
 
 ### 9.1 Asset lifecycle
 
-`method_assets.status` takes the values `active` or `retired`.
+`method_assets.status` takes the values `active`, `retired` or `legacy`. `legacy` exists only for assets carried over from before Phase 6 and not yet adopted into a form (§34, D28).
 
 - **Retiring an asset** retires its current published version and prevents new versions.
 - **History is unaffected.** Every version stays readable, and every application and lineage row that pins one stays valid.
@@ -613,6 +615,8 @@ Q7 asks the proposal to challenge the off-spine decision only for a compelling r
 - **Not evidence.** They carry no stance.
 - **Not a substitute for `raises` or `validates`.** A Review's outcomes and validations remain Review operations.
 
+**Historical reference for removed drafts (D30).** Each element link captures the element's reference code, kind, object type and title when linked, refreshed at closure with `observed_version_id`. If an unpublished linked draft is later deleted under the ordinary Phase 3 rule, the link keeps its captured identity, `element_id` becomes null (`on delete set null (element_id)`) and `element_removed_at` is stamped. Drafts stay disposable, and the application still says what it examined or produced.
+
 ### 12.4 Method Application ↔ element traceability (D14, D18)
 
 Two complementary element-level views, both internal:
@@ -637,11 +641,10 @@ Two complementary element-level views, both internal:
 
 ### 12.6 Identity and reference codes (D13)
 
-Method Applications get engagement-scoped reference codes, **`MAP-nnn`**, from `architecture_reference_counters` via `private.next_reference_code`, the ADR-0025 mechanism.
+Method Applications get engagement-scoped reference codes, **`MUS-nnn`** (`MUS-001`, `MUS-002`), from `architecture_reference_counters` via `private.next_reference_code`, the ADR-0025 mechanism.
 
 - **The codes are internal only.** They never appear in a client read model.
-- **Prefix risk:** "MAP" may be misread as _map_ (as in Capability Map). Codes always display with the method title, which mitigates this.
-- **If D12 selects "Method Use",** the prefix would be `MUS`.
+- **The code is not an abbreviation of the display name.** The record remains a _Method Application_; `MUS` avoids confusion with the many _map_ concepts in Development Architecture (D13).
 
 Method Assets and DAM releases are TPLCo-wide, not engagement-scoped. They are identified by title plus version label (_Capability Readiness Diagnostic 1.1_; _DAM 1.1_) and a stable `key` slug. They get no three-letter code, because ADR-0025's codes are engagement-scoped by design.
 
@@ -722,8 +725,8 @@ A Standard **never computes a verdict**. Judgment stays with the architect (ADR-
 | --------------------------------------------------- | -------------------------------------------------------------------- |
 | TPLCo practice, reused across engagements           | Specific to one engagement's architecture                            |
 | Authored and published by TPLCo methodology holders | Authored by engagement architects; agreed with the client            |
-| Internal (protected IP)                             | Client-visible when its element is published                         |
-| Versioned in the Method Library                     | Versioned with the element that states it                            |
+| Internal (protected IP)                             | Client-visible once agreed, on published client-visible architecture |
+| Versioned in the Method Library                     | Fixed once agreed; revised by supersession                           |
 | Answers "is this good work by TPLCo's standard?"    | Answers "does this meet what this development agreed success means?" |
 
 Keeping them separate prevents two failures:
@@ -731,7 +734,7 @@ Keeping them separate prevents two failures:
 - **leakage of IP:** a client-visible criterion copied from a protected Standard;
 - **governance by the library:** a library change silently altering what an engagement agreed.
 
-An acceptance criterion _may_ cite a Standard internally (a `judged_against` lineage row on the element that states it). The citation is not client-visible (D29).
+An acceptance criterion _may_ record the Standard version and criterion that informed it (an internal-only field on the criterion). The Standard informs the criterion; it never is the criterion, and the reference is never client-visible (D20, D29).
 
 ### 14.3 Why this
 
@@ -743,47 +746,137 @@ An acceptance criterion _may_ cite a Standard internally (a `judged_against` lin
 
 ---
 
-## 15. Engagement acceptance criteria (recommendation)
+## 15. Engagement acceptance criteria
 
-### 15.1 The gap
+_Revised after Kerrick's final review: D20 approved for Phase 6; placement reconsidered._
 
-Phase 5 lets a Review `validate` an Intended Outcome, Capability, Development Initiative or Implementation Initiative (ADR-0036). A validation is a judgment recorded against pinned versions. The system cannot answer **"validated against what?"** except by reading prose. Kerrick asked for a recommendation (D20).
+### 15.1 The gap, as the repository actually has it
 
-### 15.2 Options
+- **Validation targets.** Phase 5's only validation is a `validates` relationship from a held Review to an **Implementation Initiative**. It is written only by `record_review_validation`, and `relationship_rules` allows no other target. The Review must first examine the initiative, or a core object the initiative `implements` (ADR-0036).
+- **Validation pins nothing.** A `validates` row is an ordinary relationship: it carries provenance and timestamps, not an element version. It therefore does not record what the initiative, or the objects it implements, said at the moment of validation.
+- **The system cannot answer "validated against what?"** It can only point to prose.
 
-| Option                                                                        | Assessment                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **A. A statement kind `acceptance_criterion`** on the element being validated | **Recommended.** Uses the Phase 3 statement system. It is versioned with the element, client-visible when the element is published, agreed through the existing version approval (ADR-0021), and can carry provenance (`client_decision`, `architect_judgment`) and evidence. At validation, the pinned version carries the criteria in force. Cost: one enum value, plus UI to author criteria and show "Validated against" |
-| B. An attribute on Intended Outcome                                           | Too narrow. Capabilities and Implementation Initiatives are also validated                                                                                                                                                                                                                                                                                                                                                   |
-| C. Metric targets                                                             | Quantitative only; many criteria are qualitative. Metrics remain the right place for measured targets, and a criterion may point at a Metric by a `measures` relationship that already exists                                                                                                                                                                                                                                |
-| D. A new element kind, "Acceptance Criterion"                                 | A spine record for something that is a property of another record. It would need its own relationships, publication and versions. Disproportionate                                                                                                                                                                                                                                                                           |
-| E. A Method Library Standard                                                  | **Rejected.** A Standard is TPLCo practice. Engagement criteria belong to the engagement and its client (§14.2)                                                                                                                                                                                                                                                                                                              |
+### 15.2 What the concept needs to preserve
 
-### 15.3 Recommendation detail (Option A)
+Kerrick's chain:
 
-- **The new `statement_kind` value `acceptance_criterion`** is allowed on:
-  - Intended Outcome;
-  - Capability;
-  - Development Initiative;
-  - Implementation Initiative.
+> Architecture → agreed criterion → Implementation → Evidence → Review → Validation
 
-  These are the targets of `validates`. It is also allowed on other core objects, for flexibility.
+Tested against that chain, the **minimum** a criterion needs is:
 
-- **Client visibility** follows the element and statement rules that already exist.
-- **The validation UI** in a Review lists the criteria from the pinned version of the target as "Validated against". Validating remains a judgment. **There is no per-criterion pass/fail and no gate.** A structured per-criterion verdict can be added later, but it is not proposed.
-- **Criteria can be cited internally.** An element may record `judged_against` lineage to a Standard, for example when the criteria were derived from TPLCo's readiness Standard. That lineage is internal.
+| Need                                                | Required in Phase 6? | Why                                                                                                 |
+| --------------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------- |
+| Durable identity that survives edits to its element | **Yes**              | A validation must point at _this_ criterion, not at whatever the element says today                 |
+| The architecture it governs                         | **Yes**              | One governed element: the initiative, or a core object an initiative implements                     |
+| Criterion text, fixed once agreed                   | **Yes**              | "Validated against" is meaningless if the text can change afterward                                 |
+| Who agreed it, and when it became applicable        | **Yes**              | This is what distinguishes a criterion from an architect's note                                     |
+| Revision history                                    | **Yes, minimally**   | Supersession (new criterion replaces old) rather than edit-in-place                                 |
+| Which criteria a validation was made against        | **Yes**              | Captured at the moment of validation                                                                |
+| An optional reusable Standard that informed it      | **Yes, internal**    | Q4's split: the Standard informs, it is not the criterion                                           |
+| Per-criterion evidence links                        | **No**               | Evidence already attaches to checkpoints and initiatives (Phase 5). The validation note may cite it |
+| Per-criterion verdict or score                      | **No**               | Validation remains one judgment (ADR-0036)                                                          |
 
-### 15.4 Build in Phase 6 or defer? (D20)
+### 15.3 Options compared
 
-**Recommendation: build it in Phase 6.**
+**Option A: `statement_kind = acceptance_criterion`** (the original recommendation).
 
-- It is small: one enum value, an authoring affordance and a Review display.
-- It completes Phase 5's validation semantics.
-- It is the concrete engagement-side counterpart of Standards. Q4 created that split.
+- **For:**
+  - reuses statements, provenance, evidence links and client snapshots;
+  - one enum value.
+- **Against:**
+  - Statements are edited in place (`architecture_statements.body` is mutable). Their history survives only inside element-version snapshots, and only if a version was published between the edit and the validation.
+  - `validates` pins no version, so a validation cannot say which criterion text it was judged against.
+  - Agreement would be the whole element's version approval. This conflates "the client approved this Capability's description" with "the client agreed these are the success criteria".
+  - A Standard can be cited only at the element level (lineage), not per criterion.
+- **Verdict:** preserves most of the semantics on paper, but loses the two things that make a criterion a criterion: fixed agreed text and validation traceability.
 
-The alternative is to defer it to a Phase 5.x correction. In that case this section is recorded as the approved design and Phase 6 does not build it.
+**Option B: a lightweight engagement-governance record** (recommended).
 
-**This is a permanent enum value.** It is listed under difficult-to-reverse decisions (§36).
+- One off-spine table, `acceptance_criteria`, plus one capture table, `validation_criteria`. Details in §15.4.
+- **For:** all seven "Yes" needs above, with no change to the element spine, statements or snapshots.
+- **Against:**
+  - Two tables, a small set of operations and one client read model.
+  - A permanent state enum.
+  - An addition to one Phase 5 operation (D34).
+
+**Option C: an existing Phase 3–5 primitive.**
+
+| Candidate                 | Why it distorts the concept                                                                                                                   |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Metric + `measures`       | Metrics are architecture elements; they are quantitative; a Metric measures an outcome, it is not an agreement about what validation requires |
+| Intended Outcome          | An element; it states a desired condition, not the test of whether an initiative achieved it                                                  |
+| Implementation Checkpoint | Excluded by Kerrick. A checkpoint is a dated progress fact, not a standing criterion                                                          |
+| Decision                  | An element with its own lifecycle and options; agreeing criteria is not a choice among options                                                |
+| Architecture approval     | Pins an element version or baseline, not an individual criterion; no per-criterion identity                                                   |
+| Statement (Option A)      | See above                                                                                                                                     |
+
+No existing primitive fits without distortion.
+
+### 15.4 Recommended model (Option B)
+
+**`acceptance_criteria`** is an engagement-governance record. It follows the Phase 5 precedent of `implementation_checkpoints`: off-spine, engagement-scoped, written only through operations.
+
+| Field                                                      | Purpose                                                                                                                                                                                                                     |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `engagement_id`, `reference_code` (`ACR-nnn`)              | Durable identity, citable in review notes (D33). Engagement-scoped counter (ADR-0025)                                                                                                                                       |
+| `governed_element_id`                                      | The architecture it governs. Composite FK to the element. Kind must be `implementation_initiative` or `object` (core object). `on delete cascade`: only a proposed criterion can sit on a draft, and it goes with the draft |
+| `body`                                                     | Criterion text. Editable while `proposed`; **immutable once agreed** (guard trigger)                                                                                                                                        |
+| `state`                                                    | `proposed` → `agreed` → `superseded` or `withdrawn`                                                                                                                                                                         |
+| `agreed_with`, `agreed_on`, `agreed_recorded_by`           | Who agreed it (free text naming the party, e.g. "Executive Sponsor and steering committee"), the date it became applicable, and the TPLCo member who recorded it                                                            |
+| `agreement_evidence_source_id`                             | Optional: the meeting notes or signed document recording the agreement (existing evidence source)                                                                                                                           |
+| `supersedes_criterion_id`, `closure_reason`                | Revision: a new criterion supersedes an agreed one; withdrawal and supersession require a reason                                                                                                                            |
+| `informing_standard_version_id`, `informing_criterion_key` | **Internal only.** The Method Library Standard version and criterion row that informed it, if any. Never returned to clients                                                                                                |
+| `client_visible`                                           | Default true once agreed. The criterion reaches a client only if the governed element is published and client-visible                                                                                                       |
+
+**`validation_criteria`** is the capture table: `validation_relationship_id`, `criterion_id`, `note`.
+
+- When `record_review_validation` writes a `validates` relationship, it records every **agreed** criterion in force at that moment:
+  - criteria on the initiative;
+  - criteria on the core objects the initiative `implements`.
+- The architect may add a note per criterion, saying how the evidence addressed it.
+- **There is no verdict column.** The validation remains one judgment, and the ADR-0036 gate is unchanged (D34).
+
+**Lifecycle rules:**
+
+| Transition                       | Capability                                                    | Rule                                                                                                                                               |
+| -------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Propose, edit, delete a proposal | `edit_architecture`                                           | Proposed criteria are working material and may be deleted                                                                                          |
+| Agree                            | `publish_architecture`                                        | The governed element must already be published. Records party, date and recorder; freezes text and governed element                                |
+| Supersede                        | `publish_architecture`                                        | Creates the replacement (proposed or agreed) and closes the old one with a reason                                                                  |
+| Withdraw                         | `publish_architecture`                                        | Reason required                                                                                                                                    |
+| Delete an agreed criterion       | Nobody                                                        | Agreed, superseded and withdrawn criteria are never deleted                                                                                        |
+| Delete a governed draft element  | Existing Phase 3 rule (`edit_architecture`, unpublished only) | Unchanged. A draft can carry only proposed criteria, which go with it. Published elements are never deleted, so agreed criteria are never orphaned |
+
+**Reading it:**
+
+- **Internal.** The element page gets an "Acceptance criteria" panel. The Implementation Initiative page shows the criteria in force (its own plus those on objects it implements). The Review validation dialog shows those criteria as "Validated against", with a note field per criterion.
+- **Client.** `client_acceptance_criteria(engagement)` returns the code, body, state, agreement date and governed element for agreed, client-visible criteria on published, client-visible elements. For validations the client can already see, it returns the captured criteria. **It never returns the informing Standard.**
+- **Area limits.** Contributor visibility follows the governed element (ADR-0040).
+
+### 15.5 Why the added schema is justified, and why it stays lightweight
+
+- **Justified.** Each column answers one of the seven needs in §15.2. Without them, "validated against what?" can only be answered by prose.
+- **Not an Architecture element.** It has no spine row, no versions, no relationships and no publication cycle. It is a governance fact _about_ an element, like a checkpoint is a fact about an initiative.
+- **Not a Method Asset.** It is engagement-specific and agreed with the client. A Standard may inform it, recorded internally, and it never becomes the Standard (§14.2).
+- **Not a task, checkpoint, Review or score.**
+  - It has no assignee, due date or status beyond the agreement lifecycle.
+  - It records no progress.
+  - It is not held or convened.
+  - It has no pass or fail.
+- **Lightweight.**
+  - two tables and one enum;
+  - six operations: propose, update, agree, supersede, withdraw, and set the validation note;
+  - one client read model;
+  - one addition inside an existing Phase 5 operation.
+- **What it drops from Option A.** No `acceptance_criterion` statement kind is added. The `approach` statement kind (D21) is unaffected.
+
+### 15.6 Why this
+
+- **Why DSA OS:** validation is already a governed act (Phase 5). Its basis must be governed too.
+- **Why Phase 6:** Q4 split Standards from engagement criteria, and Kerrick approved building criteria now.
+- **Why not document management:** fixed agreed text, identity, and capture at validation. A document holds none of these.
+- **Relation to Architecture:** it governs an element without being one.
+- **Provenance for learning:** Phase 7 can compare which criteria (and which informing Standards) were agreed, validated against and superseded.
 
 ---
 
@@ -891,7 +984,7 @@ Project Intelligence records (Assumption, Risk, Constraint, Dependency, Decision
 
 | Change                                                                                                                                        | Nature                                                           |
 | --------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `statement_kind` + `acceptance_criterion`, + `approach`                                                                                       | Two permanent enum values (D20, D21)                             |
+| `statement_kind` + `approach`                                                                                                                 | One permanent enum value (D21)                                   |
 | `element_method_lineage` + `method_asset_version_id`, + `lineage_role`                                                                        | Additive columns; backfill; trigger enforcing form ↔ role ↔ kind |
 | `engagements.dam_release_id`; `methodology_version` synchronized by trigger                                                                   | Additive                                                         |
 | Element publication check: a `methodology_derived` statement on an element requires `instantiates` lineage to a published Model version (D19) | New validation in the publish operation                          |
@@ -903,7 +996,8 @@ Project Intelligence records (Assumption, Risk, Constraint, Dependency, Decision
 - no new object types;
 - no new relationship types or rules;
 - no change to versions, baselines, approvals or visibility;
-- no change to the client snapshot builder, except that new statement kinds flow through the existing statement path;
+- no change to the client snapshot builder, except that the new `approach` statement kind flows through the existing statement path;
+- no change to Phase 3 draft deletion: Method Application links keep a captured reference instead of blocking it (D30);
 - no change to how `methodology_version` text is copied onto elements.
 
 ### 19.3 `methodology_derived`, narrowed (Q15, D19)
@@ -917,7 +1011,7 @@ Project Intelligence records (Assumption, Risk, Constraint, Dependency, Decision
 
 **Enforcement:** publishing an element fails if it has a `methodology_derived` statement or provenance and no `instantiates` lineage to a published Model version.
 
-**Seed check.** The Meridian element _Anchor-led cluster development_ (Applied Strategic Model, `methodology_derived`) has lineage to _Strategic Model Library Index_. It remains valid **if** that asset is backfilled as a Model (§34, D28). The capability element's lineage to _Capability Readiness Diagnostic_ (a Method) becomes `legacy_derived_from`. That element's statements are not `methodology_derived`, so the publish check is unaffected. **The seed is valid under the narrow reading, subject to D28.**
+**Seed check.** The Meridian element _Anchor-led cluster development_ (Applied Strategic Model, `methodology_derived`) has lineage to _Strategic Model Library Index_. That index is **not** a Model and is not turned into one (D28). The backfill keeps it as a legacy asset and turns the row into `legacy_derived_from` lineage. The element is already published, and published versions are not re-validated, so nothing breaks. Its next published version will need `instantiates` lineage to a proper Model, which the build-time seed authors (_Anchor-led cluster development model 1.0_). The capability element's lineage to _Capability Readiness Diagnostic_ also becomes `legacy_derived_from`, and its statements are not `methodology_derived`. **The seed stays valid under the narrow reading without rewriting history.**
 
 ### 19.4 Architecture is never replaced
 
@@ -934,7 +1028,7 @@ Every fact about the development remains an element. The Method Library can be r
 | **Evidence**                             | `method_application_evidence` (`drew_on`, `gathered`, optional Instrument version). Evidence remains "what supports claims" (Q1). Methods are never evidence, and evidence is never a Method Asset                                                                                                                                                                                                                                                                          |
 | **Reviews**                              | **Reviews do not `examine` Method Applications in Phase 6 (D24).** `examines` is an element-to-element relationship, and applications are off-spine. Instead: (a) Application → Review, `informed` (results brought to the Review); (b) Review → Standard, `judged_against` lineage; (c) a Review may examine the _elements_ an application produced, as today. A formal methodological review (reviewing how well a method was applied) is Phase 7 governance, not Phase 6 |
 | **Deliverables**                         | Deliverable → Template, `produced_from` lineage (pinned version). Application → Deliverable, `produced`. Confidentiality and visibility are unchanged. Template content never enters the deliverable file automatically (no generation)                                                                                                                                                                                                                                     |
-| **Validation (`validates`)**             | Unchanged operation, restricted write (ADR-0036). "Validated against" shows acceptance criteria from the pinned target version (§15). No gate                                                                                                                                                                                                                                                                                                                               |
+| **Validation (`validates`)**             | The gate is unchanged (ADR-0036): a held Review validates an Implementation Initiative only. `record_review_validation` also captures the agreed acceptance criteria in force, those on the initiative and on the core objects it implements, into `validation_criteria`, with an optional note per criterion and no verdict (§15, D34)                                                                                                                                     |
 | **Implementation status publication**    | Unchanged. Client status updates never mention Method Applications                                                                                                                                                                                                                                                                                                                                                                                                          |
 | **Area-limited Contributors (ADR-0040)** | Method Applications are readable to anyone with `can_read_architecture` on the engagement. **Area limits are not applied to applications in Phase 6**; a Contributor sees an application but its element links are filtered through `element_in_member_areas` in the read model. A Contributor cannot create applications without `edit_architecture` (D32)                                                                                                                 |
 
@@ -988,7 +1082,7 @@ Every fact about the development remains an element. The Method Library can be r
 
 - **Client confidentiality.** Learning across engagements must respect each engagement's classification (ADR-0013). Phase 6 adds no cross-engagement read path for non-TPLCo users. The only cross-engagement read models are internal and show titles, codes and counts.
 - **Origin.** Client-owned and licensed-in methodology is marked (§16). Phase 7 must decide whether it may learn from such assets.
-- **Nothing is deleted.** Applications and links use `on delete restrict` against elements. An element with practice links cannot be deleted without first removing the links, which is prevented after closure. This preserves the history learning needs. The implication for Phase 3 element deletion is noted in §39.
+- **Practice history survives deletion.** Published elements are never deleted. When an unpublished draft linked to a Method Application is deleted, the link keeps a captured reference (code, kind, type, title) and a removal timestamp (D30), so learning still sees what the work produced, and drafts stay disposable.
 
 ---
 
@@ -1012,16 +1106,19 @@ Proposed only. Nothing below exists until the decisions are approved and a migra
 | `method_rights_role`               | `owner`, `co_owner`, `licensor`, `contributor`                                  | D23      |
 | `method_identity_disclosure`       | `internal_only`, `may_be_named`                                                 | D21      |
 | `practice_capability`              | `author_methodology`, `publish_methodology`                                     | D10, D11 |
+| `acceptance_criterion_state`       | `proposed`, `agreed`, `superseded`, `withdrawn`                                 | D20      |
 
 **Extended enums:**
 
-- `statement_kind`: adds `acceptance_criterion` (D20) and `approach` (D21).
+- `statement_kind`: adds `approach` (D21). No `acceptance_criterion` statement kind (D20).
 - `activity_action`: adds values as needed for the new operations, following the Phase 5 precedent.
 
 **No changes** to:
 
 - `architecture_domain`, `element_kind`, `provenance_type`, `ip_classification`, `organization_type`;
-- `engagement_capability`: `publish_methodology` is **not** an engagement capability (D10).
+- `engagement_capability`: methodology capabilities are **not** engagement capabilities (D10). The engagement capability tables and functions are untouched.
+
+**Check-constraint values (reversible, not enums):** `method_assets.status` adds `legacy` (D28).
 
 **New reference tables** (migration-managed):
 
@@ -1055,156 +1152,228 @@ Conventions throughout:
 
 ### Method Library (TPLCo-wide)
 
-| Table                               | Important fields                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `method_assets`                     | `key` (unique slug, immutable), `title`, `form` (immutable after the first publish), `category_key` → `method_asset_categories`, `origin`, `usage_restriction`, `ip_classification` (default `tplco_method_ip`), `status` (`active`/`retired`), `current_version_id` (the published version, maintained by operations), `steward_user_id` (renamed from `owner_user_id`, to avoid confusion with IP ownership)                                                                                                                                                                                                                                                           |
-| `method_asset_categories`           | `key`, `label`, `description`, `sort_order`, `active`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `method_asset_versions`             | `asset_id`, `version_no` (monotonic), `version_label` (unique per asset, set at publish), `lifecycle`, `architectural_question`, `summary`, `applicability`, `exclusions`, `prerequisites`, `expected_inputs`, `evidence_expectations`, `practitioner_roles`, `completion_criteria`, `review_implications`, `implementation_implications`, `practitioner_instructions` (protected), `internal_notes`, `modes` (subset of discover/define/assess/validate/govern, Method only), `identity_disclosure`, `disclosable_name`, `change_summary`, `derived_from_version_id`, `external_basis`, `authored_by`, `published_by`, `published_at`, `effective_on`, `retired_reason` |
-| `method_version_domains`            | `version_id`, `domain`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `method_version_contexts`           | `version_id`, `context_id`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `method_version_stages`             | `version_id`, `ordinal`, `key`, `title`, `purpose`, `guidance` (protected)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `method_version_outputs`            | `version_id`, `output_kind` (`element_kind`), `object_type_key` (for kind `object`), `deliverable_type` (for kind `deliverable`), `note`. A check ensures exactly the relevant key is set                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `method_version_components`         | `version_id`, `component_version_id` (published; form ≠ method), `note`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `standard_version_criteria`         | `version_id`, `ordinal`, `key`, `statement`, `guidance`, `scale`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `standard_version_judged_in`        | `version_id`, `setting` (`review`, `completion`, `assessment`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `instrument_version_evidence_types` | `version_id`, `evidence_source_type`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `template_version_spec`             | `version_id` (PK), `deliverable_type`, `section_outline` (ordered text rows in `template_version_sections`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `method_version_files`              | `version_id`, `storage_path` (bucket `method-library`), `file_name`, `content_type`, `byte_size`; Template/Instrument only                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `method_version_learning_sources`   | `version_id`, `method_application_id`, `note`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `method_asset_rights_holders`       | §16.2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `dam_releases`                      | `version_label` (unique), `title`, `status`, `summary`, `change_summary`, `effective_on`, `supersedes_release_id`, `vocabulary_record` (jsonb, system-built at publish), `published_by`, `published_at`                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `dam_release_members`               | `release_id`, `asset_id`, `asset_version_id`; unique (`release_id`, `asset_id`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `development_contexts`              | `key` (immutable), `label`, `definition`, `status`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `development_context_revisions`     | `context_id`, `prior_label`, `prior_definition`, `reason`, `revised_by`, `revised_at`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `practice_capability_defaults`      | `internal_role`, `capability`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `practice_capability_overrides`     | `membership_id` (TPLCo `organization_members` row), `capability`, `effect` (`grant`/`revoke`), `reason`, `set_by`, `set_at`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Table                                  | Important fields                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `method_assets`                        | `key` (unique slug, immutable), `title`, `form` (immutable after the first publish; null only while `legacy`), `category_key` → `method_asset_categories`, `origin`, `usage_restriction`, `ip_classification` (default `tplco_method_ip`), `status` (`active`/`retired`), `current_version_id` (the published version, maintained by operations), `steward_user_id` (renamed from `owner_user_id`, to avoid confusion with IP ownership)                                                                                                                                                                                                                                                                  |
+| `method_asset_categories`              | `key`, `label`, `description`, `sort_order`, `active`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `method_asset_versions`                | `asset_id`, `legacy` (backfilled only, D28), `version_no` (monotonic), `version_label` (unique per asset, set at publish), `lifecycle`, `architectural_question`, `summary`, `applicability`, `exclusions`, `prerequisites`, `expected_inputs`, `evidence_expectations`, `practitioner_roles`, `completion_criteria`, `review_implications`, `implementation_implications`, `practitioner_instructions` (protected), `internal_notes`, `modes` (subset of discover/define/assess/validate/govern, Method only), `identity_disclosure`, `disclosable_name`, `change_summary`, `derived_from_version_id`, `external_basis`, `authored_by`, `published_by`, `published_at`, `effective_on`, `retired_reason` |
+| `method_version_domains`               | `version_id`, `domain`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `method_version_contexts`              | `version_id`, `context_id`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `method_version_stages`                | `version_id`, `ordinal`, `key`, `title`, `purpose`, `guidance` (protected)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `method_version_outputs`               | `version_id`, `output_kind` (`element_kind`), `object_type_key` (for kind `object`), `deliverable_type` (for kind `deliverable`), `note`. A check ensures exactly the relevant key is set                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `method_version_components`            | `version_id`, `component_version_id` (published; form ≠ method), `note`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `standard_version_criteria`            | `version_id`, `ordinal`, `key`, `statement`, `guidance`, `scale`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `standard_version_judged_in`           | `version_id`, `setting` (`review`, `completion`, `assessment`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `instrument_version_evidence_types`    | `version_id`, `evidence_source_type`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `template_version_spec`                | `version_id` (PK), `deliverable_type`, `section_outline` (ordered text rows in `template_version_sections`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `method_version_files`                 | `version_id`, `storage_path` (bucket `method-library`), `file_name`, `content_type`, `byte_size`; Template/Instrument only                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `method_version_learning_sources`      | `version_id`, `method_application_id`, `note`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `method_asset_rights_holders`          | §16.2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `dam_releases`                         | `version_label` (unique), `title`, `status`, `summary`, `change_summary`, `effective_on`, `supersedes_release_id`, `vocabulary_record` (jsonb, system-built at publish), `published_by`, `published_at`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `dam_release_members`                  | `release_id`, `asset_id`, `asset_version_id`; unique (`release_id`, `asset_id`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `development_contexts`                 | `key` (immutable), `label`, `definition`, `status`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `development_context_revisions`        | `context_id`, `prior_label`, `prior_definition`, `reason`, `revised_by`, `revised_at`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `practice_role_capability_defaults`    | `role` (internal roles only), `capability`; migration-only, like `role_capability_defaults`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `practice_member_capability_overrides` | `organization_member_id` (TPLCo membership), `capability`, `granted`, `reason`, `created_by`, `created_at`; same trigger and audit pattern as `engagement_member_capability_overrides`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 ### Engagement-scoped
 
-| Table                              | Important fields                                                                                                                                                                                                                                                                                                |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `engagements` (changed)            | + `dam_release_id`                                                                                                                                                                                                                                                                                              |
-| `engagement_development_contexts`  | `engagement_id`, `context_id`, `is_primary` (partial unique: one primary)                                                                                                                                                                                                                                       |
-| `method_applications`              | `engagement_id`, `reference_code` (`MAP-nnn`), `method_asset_version_id`, `dam_release_id` (at start), `title`, `selection_reason`, `architectural_question`, `engagement_wide`, `state`, `started_on`, `closed_on`, `completion_statement`, `retrospective`, `discontinued_reason`, `continues_application_id` |
-| `method_application_practitioners` | `application_id`, `engagement_member_id`, `role` (`lead`/`contributor`); exactly one lead while open                                                                                                                                                                                                            |
-| `method_application_contexts`      | `application_id`, `context_id`                                                                                                                                                                                                                                                                                  |
-| `method_application_domains`       | `application_id`, `domain`                                                                                                                                                                                                                                                                                      |
-| `method_application_stage_notes`   | `application_id`, `stage_id` (must belong to the pinned version), `treatment`, `reason`, `note`                                                                                                                                                                                                                 |
-| `method_application_elements`      | `application_id`, `engagement_id`, `element_id`, `role`, `observed_version_id` (set at closure), `note`; FK (`element_id`, `engagement_id`) on delete restrict                                                                                                                                                  |
-| `method_application_evidence`      | `application_id`, `engagement_id`, `evidence_source_id`, `role`, `instrument_version_id`, `note`                                                                                                                                                                                                                |
-| `method_application_assets`        | `application_id`, `asset_version_id` (published; form ≠ method), `deviation_note`                                                                                                                                                                                                                               |
-| `method_application_addenda`       | `application_id`, `body`, `created_by`, `created_at`; append-only                                                                                                                                                                                                                                               |
-| `element_method_lineage` (changed) | + `method_asset_version_id`, + `lineage_role`; `method_version` text retained read-only; unique becomes (`element_id`, `method_asset_version_id`, `lineage_role`)                                                                                                                                               |
+| Table                              | Important fields                                                                                                                                                                                                                                                                                                              |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `engagements` (changed)            | + `dam_release_id`                                                                                                                                                                                                                                                                                                            |
+| `engagement_development_contexts`  | `engagement_id`, `context_id`, `is_primary` (partial unique: one primary)                                                                                                                                                                                                                                                     |
+| `method_applications`              | `engagement_id`, `reference_code` (`MUS-nnn`), `method_asset_version_id`, `dam_release_id` (at start), `title`, `selection_reason`, `architectural_question`, `engagement_wide`, `state`, `started_on`, `closed_on`, `completion_statement`, `retrospective`, `discontinued_reason`, `continues_application_id`               |
+| `method_application_practitioners` | `application_id`, `engagement_member_id`, `role` (`lead`/`contributor`); exactly one lead while open                                                                                                                                                                                                                          |
+| `method_application_contexts`      | `application_id`, `context_id`                                                                                                                                                                                                                                                                                                |
+| `method_application_domains`       | `application_id`, `domain`                                                                                                                                                                                                                                                                                                    |
+| `method_application_stage_notes`   | `application_id`, `stage_id` (must belong to the pinned version), `treatment`, `reason`, `note`                                                                                                                                                                                                                               |
+| `method_application_elements`      | `application_id`, `engagement_id`, `element_id` (nullable), `role`, `observed_version_id` (set at closure), `captured_reference_code`, `captured_kind`, `captured_object_type_key`, `captured_title`, `captured_at`, `element_removed_at`, `note`; FK (`element_id`, `engagement_id`) `on delete set null (element_id)` (D30) |
+| `method_application_evidence`      | `application_id`, `engagement_id`, `evidence_source_id`, `role`, `instrument_version_id`, `note`                                                                                                                                                                                                                              |
+| `method_application_assets`        | `application_id`, `asset_version_id` (published; form ≠ method), `deviation_note`                                                                                                                                                                                                                                             |
+| `method_application_addenda`       | `application_id`, `body`, `created_by`, `created_at`; append-only                                                                                                                                                                                                                                                             |
+| `acceptance_criteria`              | `engagement_id`, `reference_code` (`ACR-nnn`), `governed_element_id`, `body`, `state`, `agreed_with`, `agreed_on`, `agreed_recorded_by`, `agreement_evidence_source_id`, `supersedes_criterion_id`, `closure_reason`, `informing_standard_version_id`, `informing_criterion_key` (internal), `client_visible` (§15.4)         |
+| `validation_criteria`              | `validation_relationship_id`, `criterion_id`, `note`; written by `record_review_validation` (D34)                                                                                                                                                                                                                             |
+| `element_method_lineage` (changed) | + `method_asset_version_id`, + `lineage_role`; `method_version` text retained read-only; unique becomes (`element_id`, `method_asset_version_id`, `lineage_role`)                                                                                                                                                             |
 
 ## 25. Operations
 
 All writes go through `security definer` functions in `public`. They check capability through `private.*`, validate, log activity and return the row. **There are no direct table write grants to `authenticated`**, the Phase 5 pattern (ADR-0034). Reads use RLS policies plus read-model functions.
 
-| Operation                                                                                  | Capability                                                         | Key rules                                                                                                                                                                                                     |
-| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `create_method_asset(key, title, form, category, origin, …)`                               | `author_methodology`                                               | Creates asset + draft v1                                                                                                                                                                                      |
-| `update_method_asset(…)`                                                                   | `author_methodology`                                               | Title, category, steward, usage restriction; `form` only before first publish                                                                                                                                 |
-| `create_method_asset_version(asset, from_version)`                                         | `author_methodology`                                               | One draft per asset; copies the published version's content and children                                                                                                                                      |
-| `update_method_asset_version(…)`, child add/remove functions                               | `author_methodology`                                               | Draft only (guard trigger backstops)                                                                                                                                                                          |
-| `publish_method_asset_version(version, label, change_summary)`                             | **`publish_methodology`**                                          | Form requirements met (§7.2, §8.1); label unique; supersedes prior published version; sets `current_version_id`                                                                                               |
-| `retire_method_asset_version(version, reason)`                                             | **`publish_methodology`**                                          | Published only                                                                                                                                                                                                |
-| `retire_method_asset(asset, reason)`                                                       | **`publish_methodology`**                                          | Retires current version                                                                                                                                                                                       |
-| `record_method_rights_holder(…)`, `supersede_rights_holder(…)`                             | **`publish_methodology`**                                          | Append-only                                                                                                                                                                                                   |
-| `attach_method_version_file(…)` / `remove_…`                                               | `author_methodology`                                               | Draft, Template/Instrument only                                                                                                                                                                               |
-| `create_dam_release(label, title)`, `set_dam_release_member(release, version)`, `remove_…` | `author_methodology`                                               | Draft only; published versions only; one per asset                                                                                                                                                            |
-| `publish_dam_release(release, change_summary)`                                             | **`publish_methodology`**                                          | Freezes; builds vocabulary record; supersedes prior published release                                                                                                                                         |
-| `retire_dam_release(release, reason)`                                                      | **`publish_methodology`**                                          | Cannot retire a release any active engagement is on                                                                                                                                                           |
-| `create_/revise_/retire_development_context(…)`                                            | **`publish_methodology`**                                          | Revisions append-only                                                                                                                                                                                         |
-| `set_practice_capability_override(member, capability, effect, reason)`                     | Principal Architect role **and** `publish_methodology`; never self | The one place a role name is checked, mirroring how engagement capability overrides are administered (§27.3)                                                                                                  |
-| `set_engagement_dam_release(engagement, release, reason)`                                  | `publish_architecture` on the engagement                           | Published release only                                                                                                                                                                                        |
-| `set_engagement_development_contexts(engagement, contexts[], primary)`                     | `edit_architecture` on the engagement                              | Active contexts only                                                                                                                                                                                          |
-| `start_method_application(engagement, version, title, reason, …)`                          | `edit_architecture`                                                | Version: form `method`, lifecycle `published`; snapshots release and contexts; lead = caller unless given; reason required if the version is not in the engagement's release (D9); warns on usage restriction |
-| `update_method_application(…)`, practitioners, contexts, domains, stage notes, assets      | `edit_architecture`                                                | Open states only                                                                                                                                                                                              |
-| `link_method_application_element(app, element, role, note)` / `unlink_…`                   | `edit_architecture`                                                | Role/kind rules (§12.3); same engagement                                                                                                                                                                      |
-| `link_method_application_evidence(…)` / `unlink_…`                                         | `edit_architecture`                                                | Instrument version must be a used component or declared component                                                                                                                                             |
-| `begin_method_application(app)`                                                            | `edit_architecture`                                                | `planned` → `in_progress`                                                                                                                                                                                     |
-| `complete_method_application(app, completion_statement, retrospective)`                    | `edit_architecture`                                                | §11.4; freezes                                                                                                                                                                                                |
-| `discontinue_method_application(app, reason, continued_by?)`                               | `edit_architecture`                                                | Freezes                                                                                                                                                                                                       |
-| `add_method_application_addendum(app, body)`                                               | `edit_architecture`                                                | Closed applications only                                                                                                                                                                                      |
-| `add_method_version_learning_source(version, app, note)`                                   | `author_methodology`                                               | Draft version; closed application                                                                                                                                                                             |
-| `record_method_lineage(element, version, role, note)` / `remove_…`                         | `edit_architecture` (existing)                                     | Replaces direct lineage inserts; form ↔ role ↔ kind; published version                                                                                                                                        |
+| Operation                                                                                                         | Capability                                  | Key rules                                                                                                                                                                                                     |
+| ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create_method_asset(key, title, form, category, origin, …)`                                                      | `author_methodology`                        | Creates asset + draft v1                                                                                                                                                                                      |
+| `update_method_asset(…)`                                                                                          | `author_methodology`                        | Title, category, steward, usage restriction; `form` only before first publish                                                                                                                                 |
+| `create_method_asset_version(asset, from_version)`                                                                | `author_methodology`                        | One draft per asset; copies the published version's content and children                                                                                                                                      |
+| `update_method_asset_version(…)`, child add/remove functions                                                      | `author_methodology`                        | Draft only (guard trigger backstops)                                                                                                                                                                          |
+| `publish_method_asset_version(version, label, change_summary)`                                                    | **`publish_methodology`**                   | Form requirements met (§7.2, §8.1); label unique; supersedes prior published version; sets `current_version_id`                                                                                               |
+| `retire_method_asset_version(version, reason)`                                                                    | **`publish_methodology`**                   | Published only                                                                                                                                                                                                |
+| `retire_method_asset(asset, reason)`                                                                              | **`publish_methodology`**                   | Retires current version                                                                                                                                                                                       |
+| `record_method_rights_holder(…)`, `supersede_rights_holder(…)`                                                    | **`publish_methodology`**                   | Append-only                                                                                                                                                                                                   |
+| `attach_method_version_file(…)` / `remove_…`                                                                      | `author_methodology`                        | Draft, Template/Instrument only                                                                                                                                                                               |
+| `create_dam_release(label, title)`, `set_dam_release_member(release, version)`, `remove_…`                        | `author_methodology`                        | Draft only; published versions only; one per asset                                                                                                                                                            |
+| `publish_dam_release(release, change_summary)`                                                                    | **`publish_methodology`**                   | Freezes; builds vocabulary record; supersedes prior published release                                                                                                                                         |
+| `retire_dam_release(release, reason)`                                                                             | **`publish_methodology`**                   | Cannot retire a release any active engagement is on                                                                                                                                                           |
+| `create_/revise_/retire_development_context(…)`                                                                   | **`publish_methodology`**                   | Revisions append-only                                                                                                                                                                                         |
+| `set_practice_capability_override(member, capability, granted, reason)`                                           | **`publish_methodology`**; never on oneself | Capability-based (D11); last-holder guard; logged                                                                                                                                                             |
+| `adopt_legacy_method_asset(asset, form)`                                                                          | **`publish_methodology`**                   | Legacy assets only; sets the form and opens the first proper draft (D28)                                                                                                                                      |
+| `propose_acceptance_criterion(element, body, informing_standard?)`, `update_…`, `delete_…`                        | `edit_architecture`                         | Proposed state only; governed element must be an Implementation Initiative or a core object                                                                                                                   |
+| `agree_acceptance_criterion(criterion, agreed_with, agreed_on, evidence?)`                                        | `publish_architecture`                      | Governed element must be published; freezes text                                                                                                                                                              |
+| `supersede_acceptance_criterion(criterion, new_body, reason)`, `withdraw_acceptance_criterion(criterion, reason)` | `publish_architecture`                      | Agreed criteria only; append-only history                                                                                                                                                                     |
+| `set_validation_criterion_note(validation, criterion, note)`                                                      | `publish_architecture`                      | Note only; no verdict (D34)                                                                                                                                                                                   |
+| `set_engagement_dam_release(engagement, release, reason)`                                                         | `publish_architecture` on the engagement    | Published release only                                                                                                                                                                                        |
+| `set_engagement_development_contexts(engagement, contexts[], primary)`                                            | `edit_architecture` on the engagement       | Active contexts only                                                                                                                                                                                          |
+| `start_method_application(engagement, version, title, reason, …)`                                                 | `edit_architecture`                         | Version: form `method`, lifecycle `published`; snapshots release and contexts; lead = caller unless given; reason required if the version is not in the engagement's release (D9); warns on usage restriction |
+| `update_method_application(…)`, practitioners, contexts, domains, stage notes, assets                             | `edit_architecture`                         | Open states only                                                                                                                                                                                              |
+| `link_method_application_element(app, element, role, note)` / `unlink_…`                                          | `edit_architecture`                         | Role/kind rules (§12.3); same engagement                                                                                                                                                                      |
+| `link_method_application_evidence(…)` / `unlink_…`                                                                | `edit_architecture`                         | Instrument version must be a used component or declared component                                                                                                                                             |
+| `begin_method_application(app)`                                                                                   | `edit_architecture`                         | `planned` → `in_progress`                                                                                                                                                                                     |
+| `complete_method_application(app, completion_statement, retrospective)`                                           | `edit_architecture`                         | §11.4; freezes                                                                                                                                                                                                |
+| `discontinue_method_application(app, reason, continued_by?)`                                                      | `edit_architecture`                         | Freezes                                                                                                                                                                                                       |
+| `add_method_application_addendum(app, body)`                                                                      | `edit_architecture`                         | Closed applications only                                                                                                                                                                                      |
+| `add_method_version_learning_source(version, app, note)`                                                          | `author_methodology`                        | Draft version; closed application                                                                                                                                                                             |
+| `record_method_lineage(element, version, role, note)` / `remove_…`                                                | `edit_architecture` (existing)              | Replaces direct lineage inserts; form ↔ role ↔ kind; published version                                                                                                                                        |
 
 ## 26. Read models
 
-| Read model                                  | Audience                           | Returns                                                                                                           |
-| ------------------------------------------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `method_library(filters)`                   | Internal                           | Assets with current published version, form, category, domains, contexts, question, release membership, use count |
-| `method_asset_detail(asset, version?)`      | Internal                           | Version content and children; version history; rights; releases containing it; learning sources                   |
-| `method_usage(asset)`                       | Internal                           | Applications, lineage rows and releases per version, across engagements; titles, codes and counts only (§22.3)    |
-| `dam_release_contents(release)`             | Internal                           | Members; diff against the prior release (added, removed, re-versioned); engagements on the release                |
-| `method_application_register(engagement)`   | Internal (`can_read_architecture`) | Applications, state, method and version, lead, dates, link counts                                                 |
-| `method_application_detail(application)`    | Internal                           | Everything in §11, with expected vs. actual outputs; element links filtered by area for area-limited members      |
-| `element_practice_context(element)`         | Internal                           | Applications linked to the element (role, method, version, state) and typed lineage                               |
-| `client_engagement_methodology(engagement)` | **Client**                         | `{ release_label, release_title }` for the engagement's release, or null. Nothing else                            |
+| Read model                                  | Audience                           | Returns                                                                                                                                                          |
+| ------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `method_library(filters)`                   | Internal                           | Assets with current published version, form, category, domains, contexts, question, release membership, use count                                                |
+| `method_asset_detail(asset, version?)`      | Internal                           | Version content and children; version history; rights; releases containing it; learning sources                                                                  |
+| `method_usage(asset)`                       | Internal                           | Applications, lineage rows and releases per version, across engagements; titles, codes and counts only (§22.3)                                                   |
+| `dam_release_contents(release)`             | Internal                           | Members; diff against the prior release (added, removed, re-versioned); engagements on the release                                                               |
+| `method_application_register(engagement)`   | Internal (`can_read_architecture`) | Applications, state, method and version, lead, dates, link counts                                                                                                |
+| `method_application_detail(application)`    | Internal                           | Everything in §11, with expected vs. actual outputs; element links filtered by area for area-limited members                                                     |
+| `element_practice_context(element)`         | Internal                           | Applications linked to the element (role, method, version, state) and typed lineage                                                                              |
+| `client_acceptance_criteria(engagement)`    | **Client**                         | Agreed, client-visible criteria on published client-visible elements, and the criteria captured for validations the client can see; never the informing Standard |
+| `client_engagement_methodology(engagement)` | **Client**                         | `{ release_label, release_title }` for the engagement's release, or null. Nothing else                                                                           |
 
 ## 27. Capabilities
 
-### 27.1 A new capability scope
+_Revised after Kerrick's final review (D10). Neither approach is implemented._
 
-All capabilities today are **engagement-scoped** (`engagement_capability`, ADR-0024). Publishing methodology is **TPLCo-wide practice authority** and has no engagement. Phase 6 therefore introduces a second, parallel mechanism, **practice capabilities** (D10), with the same shape:
+### 27.1 The requirement
 
-- defaults by internal role;
-- per-member overrides with a reason;
-- a single private check function, `private.has_practice_capability(cap)`.
+- `author_methodology` and `publish_methodology` are **TPLCo-wide**. There is no engagement to hold them on.
+- Authority is **capability-based**, never a hard-coded role check.
+- A System Administrator gets **no methodological authority** by being a System Administrator.
+- Prefer **one coherent capability philosophy**, without destabilizing the Phase 1–5 engagement model.
 
-### 27.2 Defaults (D11)
+### 27.2 What the current engagement machinery is
 
-| ----------------------- | ------------------- | --------- | ---------- | -------------------- | ------------------------------- | ------------ |
-| ----------------------- | ------------------- | --------- | ---------- | -------------------- | ------------------------------- | ------------ |
-| `author_methodology`    | ✓                   | ✓         | —          | —                    | —                               | never        |
-| `publish_methodology`   | ✓                   | —         | —          | **—**                | —                               | never        |
+From `20260929233000_engagement_capabilities.sql` and its successors:
 
-- **Viewing the library** remains every internal member's right (unchanged, `is_internal()`). Researchers, Project Administrators and Finance Administrators keep read access, as today. Spec §4's "create reusable IP candidates" for Principal Architects is consistent with authoring.
-- **System Administrators** get no methodological authority by default (Q11). They can be granted it by a Principal Architect override.
-- **Client and licensed-practice users** can never hold a practice capability. The check requires active membership in the TPLCo organization.
+| Part                                              | Shape                                                                                                                                                                                                                    |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `engagement_capability` enum                      | 18 values, all meaningful per engagement                                                                                                                                                                                 |
+| `role_capability_defaults (role, capability)`     | Migration-only reference data; `capability` is typed `engagement_capability`; a check ties side-restricted capabilities to the role's side                                                                               |
+| `engagement_member_capability_overrides`          | `engagement_member_id` **not null** FK to `engagement_members`; `engagement_id` **not null** (denormalized for RLS and the audit log); `granted boolean`; `reason`                                                       |
+| `private.member_has_capability(member, cap)`      | Override wins; else role default                                                                                                                                                                                         |
+| `private.has_engagement_capability(eng, cap)`     | Requires an active engagement membership with a valid side; plus the role-based portfolio financial exception for `view_financials`                                                                                      |
+| `public.my_engagement_capabilities(eng)`          | Iterates `enum_range(null::engagement_capability)`                                                                                                                                                                       |
+| `private.can_manage_capability(eng, member, cap)` | Who may grant or revoke: a role-based rule per capability family (Principal Architects only for `edit_architecture` and `publish_architecture`, never self)                                                              |
+| App mirror                                        | `src/domain/capabilities/catalog.ts` (`ENGAGEMENT_CAPABILITIES`, labels typed `Record<EngagementCapability, string>`), the engagement capability matrix, and the Zod override schema (`z.enum(ENGAGEMENT_CAPABILITIES)`) |
+| Tests                                             | `03_engagement_capabilities` asserts per-role default counts                                                                                                                                                             |
 
-### 27.3 Administration
+### 27.3 Approach U: extend the engagement machinery with a scope
 
-- **Overrides are set only by a Principal Architect who also holds `publish_methodology`, and never on themselves.**
-- **This is a deliberate, narrow role check** (like the existing rule that only Principal Architects execute contracts). It guarantees there is always a methodology authority that System Administrators cannot manufacture.
-- **Every override is logged.**
-- **Safety guard:** the last effective `publish_methodology` holder cannot be revoked.
+Add `author_methodology` and `publish_methodology` to `engagement_capability`, and a `capability_scope(cap)` function returning `engagement` or `practice`, the same pattern as `capability_side`.
 
-### 27.4 Engagement-side capabilities
+| Area           | Consequence                                                                                                                                                                                                                                                                                                                                      |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Enum           | Two permanent values in an enum named for engagements. They can never be removed                                                                                                                                                                                                                                                                 |
+| Defaults       | Rows in `role_capability_defaults` work unchanged. Per-role counts in suite 03 change                                                                                                                                                                                                                                                            |
+| Overrides      | The override table cannot hold a TPLCo-wide override: both `engagement_member_id` and `engagement_id` are not null. Either they become nullable, with a new `organization_member_id` and an exclusive-or check (**the nullable engagement semantics Kerrick named**), or a second override table is added anyway                                 |
+| Checks         | `has_engagement_capability(eng, 'publish_methodology')` would return true for any engagement a Principal Architect belongs to and false elsewhere. That is meaningless, so it must refuse practice values explicitly. Library RLS still needs a check with no engagement argument: either `has_engagement_capability(null, …)` or a new function |
+| Listing        | `my_engagement_capabilities` would list practice capabilities per engagement unless filtered                                                                                                                                                                                                                                                     |
+| Administration | `can_manage_capability` gains a third branch keyed on scope                                                                                                                                                                                                                                                                                      |
+| App            | Every use of `ENGAGEMENT_CAPABILITIES` (the matrix, the engagement page and the Zod schema) must filter out practice values, or the matrix would offer "Publish methodology" as a per-engagement toggle. The labels map must gain entries                                                                                                        |
+| RLS clarity    | Every existing policy keeps working, but readers must now know that some values of the engagement enum are not engagement capabilities                                                                                                                                                                                                           |
+
+**Assessment:** it touches the enum, the override table, three functions, three UI or schema sites and one test suite, and it needs nullable engagement semantics or a second table anyway. **These are the distortions Kerrick asked to avoid.**
+
+### 27.4 Approach P: one capability model, two membership scopes (recommended)
+
+**The unifying rule** (to be stated in ADR-0044):
+
+> A capability is always held **through a membership**, and its scope is the scope of that membership.
+>
+> - An engagement membership (`engagement_members`) carries **engagement capabilities**.
+> - A TPLCo organization membership (`organization_members` in the single TPLCo organization) carries **practice capabilities**.
+>
+> Both scopes use the same three parts and the same semantics:
+>
+> 1. role defaults as migration-only reference data;
+> 2. per-membership overrides with `granted` and a reason, logged;
+> 3. one private check function.
+
+This is **one philosophy with two storage scopes**, not a second architecture. Storage is separate only because the capability column is typed, and because the thing an override attaches to differs. Nothing is nullable.
+
+| Part                      | Engagement scope (unchanged)                  | Practice scope (new, mirrors it)                                                                                                                  |
+| ------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Capability enum           | `engagement_capability`                       | `practice_capability`: `author_methodology`, `publish_methodology`                                                                                |
+| Role defaults             | `role_capability_defaults (role, capability)` | `practice_role_capability_defaults (role, capability)`; internal roles only (check)                                                               |
+| Holding membership        | `engagement_members` row                      | Active `organization_members` row in the TPLCo organization                                                                                       |
+| Overrides                 | `engagement_member_capability_overrides`      | `practice_member_capability_overrides (organization_member_id, capability, granted, reason)`; same trigger pattern, same audit logging            |
+| Effective check           | `private.has_engagement_capability(eng, cap)` | `private.has_practice_capability(cap)`                                                                                                            |
+| Caller's list (UI)        | `public.my_engagement_capabilities(eng)`      | `public.my_practice_capabilities()`                                                                                                               |
+| Who administers overrides | `private.can_manage_capability` (existing)    | `private.can_manage_practice_capability(member, cap)`: **holders of `publish_methodology`**, never on themselves. Capability-based, no role check |
+| App mirror                | `catalog.ts` (unchanged)                      | `src/domain/capabilities/practice.ts`, same structure                                                                                             |
+
+**Consequences:**
+
+- **Engagement machinery:** no change to the engagement enum, tables, functions, UI or suite 03.
+- **Schema:** one enum, two tables and three functions, all new.
+- **RLS:** every Method Library write goes through operations that call `has_practice_capability`. Library reads remain `is_internal()`. No policy anywhere mixes scopes.
+- **Operations:** each methodology operation names exactly one practice capability (§25).
+- **Safety:** the last effective holder of `publish_methodology` cannot be revoked. Only TPLCo memberships can hold practice capabilities, so client and licensed-practice users never qualify.
+- **Future use:** any later TPLCo-wide authority (for example Pattern Library curation or licensing administration) adds a `practice_capability` value, never an engagement one.
+- **Deliberately not changed:** the role-based portfolio financial exception (`has_portfolio_financial_access`) could later move into the practice scope. Phase 6 leaves it alone, because the engagement model is stable.
+
+### 27.5 Defaults (D11)
+
+| Practice capability   | Principal Architect | Architect | Researcher | System Administrator | Project / Finance Administrator | Client roles |
+| --------------------- | ------------------- | --------- | ---------- | -------------------- | ------------------------------- | ------------ |
+| `author_methodology`  | ✓                   | ✓         | —          | —                    | —                               | never        |
+| `publish_methodology` | ✓                   | —         | —          | **—**                | —                               | never        |
+
+- **Viewing the library** remains every internal member's right, unchanged (`is_internal()`).
+- **System Administrators** hold no practice capability by default. One can receive it only by an explicit, logged override from an existing `publish_methodology` holder.
+
+### 27.6 Engagement-side capabilities
 
 **No new engagement capabilities.**
 
 - Method Applications use `edit_architecture` (write) and `can_read_architecture` (read).
+- Acceptance criteria use `edit_architecture` to propose and `publish_architecture` to agree (§15).
 - Engagement release changes use `publish_architecture`.
-- Lineage uses `edit_architecture`, as today.
 
-### 27.5 Why this
+### 27.7 Why this
 
 - **Why DSA OS:** Q11 separates methodological authority from system authority.
 - **Why Phase 6:** publishing requires it from the first asset.
-- **Why not document management:** a document system's permissions are folder ACLs. These are practice authorities tied to TPLCo roles and audited.
+- **Why not document management:** these are audited practice authorities, not folder permissions.
 - **Relation to Architecture:** it never grants any architecture right.
 - **Provenance for learning:** every publication records who exercised the authority.
 
 ## 28. RLS and security model
 
-| Surface                                                                                                   | Select                                                                                  | Insert / update / delete                                                |
-| --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Library tables (assets, versions, children, releases, rights, contexts, categories, capability tables)    | `is_internal()` (active TPLCo member). **No client or licensed-practice policy at all** | None to `authenticated`; operations only                                |
-| `method-library` storage bucket                                                                           | `is_internal()`                                                                         | None; upload via signed URLs issued by an operation for a draft version |
-| Engagement-scoped practice tables (`method_applications` and children, `engagement_development_contexts`) | `private.can_read_architecture(engagement_id)` **and** `is_internal()`                  | None; operations only                                                   |
-| `element_method_lineage`                                                                                  | Unchanged (`can_read_architecture`), plus `is_internal()` added                         | Direct grants **revoked**; operations only                              |
-| `engagements.dam_release_id`                                                                              | Existing engagement policy (clients can read the id)                                    | Operation only                                                          |
-| `client_engagement_methodology`                                                                           | `security definer`; returns label and title for members of the engagement               | —                                                                       |
+| Surface                                                                                                                                                                | Select                                                                                  | Insert / update / delete                                                |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Library tables (assets, versions, children, releases, rights, contexts, categories, capability tables)                                                                 | `is_internal()` (active TPLCo member). **No client or licensed-practice policy at all** | None to `authenticated`; operations only                                |
+| `method-library` storage bucket                                                                                                                                        | `is_internal()`                                                                         | None; upload via signed URLs issued by an operation for a draft version |
+| Engagement-scoped practice and governance tables (`method_applications` and children, `engagement_development_contexts`, `acceptance_criteria`, `validation_criteria`) | `private.can_read_architecture(engagement_id)` **and** `is_internal()`                  | None; operations only                                                   |
+| `element_method_lineage`                                                                                                                                               | Unchanged (`can_read_architecture`), plus `is_internal()` added                         | Direct grants **revoked**; operations only                              |
+| `engagements.dam_release_id`                                                                                                                                           | Existing engagement policy (clients can read the id)                                    | Operation only                                                          |
+| `client_engagement_methodology`                                                                                                                                        | `security definer`; returns label and title for members of the engagement               | —                                                                       |
 
 **Security invariants.** Each is tested in pgTAP as a client, licensed-practice user, Researcher and System Administrator:
 
 1. **No client or licensed-practice session can select any row from any Method Library table, practice table or storage object.** "Client users must never access Method/IP content."
 2. **Client snapshots never contain any Method Library field.** The builder is unchanged, and a regression test asserts that the key sets are unchanged.
-3. **The only client-readable methodology is the release label and title,** plus architect-authored `approach` and `acceptance_criterion` statements under existing statement visibility rules.
+3. **The only client-readable methodology is the release label and title,** plus architect-authored `approach` statements under existing statement visibility rules. Agreed acceptance criteria reach clients only through `client_acceptance_criteria`, which never returns the informing Standard.
 4. **A published version, a published release, a closed application and a revision row cannot be changed by anyone, including through operations.** This is enforced by guard triggers, not UI.
 5. **No permission depends on hidden UI.** Every operation re-checks capability. UI hiding is convenience only.
-6. **Capabilities, not role names,** except the single documented override-administration rule (§27.3).
+6. **Capabilities, not role names,** everywhere in Phase 6, including administration of practice capability overrides (§27.4).
 
 ## 29. Internal UX
 
@@ -1281,18 +1450,18 @@ This replaces the "Method lineage" panel (lines ~521–563 of the element page).
 - **Adding lineage** is form-aware. The role list depends on the element kind, and the asset picker depends on the role.
 - **On an element with a `methodology_derived` statement and no `instantiates` lineage,** the panel shows a publish-blocking notice.
 
-### 29.7 Statement editor
+### 29.7 Statement editor and acceptance criteria
 
-The kind selector gains **Acceptance criterion** and **Approach**.
-
-- **For Approach:**
-  - an "Insert approved method name" menu, listing names from linked applications' assets marked `may_be_named`;
-  - a warning when text matches the title of an `internal_only` asset.
-- **For Acceptance criterion:** a helper line, "Visible to the client when published; agreed through approval".
+- **Statement editor:** the kind selector gains **Approach**, with an "Insert approved method name" menu (names from linked applications' assets marked `may_be_named`) and a warning when text matches the title of an `internal_only` asset.
+- **Acceptance criteria panel** on Implementation Initiative and core object pages:
+  - propose, edit and agree criteria;
+  - supersede or withdraw with a reason;
+  - an optional "Informed by Standard" picker (internal);
+  - agreed criteria show their code, party and date.
 
 ### 29.8 Review and Deliverable touchpoints
 
-- **Review validation panel:** "Validated against", the acceptance criteria of the pinned version of each target.
+- **Review validation dialog:** "Validated against" lists the agreed criteria in force for the initiative (its own and those on objects it implements), with a note field per criterion and no verdict. A warning appears when there are none.
 - **Review page:** a "Judged against" line (Standards) and "Informed by" (Method Applications with an `informed` link).
 - **Deliverable page:** "Produced from", the Template and version.
 
@@ -1301,8 +1470,8 @@ The kind selector gains **Acceptance criterion** and **Approach**.
 Deliberately minimal.
 
 - **Engagement overview:** one line, "Conducted under the **Development Architecture Method™ 1.1**", when the engagement has a release. The line comes from `client_engagement_methodology`.
-- **Element pages:** approach statements appear under the heading "Approach", and acceptance criteria appear under "Acceptance criteria". Both are ordinary published statements.
-- **Review validation (client view):** acceptance criteria are shown beside a validation where the target version is client-visible.
+- **Element pages:** approach statements appear under "Approach" (ordinary published statements). Agreed acceptance criteria appear under "Acceptance criteria" with their code and agreement date.
+- **Implementation (client view):** a validated initiative shows the criteria it was validated against, where the client can already see the validation.
 - **Nothing else.**
   - No library, applications, stages, instruments, standards, templates, lineage, contexts or rights.
   - No link or route exists under `/client` for any of them.
@@ -1329,7 +1498,8 @@ Deliberately minimal.
   - cross-engagement refusal;
   - closure rules and `observed_version_id`;
   - freeze after closure; addenda;
-  - `MAP` codes;
+  - `MUS` codes;
+  - captured references survive deletion of a linked draft, including on closed applications (D30);
   - area-filtered detail for Contributors;
   - lineage form ↔ role ↔ kind;
   - the `methodology_derived` publish check.
@@ -1337,23 +1507,33 @@ Deliberately minimal.
   - every new table and bucket denies client, licensed-practice and anonymous roles;
   - client snapshot key-set regression;
   - `client_engagement_methodology` returns only the label and title;
-  - new statement kinds follow visibility rules.
+  - the `approach` statement kind follows visibility rules;
+  - `client_acceptance_criteria` never returns the informing Standard.
 - **`24_practice_capabilities.sql`**
   - defaults per role;
-  - overrides;
+  - overrides administered only by `publish_methodology` holders;
+  - engagement capability tables and functions unchanged;
   - no self-override;
   - last-holder guard;
   - System Administrator has no default authority;
   - non-TPLCo organizations never qualify.
-- **`25_method_backfill.sql`:** the §34 backfill results on seed data.
+- **`25_method_backfill.sql`:** the §34 backfill results on seed data, including legacy assets and adoption.
+- **`26_acceptance_criteria.sql`:**
+  - lifecycle and immutability after agreement;
+  - agreement requires a published governed element;
+  - supersession history;
+  - capture at `record_review_validation`, with the ADR-0036 gate unchanged;
+  - area limits.
 - **`99_method_concurrency.sql`**
   - two concurrent publishes of versions of the same asset;
   - concurrent release publish and member edit;
-  - concurrent `MAP` code allocation.
+  - concurrent `MUS` and `ACR` code allocation;
+  - concurrent agree and supersede of one criterion.
 
 **Existing suites:**
 
 - Suites asserting the `statement_kind` and `activity_action` enum value lists and the `element_method_lineage` grants are updated deliberately.
+- Suite 18/19 validation tests gain assertions for criteria capture; the existing validation gate assertions stay unchanged.
 - Everything else must pass unchanged.
 
 **Vitest:**
@@ -1366,7 +1546,7 @@ Deliberately minimal.
 **Browser acceptance pass** (as in Phase 5, before merge). Scripted walkthroughs:
 
 - as Principal Architect: author, publish, release, context;
-- as Architect: apply, link, close, approach statement;
+- as Architect: apply, link, close, delete a linked draft after closure, approach statement, propose acceptance criteria;
 - as Researcher: read-only library;
 - as System Administrator: no publish;
 - as Contributor: area-filtered application;
@@ -1380,15 +1560,17 @@ All in `supabase/seed.sql` only; **no methodology content in migrations** (Q4).
 
 - **Contexts** (demo only): "Institutional capability development (college)", "Regional industry cluster development", "Real-estate district development", "Community service development".
 - **Assets** (demo content, clearly fictional):
-  - _Capability Readiness Diagnostic_ (Method, 1.0 published, 1.1 published), with 4 stages, `may_be_named` "Capability Readiness Diagnostic™";
+  - _Capability Readiness Diagnostic_ (legacy 'DAM 1.0' version, adopted as a Method; 1.0 and 1.1 published), with 4 stages, `may_be_named` "Capability Readiness Diagnostic™";
   - _Leadership Capability Interview Guide_ (Instrument, 1.0);
   - _Capability Readiness Scale_ (Standard, 1.0, 5 criteria);
-  - _Anchor-led cluster development_ (Model, 1.0), backfilled from the Strategic Model Library Index (D28);
+  - _Strategic Model Library Index_: left as the backfilled **legacy** asset, unchanged (D28);
+  - _Anchor-led cluster development model_ (Model, 1.0), newly authored; the Meridian Applied Strategic Model gains `instantiates` lineage to it beside its legacy row;
   - _Capability Map_ (Template, 1.0, `deliverable_type` capability map or the closest existing type).
 - **Releases:** DAM 1.0 (published, backfill) and DAM 1.1 (published: Diagnostic 1.1 and the new assets); a DAM 1.2 draft.
 - **Applications:**
   - on **Harbor**, one completed Diagnostic application linking existing Harbor elements (examined Capabilities; produced an existing Capability Gap and Recommendation), with one adapted stage;
   - on **Meridian**, one in-progress application.
+- **Acceptance criteria:** two agreed criteria on an existing Harbor Implementation Initiative, one informed by the demo Standard.
 - **No new elements are created,** so Meridian and Harbor count assertions in suites 01–20 are unaffected (the Phase 5 precedent).
 
 ## 33. Cross-domain examples
@@ -1399,7 +1581,7 @@ Each flow is: context → asset/version → application → inputs/evidence → 
 
 1. **Context.** The engagement declares _Institutional capability development_ (primary). It runs under DAM 1.1.
 2. **Asset and version.** The architect picks _Capability Readiness Diagnostic 1.1_ (Method, in the release, context fits).
-3. **Application.** MAP-001 "Readiness of advising capability".
+3. **Application.** MUS-001 "Readiness of advising capability".
    - Reason: "Board asked whether advising can scale before the enrollment initiative."
    - Scope: Capability domain.
    - Lead: the Architect.
@@ -1414,11 +1596,11 @@ Each flow is: context → asset/version → application → inputs/evidence → 
    - The Capability Gap carries an approach statement: "Assessed using TPLCo's Capability Readiness Diagnostic™ through leadership interviews".
 7. **Implementation and review.**
    - The Recommendation leads to a Decision, which initiates Implementation Initiative _Shared advising pilot_ (Phase 5).
-   - Its acceptance criteria are written as statements.
-   - An Executive Review validates the Intended Outcome; the Review page shows "Validated against: …" and "Informed by MAP-001".
+   - Two acceptance criteria are agreed with the steering committee on the initiative (ACR-001, ACR-002). ACR-001 was informed internally by the Capability Readiness Scale 1.0.
+   - An Executive Review examines the initiative and validates it. The validation captures ACR-001 and ACR-002 as "Validated against", and the Review shows "Informed by MUS-001".
 8. **Outcome and learning.**
-   - MAP-001 is completed with its completion statement. The retrospective notes the interview stage was too long for a small college.
-   - Diagnostic 1.2 is drafted, citing MAP-001 as a learning source.
+   - MUS-001 is completed with its completion statement. The retrospective notes the interview stage was too long for a small college.
+   - Diagnostic 1.2 is drafted, citing MUS-001 as a learning source.
 
 ### 33.2 A region developing an industry cluster
 
@@ -1426,7 +1608,7 @@ Each flow is: context → asset/version → application → inputs/evidence → 
 2. **Asset.** _Anchor-led cluster development 1.0_ (Model).
 3. **Application.** Not applicable: a Model is **instantiated**, not applied.
 4. **Instantiation.** The architect creates the Applied Strategic Model _Anchor-led aerospace cluster_ with `instantiates` lineage to the Model 1.0. Its statement "Clusters grow around one anchor employer…" is `methodology_derived`, so publication is allowed.
-5. **Surrounding method work.** A separate _Capability Readiness Diagnostic 1.1_ application (MAP-002) examines ecosystem actors and produces Dependencies (_Anchor supplier training pipeline_).
+5. **Surrounding method work.** A separate _Capability Readiness Diagnostic 1.1_ application (MUS-002) examines ecosystem actors and produces Dependencies (_Anchor supplier training pipeline_).
 6. **Outputs, implementation and review.** Development Initiatives realize the Applied Strategic Model (Phase 3 relationships, unchanged). An Architecture Review examines the model's elements.
 7. **Outcome and learning.** The Model's "where used" shows this instantiation. Phase 7 can compare the implementation status of initiatives realizing instantiations of this Model across regions.
 
@@ -1434,7 +1616,7 @@ Each flow is: context → asset/version → application → inputs/evidence → 
 
 1. **Context.** _Real-estate district development_; DAM 1.1.
 2. **Asset and version.** No Method in the release covers district phasing. The architect applies a published pilot Method, _District Phasing Workshop 0.9_, outside the release, with the required reason "Pilot; not yet in release".
-3. **Application.** MAP-001; `version_in_release` = false.
+3. **Application.** MUS-001; `version_in_release` = false.
 4. **Inputs.**
    - Examined: Regulatory Factor _Zoning overlay_; Constraints.
    - Drew on: the zoning code (regulation evidence).
@@ -1445,7 +1627,7 @@ Each flow is: context → asset/version → application → inputs/evidence → 
 7. **Implementation and review.** The Assumption is later invalidated in Phase 4; the Decision is superseded.
 8. **Outcome and learning.**
    - The application's skipped stage and the invalidated Assumption are both on record.
-   - The pilot Method's authors cite MAP-001 when publishing 1.0 and propose it for DAM 1.2.
+   - The pilot Method's authors cite MUS-001 when publishing 1.0 and propose it for DAM 1.2.
 
 ### 33.4 A community developing a new service
 
@@ -1456,7 +1638,7 @@ Each flow is: context → asset/version → application → inputs/evidence → 
 5. **Outputs and review.**
    - Produced: Capability Gap and Recommendation.
    - Informed: an Executive Review.
-6. **Implementation.** The engagement's release is later moved to DAM 1.1 (`publish_architecture`, reason logged). MAP-001 keeps its recorded release, DAM 1.0.
+6. **Implementation.** The engagement's release is later moved to DAM 1.1 (`publish_architecture`, reason logged). MUS-001 keeps its recorded release, DAM 1.0.
 7. **Outcome and learning.** Phase 7 can tell that 1.1 was used ahead of its release, where, and with what result.
 
 ---
@@ -1465,17 +1647,17 @@ Each flow is: context → asset/version → application → inputs/evidence → 
 
 Existing data on `main` is small: two `method_assets` rows and two `element_method_lineage` rows, all seed data. Production is assumed to hold at most the same shape. The backfill is written to be correct for any number of rows and is tested (`25_method_backfill.sql`).
 
-| Step | Action                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1    | Create the new enums, tables, the bucket and the practice capability defaults                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| 2    | Reshape `method_assets`:<br>• add `key` (slugified from the title), `form`, `category_key` (mapped from the free-text `category`, or `other`), `origin` = `tplco_developed`, `current_version_id`;<br>• rename `owner_user_id` → `steward_user_id`;<br>• status: draft/active → `active`, retired → `retired`                                                                                                                                                                                                                                                 |
-| 3    | For each asset, create version **1.0** as `published`:<br>• `summary` from `description`;<br>• `architectural_question` and `applicability` = "Recorded before Phase 6; not yet specified";<br>• `change_summary` = "Backfilled from the pre-Phase 6 library (label 'DAM 1.0')";<br>• domains from `methodology_domain`.<br>Validation of form-specific requirements is **waived for backfilled versions only**, recorded by a `backfilled` flag, so the backfill does not invent stages or criteria (Q4). A Principal Architect later publishes a proper 1.1 |
-| 4    | **Form assignment (D28):**<br>• _Capability Readiness Diagnostic_ → `method`;<br>• _Strategic Model Library Index_ → `model`, and renamed in seed to the model it actually carries, _Anchor-led cluster development_. In production, any asset whose form cannot be inferred defaults to `instrument`, the least behavior-bearing form, and is listed in the migration report for review                                                                                                                                                                      |
-| 5    | Create DAM release **1.0**, `published`, containing every backfilled version. `vocabulary_record` is built from the current reference tables                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| 6    | For every engagement whose `methodology_version` = 'DAM 1.0', set `dam_release_id` to release 1.0. Other values are left with a null release and listed in the report. The text column is not changed                                                                                                                                                                                                                                                                                                                                                         |
-| 7    | Lineage:<br>• set `method_asset_version_id` to the backfilled 1.0 version;<br>• `lineage_role` = `instantiates` where the asset is a Model and the element is an Applied Strategic Model (seed row b3…302);<br>• `legacy_derived_from` otherwise (seed row b3…201);<br>• `method_version` text is kept and becomes read-only                                                                                                                                                                                                                                  |
-| 8    | Drop `method_assets.version`, `methodology_domain` and `description`, now held on versions. Replace the role-name write policy with the operation-only model                                                                                                                                                                                                                                                                                                                                                                                                  |
-| 9    | Revoke direct grants on `element_method_lineage`; add the new operations                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Step | Action                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | Create the new enums, tables, the bucket and the practice capability defaults. The engagement capability tables are not touched                                                                                                                                                                                                                                                                                                                             |
+| 2    | Reshape `method_assets`:<br>• add `key` (slugified from the title), a nullable `form`, `category_key` (mapped from the free-text `category`, or `other`), `origin` = `tplco_developed`, `current_version_id`;<br>• rename `owner_user_id` → `steward_user_id`;<br>• **every existing asset becomes `legacy`** (a pre-Phase-6 `retired` asset stays `retired`). No form is inferred, because the migration cannot know what an asset is without inventing it |
+| 3    | For each asset, create one **legacy version**: `legacy = true`, lifecycle `published` (frozen), `version_label` = the original text (e.g. 'DAM 1.0'), `summary` = the original `description`, domains from `methodology_domain`. It is exempt from form requirements and cannot be applied, instantiated, used, cited or added to a new release                                                                                                             |
+| 4    | **No renaming and no form assignment (D28).** _Strategic Model Library Index_ keeps its name and meaning as a legacy asset. Assets become proper forms only through `adopt_legacy_method_asset`, by a `publish_methodology` holder, after build                                                                                                                                                                                                             |
+| 5    | Create DAM release **1.0**, `published`, containing every legacy version, so 'DAM 1.0' remains exactly what existed. `vocabulary_record` is built from the current reference tables                                                                                                                                                                                                                                                                         |
+| 6    | For every engagement whose `methodology_version` = 'DAM 1.0', set `dam_release_id` to release 1.0. Other values are left with a null release and listed in the report. The text column is not changed                                                                                                                                                                                                                                                       |
+| 7    | Lineage: every row gets `method_asset_version_id` = the legacy version and `lineage_role` = `legacy_derived_from`; `method_version` text is kept read-only. The migration **reports** published elements with `methodology_derived` provenance and no `instantiates` lineage (on seed data: the Meridian Applied Strategic Model), so a proper Model can be authored and linked                                                                             |
+| 8    | Drop `method_assets.version`, `methodology_domain` and `description`, now held on versions. Replace the role-name write policy with the operation-only model                                                                                                                                                                                                                                                                                                |
+| 9    | Revoke direct grants on `element_method_lineage`; add the new operations                                                                                                                                                                                                                                                                                                                                                                                    |
 
 **The backfill does not change:**
 
@@ -1485,13 +1667,16 @@ Existing data on `main` is small: two `method_assets` rows and two `element_meth
 
 The `methodology_derived` publish check (D19) applies to future publications only. Already-published versions are immutable and are not re-validated.
 
+**Build-time seed changes** (not made now): adopt _Capability Readiness Diagnostic_ as a Method; author _Anchor-led cluster development model 1.0_; add `instantiates` lineage from the Meridian Applied Strategic Model to it, leaving its legacy row to the Index in place (§32).
+
 **Application code touched at build time:**
 
 - `listMethodAssets` and the lineage actions (`src/domain/architecture/queries.ts`, `actions.ts`);
 - the element page panel;
 - the engagement edit form (methodology version → release picker);
 - the nav placeholder;
-- the statement-kind mirrors.
+- the statement-kind mirrors;
+- the Review validation dialog and `record_review_validation` (criteria capture, D34).
 
 ---
 
@@ -1499,20 +1684,21 @@ The `methodology_derived` publish check (D19) applies to future publications onl
 
 Written at build time, not now.
 
-| ADR                | Title                                                                          | Decisions                                  |
-| ------------------ | ------------------------------------------------------------------------------ | ------------------------------------------ |
-| 0041               | Method Assets: five forms, identity and immutable versions                     | D1–D6, D29                                 |
-| 0042               | DAM releases are frozen sets of asset versions; no DAM phases                  | D7, D8, D22                                |
-| 0043               | Method Applications are off-spine practice records with explicit linkage       | D2, D9, D12–D14, D17, D24, D30–D32         |
-| 0044               | Practice capabilities and `publish_methodology` (resolves spec §4 vs ADR-0024) | D10, D11                                   |
-| 0045               | Development Context                                                            | D15, D16                                   |
-| 0046               | Engagement acceptance criteria are statements                                  | D20                                        |
-| 0047               | Methodology provenance: typed lineage and the narrow `methodology_derived`     | D18, D19 (clarifies ADR-0009)              |
-| 0048               | Method origin and rights are recorded, not decided                             | D23                                        |
-| 0049               | Client-visible methodology identity through approach statements                | D21 (ADR-0022 unchanged, cross-referenced) |
-| 0050               | Method Library / Pattern Library boundary; AI prompts excluded                 | D25, D26                                   |
-| ADR-0016 amendment | Note: releases document the vocabulary; the Method Library does not govern it  | D27                                        |
-| ADR-0009 note      | Pointer to ADR-0047                                                            | D19                                        |
+| ADR                | Title                                                                                                              | Decisions                                  |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ |
+| 0041               | Method Assets: five forms, identity, immutable versions and legacy assets                                          | D1–D6, D28, D29                            |
+| 0042               | DAM releases are frozen sets of asset versions; no DAM phases                                                      | D7, D8, D22                                |
+| 0043               | Method Applications are off-spine practice records with explicit linkage                                           | D2, D9, D12–D14, D17, D24, D30–D32         |
+| 0044               | Capabilities are scoped by membership: the practice scope and `publish_methodology` (resolves spec §4 vs ADR-0024) | D10, D11                                   |
+| 0045               | Development Context                                                                                                | D15, D16                                   |
+| 0046               | Engagement acceptance criteria are lightweight governance records, captured at validation                          | D20, D33, D34                              |
+| 0047               | Methodology provenance: typed lineage and the narrow `methodology_derived`                                         | D18, D19 (clarifies ADR-0009)              |
+| 0048               | Method origin and rights are recorded, not decided                                                                 | D23                                        |
+| 0049               | Client-visible methodology identity through approach statements                                                    | D21 (ADR-0022 unchanged, cross-referenced) |
+| 0050               | Method Library / Pattern Library boundary; AI prompts excluded                                                     | D25, D26                                   |
+| ADR-0016 amendment | Note: releases document the vocabulary; the Method Library does not govern it                                      | D27                                        |
+| ADR-0009 note      | Pointer to ADR-0047                                                                                                | D19                                        |
+| ADR-0036 note      | Validation also captures the agreed criteria in force; the gate is unchanged                                       | D34                                        |
 
 ---
 
@@ -1521,23 +1707,26 @@ Written at build time, not now.
 | Item                                                            | Why hard to reverse                                                                                        | Decision |
 | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------- |
 | `method_asset_form` values                                      | Postgres enum values cannot be dropped; published assets carry them forever                                | D1       |
-| `statement_kind` + `acceptance_criterion`, `approach`           | Enum values; statements appear in immutable client snapshots                                               | D20, D21 |
+| `statement_kind` + `approach`                                   | Enum value; statements appear in immutable client snapshots                                                | D21      |
+| `acceptance_criterion_state` values and `ACR` codes             | Enum values and permanent reference codes; agreed criteria are never deleted                               | D20, D33 |
 | `method_lineage_role`, `method_application_element_role` values | Enum values; recorded on immutable closed applications                                                     | D14, D18 |
 | `method_asset_origin` values                                    | Enum values; rights history is append-only                                                                 | D23      |
-| `practice_capability` as a new scope                            | A second capability system every later phase must respect                                                  | D10      |
-| The name "Method Application" and prefix `MAP`                  | Reference codes are permanent (ADR-0025); the name enters UI, ADRs and client-adjacent vocabulary          | D12, D13 |
+| `practice_capability` and the membership-scope rule             | Every later TPLCo-wide authority extends this scope                                                        | D10      |
+| The name "Method Application" and prefix `MUS`                  | Reference codes are permanent (ADR-0025); the name enters UI, ADRs and client-adjacent vocabulary          | D12, D13 |
 | Version and release immutability                                | Once published data exists, relaxing immutability breaks interpretability                                  | D6, D7   |
 | Off-spine placement                                             | Moving applications onto the spine later means a data migration into `architecture_elements` and new kinds | D14      |
-| Backfilled form of existing assets                              | Form is immutable after publish; the backfill publishes 1.0                                                | D28      |
+| Adoption of a legacy asset into a form                          | Form is immutable once adopted; the legacy version itself never changes                                    | D28      |
 | Development Context keys                                        | Immutable once referenced                                                                                  | D15      |
 
 Everything else (tables, read models, UI, defaults and override rules) is ordinary migration work and reversible.
 
 ---
 
-## 37. Decisions requiring approval (D1–D32)
+## 37. Decisions requiring approval (D1–D34)
 
 Each decision gives the question, the recommendation, the alternatives, the consequences and the reversibility.
+
+**Revision 2 status:** Kerrick approved every decision except D10, D13, D20, D28 and D30, which are revised below. D11 changed as a direct consequence of D10. D33 and D34 are new. Everything else is unchanged.
 
 ### Method Assets
 
@@ -1602,7 +1791,7 @@ Each decision gives the question, the recommendation, the alternatives, the cons
 - **Question:** how are TPLCo Standards represented, and are any seeded?
 - **Recommendation:**
   - a Standard-form asset with ordered criteria rows and "judged in" settings;
-  - used by citation, components and `judged_against` lineage;
+  - used by citation, components and `judged_against` lineage, and as the optional internal informing source of an engagement acceptance criterion (D20), never as the criterion itself;
   - it never computes a verdict;
   - **none seeded in migrations**; one demonstration Standard in `seed.sql` only.
 - **Alternatives:**
@@ -1662,17 +1851,20 @@ Each decision gives the question, the recommendation, the alternatives, the cons
 - **Consequences:** "Application" alone is never used in UI, to avoid confusion with the Application domain and software applications.
 - **Reversibility:** a label change is easy before build and costly after, because it appears in ADRs and codes.
 
-**D13. Identity and reference-code strategy.**
+**D13. Identity and reference-code strategy.** _(Revised: prefix changed to `MUS`.)_
 
 - **Question:** how are Method Applications identified?
 - **Recommendation:**
-  - engagement-scoped internal reference codes **`MAP-nnn`** through the existing counters (ADR-0025);
-  - Method Assets and releases identified by key, title and version label, with no three-letter code.
+  - engagement-scoped internal reference codes **`MUS-nnn`** (`MUS-001`, `MUS-002`) through the existing counters (ADR-0025);
+  - the display and record name stays **Method Application** (D12 unchanged). The code does not need to abbreviate the name;
+  - Method Assets and releases are identified by key, title and version label, with no three-letter code.
 - **Alternatives:**
-  - `MUS` (if D12 changes);
+  - `MAP` (rejected: it collides with the many map concepts in Development Architecture, such as capability maps);
   - `MTH`;
   - no code (weakens citation in notes and reviews).
-- **Consequences:** "MAP" may be read as _map_. The UI always shows the method title beside the code.
+- **Consequences:**
+  - `MUS` reads naturally as "method use", which is what the record is;
+  - the UI always shows the method title beside the code.
 - **Reversibility:** codes are permanent once issued.
 
 **D14. Off-spine linkage structure.**
@@ -1720,19 +1912,32 @@ Each decision gives the question, the recommendation, the alternatives, the cons
 - **Consequences:** a mistaken closure is corrected by an addendum, not an edit.
 - **Reversibility:** states can be added; freezing is hard to relax.
 
-**D30. Method Application → Architecture provenance.**
+**D30. Method Application → Architecture provenance.** _(Revised: drafts stay disposable.)_
 
-- **Question:** what does the system record about the architecture an application touched?
-- **Recommendation:**
-  - element links with roles;
-  - `observed_version_id` captured at closure for produced and revised elements;
-  - element links `on delete restrict`: an unpublished element linked from a closed application cannot be deleted; it can still be retired after publication;
-  - element-side "Practice" panel.
+- **Question:** what does the system record about the architecture an application touched, and what happens if a linked unpublished draft is later deleted?
+- **Recommendation: an application-side historical reference, captured on the link row.**
+  - `method_application_elements.element_id` becomes nullable, with FK `(element_id, engagement_id)` **`on delete set null (element_id)`**. This is the repository's existing pattern (for example `owner_member_id` on implementation initiatives).
+  - Each link row carries a small captured identity: `captured_reference_code`, `captured_kind`, `captured_object_type_key`, `captured_title`, `captured_at`. These are written when the link is made and refreshed at closure, together with `observed_version_id` (the published version at closure, or null for a draft).
+  - When the element row disappears, a trigger sets `element_removed_at`. The closure-freeze guard permits exactly this one change on a frozen application: `element_id` → null, with `element_removed_at` set.
+  - Published elements are never deleted (Phase 3 guard), so for them `observed_version_id` remains the authoritative immutable reference.
+  - Reference codes are never reused (counters are monotonic), so a captured code stays unambiguous.
+- **The sequence Kerrick asked about:**
+  1. MUS-004 produces draft Capability Gap CAP-031, "Advising capacity for adult learners". The link row captures CAP-031, `object`, `capability_gap` and the title.
+  2. MUS-004 closes. The draft is still unpublished, so `observed_version_id` is null and the captured title is refreshed.
+  3. The architect decides the gap should never be published.
+  4. The draft is deleted under the existing Phase 3 rule: editors may remove unpublished elements. Its statements, evidence links and relationships cascade away as today.
+  5. The link row survives with `element_id` null and `element_removed_at` set. The application still reads: _"produced CAP-031 Capability Gap 'Advising capacity for adult learners' (draft, removed after closure on 2026-11-02)"_. An addendum may explain why, but none is required.
 - **Alternatives:**
-  - cascade delete (silently loses history);
-  - no version capture (cannot say what the element looked like when the work closed).
-- **Consequences:** a small restriction on Phase 3's "editors remove unpublished" for linked drafts.
-- **Reversibility:** easy to relax, hard to tighten.
+  - `on delete restrict` (the original recommendation; makes drafts undeletable, rejected by Kerrick);
+  - `on delete cascade` (silently erases what the work produced);
+  - a full snapshot of the draft (duplicates architecture);
+  - a tombstone element (a duplicate spine row, excluded).
+- **Consequences:**
+  - no change to Phase 3 deletion rules;
+  - five captured columns plus one timestamp on one link table;
+  - read models show removed drafts distinctly;
+  - evidence links on the application are unaffected, because evidence sources are not deleted with elements.
+- **Reversibility:** easy.
 
 **D31. Method Application → Project Intelligence provenance.**
 
@@ -1753,7 +1958,7 @@ Each decision gives the question, the recommendation, the alternatives, the cons
   - not formally in Phase 6;
   - an application may be linked to a Review as `informed`;
   - a Review may carry `judged_against` lineage to a Standard;
-  - Reviews continue to examine and validate _elements_;
+  - Reviews continue to examine elements and to validate Implementation Initiatives;
   - a methodological review of method application quality is Phase 7 governance.
 - **Alternatives:**
   - a new link table Review → application (feasible; adds a Phase 5 surface change);
@@ -1848,53 +2053,62 @@ Each decision gives the question, the recommendation, the alternatives, the cons
 
 ### Capabilities
 
-**D10. A practice capability mechanism.**
+**D10. Capability architecture for methodology authority.** _(Revised after comparing both approaches against the repository, §27.3–§27.4.)_
 
-- **Question:** where does TPLCo-wide methodological authority live?
-- **Recommendation:**
-  - a new `practice_capability` enum;
-  - role defaults and per-member overrides on TPLCo membership;
-  - `private.has_practice_capability`;
-  - not an `engagement_capability`, because it has no engagement.
+- **Question:** should TPLCo-wide methodology authority extend the existing engagement-capability machinery, or live in its own scope?
+- **Recommendation: Approach P, one capability model with two membership scopes.**
+  - A capability is always held through a membership, and its scope is that membership's scope. Engagement membership carries engagement capabilities. TPLCo organization membership carries practice capabilities.
+  - The practice scope mirrors the engagement scope exactly:
+    - a `practice_capability` enum;
+    - `practice_role_capability_defaults`, migration-only;
+    - `practice_member_capability_overrides` on the TPLCo `organization_members` row, with `granted` and a reason, logged;
+    - `private.has_practice_capability`;
+    - `public.my_practice_capabilities`.
+  - The engagement enum, tables, functions, UI and tests are untouched.
 - **Alternatives:**
-  - add `publish_methodology` to `engagement_capability` (meaningless per engagement);
-  - role-name checks (violates the capability principle).
-- **Consequences:** a second capability system; later phases (Pattern Library, licensing) will likely reuse it.
-- **Reversibility:** hard once relied on.
+  - **Approach U:** add the two values to `engagement_capability` with a scope function. It requires nullable engagement semantics on the override table, or a second override table anyway. It also needs explicit refusals in `has_engagement_capability`, filtering in `my_engagement_capabilities`, and filtering in three UI and schema sites. It puts permanent non-engagement values in an engagement-named enum;
+  - a generic scoped-capability table replacing the enum (redesigns a stable model; rejected).
+- **Consequences:**
+  - one new enum, two tables and three functions;
+  - ADR-0044 states the membership-scope rule, so later TPLCo-wide authorities extend `practice_capability` instead of inventing a third mechanism.
+- **Reversibility:** hard once relied on. Approach P can still be folded into a unified table later without touching the engagement model.
 
-**D11. Methodology capabilities and defaults.**
+**D11. Methodology capabilities, defaults and administration.** _(Changed as a consequence of D10: override administration is now capability-based.)_
 
-- **Question:** which practice capabilities exist, and who holds them by default?
+- **Question:** which practice capabilities exist, who holds them by default, and who may grant them?
 - **Recommendation:**
-  - `author_methodology` (Principal Architect and Architect);
-  - `publish_methodology` (Principal Architect only; System Administrator none, per Q11);
-  - overrides only by a Principal Architect holding `publish_methodology`, never on themselves;
-  - last-holder guard;
-  - library read access unchanged for all internal members.
+  - `author_methodology`: Principal Architect and Architect by default;
+  - `publish_methodology`: Principal Architect only (System Administrator none, per Q11);
+  - overrides granted or revoked only by holders of **`publish_methodology`**, never on themselves. There is no role-name check;
+  - the last effective `publish_methodology` holder cannot be revoked;
+  - library read access is unchanged for all internal members.
 - **Alternatives:**
-  - only `publish_methodology` (Architects could not draft);
-  - Researchers also author (possible, via override).
-- **Consequences:** resolves spec §4 vs ADR-0024 in ADR-0024's favor.
+  - override administration restricted to the Principal Architect role (the original draft; a role check, which Kerrick's requirement excludes);
+  - only `publish_methodology` (Architects could not draft).
+- **Consequences:**
+  - resolves spec §4 vs ADR-0024 in ADR-0024's favor;
+  - a System Administrator can hold methodological authority only through an explicit, logged grant by a methodology authority.
 - **Reversibility:** defaults are easy to change.
 
 ### Engagement standards and client identity
 
-**D20. Placement of engagement acceptance criteria.**
+**D20. Engagement acceptance criteria.** _(Revised: approved for Phase 6; placement changed.)_
 
-- **Question:** where do engagement acceptance criteria live, and are they built in Phase 6?
-- **Recommendation:**
-  - a new `statement_kind` value `acceptance_criterion` on elements;
-  - "Validated against" shown in validation;
-  - no gate;
-  - **build in Phase 6.**
+- **Question:** what structure should engagement acceptance criteria have?
+- **Recommendation: Option B, a lightweight engagement-governance record** (§15.4):
+  - `acceptance_criteria` with durable identity (`ACR-nnn`, D33), one governed element (an Implementation Initiative or a core object), text frozen once agreed, and a lifecycle of `proposed` → `agreed` → `superseded` / `withdrawn`;
+  - agreement records who agreed, when it became applicable, who recorded it, and optional agreement evidence. Agreeing requires the governed element to be published;
+  - an internal-only optional reference to the informing Standard version and criterion;
+  - `validation_criteria` captures the agreed criteria in force when a Review validates (D34);
+  - no statement kind is added.
 - **Alternatives:**
-  - Intended Outcome attribute;
-  - Metric targets;
-  - a new element kind;
-  - Method Library Standard (rejected);
-  - defer to a Phase 5.x correction.
-- **Consequences:** a permanent enum value; criteria are agreed through existing approvals.
-- **Reversibility:** enum value permanent.
+  - **A.** `statement_kind = acceptance_criterion`. Rejected: statements are edited in place, `validates` pins no version, and agreement would be conflated with whole-element approval;
+  - **C.** Metric, Intended Outcome, Checkpoint, Decision or approval. Rejected: each distorts the concept (§15.3);
+  - a spine element, a Method Asset, a task, a checkpoint, a Review or scoring. Excluded by Kerrick.
+- **Consequences:**
+  - two tables, one enum (`acceptance_criterion_state`), six operations, one client read model and one addition inside `record_review_validation`;
+  - no change to statements, snapshots or the spine.
+- **Reversibility:** the state enum and codes are permanent; everything else is easy.
 
 **D21. Client-visible methodology identity (ADR-0022).**
 
@@ -1939,21 +2153,65 @@ Each decision gives the question, the recommendation, the alternatives, the cons
 - **Consequences:** none to existing behavior.
 - **Reversibility:** easy.
 
-**D28. Migration of existing Method Assets and lineage.**
+**D28. Migration of existing Method Assets and lineage.** _(Revised: history preserved, no renaming.)_
 
-- **Question:** how are the existing assets and lineage rows migrated?
-- **Recommendation:** per §34:
-  - backfilled 1.0 versions with waived form requirements;
-  - Diagnostic → Method;
-  - _Strategic Model Library Index_ → **Model**, renamed in seed to _Anchor-led cluster development_ (it carries one model; an "index" is not a form);
-  - DAM release 1.0;
-  - engagements mapped;
-  - lineage roles assigned.
+- **Question:** how are pre-Phase-6 assets and lineage migrated without rewriting what they meant?
+- **Recommendation: backfill every existing asset as a legacy asset, and never assign a form by inference.**
+  - **Legacy state.**
+    - `method_assets.status` gains `legacy`. It is a check-constraint value, not an enum.
+    - `form` may be null only while the asset is `legacy` (or `retired` without ever being adopted).
+    - Each existing asset gets one **legacy version**: published and frozen, `legacy = true`, with its original label ('DAM 1.0'), original description and domains.
+    - A legacy version:
+      - is exempt from form requirements;
+      - can never be applied, instantiated, used as a component, cited as a Standard, or added to any new release;
+      - is valid only as the target of `legacy_derived_from` lineage and as a member of the backfilled DAM 1.0 release.
+  - **Adoption.** `adopt_legacy_method_asset(asset, form)` (`publish_methodology`) gives a legacy asset a form and opens its first proper draft. Publishing that draft supersedes the legacy version, which remains readable. An asset that is never adopted, such as the **Strategic Model Library Index**, stays legacy with its name and meaning intact.
+  - **Lineage.**
+    - Every existing lineage row becomes `legacy_derived_from`, pinned to the legacy version. The free-text `method_version` is kept read-only.
+    - The migration **reports** every published element with `methodology_derived` provenance and no `instantiates` lineage, so a Principal Architect can author the proper Model and record `instantiates` lineage.
+    - The legacy row stays alongside it as history.
+  - **Seed, at build time only.**
+    - _Capability Readiness Diagnostic_ is adopted as a Method.
+    - A proper Model (_Anchor-led cluster development model 1.0_) is authored.
+    - The Meridian Applied Strategic Model gains `instantiates` lineage to it, beside its untouched legacy row to the Index.
+  - **No `index` form** is introduced.
 - **Alternatives:**
-  - backfill the Index as an Instrument (breaks the `methodology_derived` seed element under D19);
-  - drop both seed assets and reseed (loses continuity).
-- **Consequences:** the seed element stays valid.
-- **Reversibility:** form is immutable after the backfill publishes.
+  - backfill the Index as a Model and rename it (rejected by Kerrick);
+  - add an `index` form (rejected);
+  - infer forms for all assets in the migration (guesses meaning);
+  - drop and reseed (loses continuity).
+- **Consequences:**
+  - The seeded `methodology_derived` element is already published and is not re-validated. Its next published version will require the new `instantiates` lineage (D19), which the seed provides.
+  - DAM 1.0 remains reproducible as exactly what existed.
+- **Reversibility:** the legacy state is a check value (easy). Adoption is permanent per asset.
+
+### Added in the revision
+
+**D33. Acceptance criterion reference codes.** _(New, from D20.)_
+
+- **Question:** do acceptance criteria get engagement-scoped reference codes, and with what prefix?
+- **Recommendation:** yes, **`ACR-nnn`**, through the existing counters (ADR-0025). Codes are citable in Review notes and client conversations.
+- **Alternatives:**
+  - `ACC` (reads as "account");
+  - `CRT`;
+  - no code, with identity by uuid only (weak for human citation).
+- **Consequences:** one more engagement-scoped prefix. It is internal and client-visible, like element codes.
+- **Reversibility:** codes are permanent once issued.
+
+**D34. Validation captures the criteria in force.** _(New, from D20; touches one Phase 5 operation.)_
+
+- **Question:** how does a validation record what it was validated against?
+- **Recommendation:**
+  - `record_review_validation` additionally writes one `validation_criteria` row per agreed criterion in force at that moment: those governing the initiative and those governing core objects it `implements`;
+  - architects may add a per-criterion note;
+  - no per-criterion verdict;
+  - no new precondition. The ADR-0036 gate is unchanged, and a validation with no agreed criteria remains valid, with a UI warning;
+  - an ADR-0036 amendment note records the capture.
+- **Alternatives:**
+  - the architect selects criteria manually (can omit inconvenient ones);
+  - require at least one agreed criterion before validating (changes the Phase 5 gate; not proposed).
+- **Consequences:** "validated against what?" is answered by data captured at the moment of judgment.
+- **Reversibility:** easy.
 
 ---
 
@@ -1963,8 +2221,8 @@ Each step lands with its pgTAP and vitest tests, and CI must be green ("App", "D
 
 1. **Vocabulary and capabilities:**
    - enums;
-   - `practice_capability` defaults, overrides and `has_practice_capability`;
-   - `statement_kind` additions;
+   - practice-scope defaults, overrides, `has_practice_capability` and `my_practice_capabilities`;
+   - the `approach` statement kind;
    - suite 24.
 2. **Library core:**
    - `method_assets` reshape;
@@ -1977,13 +2235,14 @@ Each step lands with its pgTAP and vitest tests, and CI must be green ("App", "D
    - suite 21 (library parts).
 3. **Backfill** (§34), suite 25.
 4. **DAM releases and Development Contexts:** tables, operations, engagement release and contexts, synchronization trigger; suite 21 (release and context parts).
-5. **Method Applications:** tables, `MAP` codes, link tables, closure and freeze, addenda, learning sources; suite 22.
-6. **Typed lineage and provenance:** lineage columns and operations, `methodology_derived` publish check.
-7. **Read models and the client boundary:** `client_engagement_methodology`; suite 23; snapshot regression; suite 99.
-8. **Internal UX:** library, asset pages, releases, contexts, engagement Method tab, application page, Practice panel, statement editor.
-9. **Phase 5 touchpoints and client UX:** "Validated against", Review and Deliverable lines, client overview line.
-10. **Seed and demo data; ADRs 0041–0050; documentation** (`docs/database/method-library.md`, CLAUDE.md, README).
-11. **Browser acceptance pass** by role, with written results. Fix, re-verify, then request merge.
+5. **Method Applications:** tables, `MUS` codes, link tables with captured references, closure and freeze, addenda, learning sources; suite 22.
+6. **Acceptance criteria:** tables, `ACR` codes, operations, capture in `record_review_validation`; suite 26.
+7. **Typed lineage and provenance:** lineage columns and operations, `methodology_derived` publish check.
+8. **Read models and the client boundary:** `client_engagement_methodology`, `client_acceptance_criteria`; suite 23; snapshot regression; suite 99.
+9. **Internal UX:** library, asset pages, releases, contexts, engagement Method tab, application page, Practice panel, statement editor, acceptance criteria panel.
+10. **Phase 5 touchpoints and client UX:** "Validated against", Review and Deliverable lines, client overview line.
+11. **Seed and demo data; ADRs 0041–0050 and the ADR-0016, ADR-0009 and ADR-0036 notes; documentation** (`docs/database/method-library.md`, CLAUDE.md, README).
+12. **Browser acceptance pass** by role, with written results. Fix, re-verify, then request merge.
 
 A single PR, as for Phases 3–5, with these as reviewable commits.
 
@@ -1999,11 +2258,11 @@ A single PR, as for Phases 3–5, with these as reviewable commits.
 | **Architects stop recording applications** because it feels like overhead                  | Minimal required fields (reason, method, closure); "Create element from here" makes linking a by-product of work; retrospective optional |
 | **Broad `methodology_derived` creeps back**                                                | Publish check (D19)                                                                                                                      |
 | **Invented methodology** (standards, contexts, stages TPLCo never established)             | Nothing methodological in migrations; backfill waives requirements instead of inventing content; seed is demonstration only              |
-| **Draft element deletion blocked** by a closed application link (D30)                      | Clear error naming the application; recorded as a deliberate history-preservation rule                                                   |
-| **Two capability systems confuse administration**                                          | Practice capabilities live on a separate settings page; one check function; documented in ADR-0044                                       |
+| **Removed drafts make application history unreadable**                                     | Captured code, kind, type and title on each link, with a removal timestamp (D30)                                                         |
+| **Two capability scopes confuse administration**                                           | One model stated in ADR-0044; identical shape and naming; practice capabilities on their own settings page                               |
 | **Release/engagement drift**: engagements left on old releases indefinitely                | Release page lists engagements per release; moving is explicit and logged; no automatic migration                                        |
-| **`MAP` misread** as a map                                                                 | Always displayed with the method title; alternative prefix via D13                                                                       |
-| **Backfilled 1.0 versions look complete but are placeholders**                             | `backfilled` flag shown as a banner; library filter "needs specification"                                                                |
+| **Acceptance criteria drift into scoring or tasks**                                        | No verdict, assignee, date or progress columns; validation stays one judgment (D20, D34)                                                 |
+| **Legacy assets look like real methodology**                                               | `legacy` status and banner; cannot be applied or released; adoption is an explicit act (D28)                                             |
 | **Enum permanence** locks in a wrong value                                                 | All permanent values listed in §36 for explicit approval before any migration                                                            |
 | **Concurrency** (double publish, code allocation, release edits during publish)            | Row locks in operations; counters reuse the ADR-0025 mechanism; suite 99                                                                 |
 | **Scope creep into Phase 7** (analytics, scoring, AI)                                      | Read models limited to lists and counts; out-of-scope table (§4)                                                                         |
@@ -2014,18 +2273,19 @@ A single PR, as for Phases 3–5, with these as reviewable commits.
 
 Phase 6 is complete when **all** of the following are true on `main`:
 
-1. Every approved decision D1–D32 is implemented as approved, with ADRs 0041–0050 and the ADR-0016 and ADR-0009 notes written.
+1. Every approved decision D1–D34 is implemented as approved, with ADRs 0041–0050 and the ADR-0016, ADR-0009 and ADR-0036 notes written.
 2. A `publish_methodology` holder can author, publish, supersede and retire assets of all five forms, and publish a DAM release. A System Administrator without an override cannot do any of these, and this is tested.
 3. An architect can apply a published Method version on an engagement, record its context, scope, inputs, evidence, components, stage treatments and outputs, and complete or discontinue it. The closed record cannot be changed, and this is tested.
 4. Every element shows its practice provenance. Every Method Asset shows where it has been used. Every release shows its members, its changes and the engagements on it.
 5. `methodology_derived` publication requires `instantiates` lineage. Deliverables can record `produced_from`; Reviews and elements can record `judged_against`.
-6. Engagement acceptance criteria and approach statements work end to end, including client display, if D20 and D21 are approved for Phase 6.
-7. Clients see exactly the release label and authored statements, and nothing else. Every client-denial test passes.
-8. Existing data is backfilled as §34 describes. All pre-existing pgTAP suites pass, with only the deliberate enum-list and grant updates.
-9. CI ("App", "Database") is green on the final head.
-10. A role-by-role browser acceptance pass has been completed and written up, with every defect fixed and re-verified.
-11. `CLAUDE.md`, `README.md` and `docs/database/method-library.md` reflect the merged state.
-12. Kerrick has reviewed and explicitly approved the merge.
+6. Acceptance criteria can be proposed, agreed, superseded and withdrawn; a validation captures the criteria in force; and criteria and approach statements reach clients only as §15 and §17 describe.
+7. Deleting a linked unpublished draft leaves its Method Application history readable (D30).
+8. Clients see exactly the release label, authored approach statements and agreed acceptance criteria, and nothing else. Every client-denial test passes.
+9. Existing data is backfilled as §34 describes. All pre-existing pgTAP suites pass, with only the deliberate enum-list and grant updates.
+10. CI ("App", "Database") is green on the final head.
+11. A role-by-role browser acceptance pass has been completed and written up, with every defect fixed and re-verified.
+12. `CLAUDE.md`, `README.md` and `docs/database/method-library.md` reflect the merged state.
+13. Kerrick has reviewed and explicitly approved the merge.
 
 **Not required for completion:**
 
