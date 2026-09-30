@@ -24,7 +24,9 @@ Treat `DSA_OS_MASTER_BUILD_SPEC.md` as the authoritative product specification.
 If code and the specification conflict, surface the conflict before making an expensive architectural change.
 
 ## Current Build Phase
-**Phase 4 — Project Intelligence** (implementation approved 2026-09-30; Phases 1, 2 and 3 merged). Build on `phase-4-project-intelligence` following `docs/product/PHASE_4_PROPOSAL.md` §17, with the decisions in §16. Do not build AI/Architecture Intelligence, deliverables, implementation tracking, Executive Review, Method Library, portfolio analytics, certification or licensing functionality.
+**Phase 5 — Reviews, Deliverables and Implementation: complete and merged** (2026-09-30; Phases 1-4 merged). See `docs/product/PHASE_5_REPORT.md` for what was built, the corrected acceptance-review defects, and ADR-0034 through ADR-0040.
+
+**Do not begin Phase 6.** Do not create a Phase 6 branch, proposal, migration, schema, ADR, UI, or application code. Phase 6 begins only after its methodological purpose, scope, and intended UX are separately reviewed and approved.
 
 Only build the currently approved phase unless explicitly instructed otherwise.
 
