@@ -1,6 +1,6 @@
 # Phase 6 end-of-phase report: Method Library
 
-Status: implemented on PR #7, awaiting Kerrick's final acceptance. Not merged.
+Status: complete and merged to `main` on 2026-09-30 (PR #7, squash commit `e442d87`) after Kerrick's final acceptance of head `b702bee`.
 
 Kerrick approved [`PHASE_6_PROPOSAL.md`](PHASE_6_PROPOSAL.md) Revision 2 (decisions D1–D34) on 2026-09-30 and authorized implementation in the §38 staged order. Each step landed with database and application tests and green CI before the next. No approved decision was reinterpreted; the one tension found between a decision and the rest of the approved design is recorded in §7.
 
@@ -101,4 +101,4 @@ Method Applications are internal TPLCo practice and provenance records and are n
 
 ## 8. Recommended next step
 
-Kerrick's final acceptance review of PR #7. After approval and merge, update the status docs to "merged". Phase 7 (Architecture Intelligence) has not begun.
+Phase 6 is closed. Phase 7 (Architecture Intelligence) is on hold until Kerrick separately reviews what it should mean for Development Systems Architecture; no Phase 7 work has begun.
