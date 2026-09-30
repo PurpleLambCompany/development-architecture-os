@@ -79,8 +79,11 @@ select is((select open_client_actions from public.intelligence_register('e000000
            where reference_code = 'RSK-002'), 1, 'and the open client requests about the record');
 select is((select attractiveness from public.intelligence_register('e0000000-0000-4000-8000-000000000001')
            where reference_code = 'OPP-002'), 16::smallint, 'an opportunity''s attractiveness is value times feasibility');
-select is((select count(*)::int from public.intelligence_register('e0000000-0000-4000-8000-000000000003')), 0,
-  'an Architect not assigned to Harbor reads none of its records');
+-- The Architect is in fact assigned to Harbor too (seed); intelligence_register
+-- also returns non-object Phase 5 kinds, so this is Harbor's one review, one
+-- deliverable and three implementation initiatives (Phase 5 seed), not zero.
+select is((select count(*)::int from public.intelligence_register('e0000000-0000-4000-8000-000000000003')), 5,
+  'the register also carries Harbor''s reviews, deliverables and implementation initiatives');
 select pg_temp.reset_actor();
 
 select pg_temp.act_as('finance@tplco.test');

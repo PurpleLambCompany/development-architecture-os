@@ -10,7 +10,9 @@
 -- Seed: Meridian district e...01 has 33 published client-visible elements,
 -- one internal element (KNW-008), one never-published draft, 33 client-visible
 -- published relationships (of 35 published), 2 frozen baselines and 3
--- approvals. Harbor e...03 has 2 published elements.
+-- approvals. Harbor e...03 has 2 published core objects, plus (Phase 5 seed)
+-- one held review, one approved deliverable and two published implementation
+-- initiatives, all client-visible: 6 client-visible elements in all.
 -- =============================================================================
 begin;
 
@@ -310,7 +312,7 @@ select is(pg_temp.client_count('e0000000-0000-4000-8000-000000000001'), 34,
 select pg_temp.reset_actor();
 
 select pg_temp.act_as('advisor@consulting.test');
-select is(pg_temp.client_count('e0000000-0000-4000-8000-000000000003'), 2, 'the multi-organization advisor sees Harbor''s architecture');
+select is(pg_temp.client_count('e0000000-0000-4000-8000-000000000003'), 6, 'the multi-organization advisor sees Harbor''s architecture');
 select is(pg_temp.client_count('e0000000-0000-4000-8000-000000000001'), 5, 'and, separately, the Meridian district operating model that is their area');
 select pg_temp.reset_actor();
 
