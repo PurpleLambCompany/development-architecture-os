@@ -33,12 +33,16 @@ import { recordStatusValue } from "@/components/architecture/element-fields";
 import { ActionButton, ActionForm } from "@/components/ui/action-form";
 import { DetailList, EmptyState, Panel } from "@/components/ui/panel";
 import { StatusTag } from "@/components/ui/status-tag";
-import { escalateFields, reopenFields, requiredNoteFields, resolveFields, triageFields } from "./fields";
+import {
+  escalateFields,
+  reopenFields,
+  requiredNoteFields,
+  resolveFields,
+  triageFields,
+} from "./fields";
 import { AttentionTag, RecordStatusTag } from "./register-view";
 
-const RELATIONSHIP_LABEL = new Map<string, string>(
-  RELATIONSHIP_TYPES.map((t) => [t.key, t.label]),
-);
+const RELATIONSHIP_LABEL = new Map<string, string>(RELATIONSHIP_TYPES.map((t) => [t.key, t.label]));
 
 /**
  * Stewardship of one record: attention, triage, review date, resolution and
@@ -183,10 +187,8 @@ export function EscalationItem({
   nameOf: (id: string | null) => string;
   subject?: ReactNode;
 }) {
-  const who = (
-    profile: Parameters<typeof personName>[0] | undefined,
-    id: string | null,
-  ) => (profile ? personName(profile) : nameOf(id));
+  const who = (profile: Parameters<typeof personName>[0] | undefined, id: string | null) =>
+    profile ? personName(profile) : nameOf(id);
   return (
     <div className="rounded-sm border border-rule px-4 py-3 text-sm">
       <p className="flex flex-wrap items-center gap-2">

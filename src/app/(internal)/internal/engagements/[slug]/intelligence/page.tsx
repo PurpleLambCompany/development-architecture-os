@@ -47,9 +47,10 @@ export default async function IntelligencePage({
     const q = registerQuery({ ...filters, ...extra });
     return q ? `${base}?${q}` : base;
   };
-  const creating = (RECORD_KINDS as readonly string[]).includes(String(query.new)) && canEdit
-    ? (query.new as RecordKind)
-    : null;
+  const creating =
+    (RECORD_KINDS as readonly string[]).includes(String(query.new)) && canEdit
+      ? (query.new as RecordKind)
+      : null;
   const live = architecture.elements.filter(
     (e) => e.lifecycle !== "retired" && e.lifecycle !== "superseded",
   );
@@ -86,7 +87,11 @@ export default async function IntelligencePage({
           { label: "Untriaged", value: counts.untriaged, href: here({ triage: "untriaged" }) },
           { label: "Critical", value: counts.critical, href: here({ attention: "critical" }) },
           { label: "Escalated", value: counts.escalated, href: here({ escalated: true }) },
-          { label: "Reviews overdue", value: counts.reviewsOverdue, href: here({ review: "overdue" }) },
+          {
+            label: "Reviews overdue",
+            value: counts.reviewsOverdue,
+            href: here({ review: "overdue" }),
+          },
           { label: "Open signals", value: register.signals.length, href: `${base}/signals` },
         ]}
       />

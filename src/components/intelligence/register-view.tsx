@@ -91,8 +91,7 @@ export function KindTabs({
                 : "border-rule text-ink-muted hover:text-ink",
             )}
           >
-            {tab.label}{" "}
-            <span className="text-xs text-ink-subtle tabular-nums">{tab.count}</span>
+            {tab.label} <span className="text-xs text-ink-subtle tabular-nums">{tab.count}</span>
           </Link>
         );
       })}
@@ -253,13 +252,19 @@ function RowFacts({ row }: { row: RegisterRow }): ReactNode {
       );
       break;
     case "assumption":
-      if (row.confidence) facts.push(`Confidence ${CONFIDENCE_LABELS[row.confidence].toLowerCase()}`);
+      if (row.confidence)
+        facts.push(`Confidence ${CONFIDENCE_LABELS[row.confidence].toLowerCase()}`);
       break;
     case "constraint":
       facts.push(row.negotiable ? "Negotiable" : "Non-negotiable");
       break;
     case "dependency":
-      if (row.blocking) facts.push(<StatusTag key="b" tone="negative">Blocking</StatusTag>);
+      if (row.blocking)
+        facts.push(
+          <StatusTag key="b" tone="negative">
+            Blocking
+          </StatusTag>,
+        );
       break;
     case "decision":
       if (row.needed_by) facts.push(`Needed by ${formatDate(row.needed_by)}`);
@@ -348,16 +353,15 @@ export function RegisterTable({
               return (
                 <tr key={row.element_id} className={isActiveRecord(row) ? undefined : "opacity-70"}>
                   <Td>
-                    <Link
-                      href={recordHref(row)}
-                      className="group inline-flex items-baseline gap-2"
-                    >
+                    <Link href={recordHref(row)} className="group inline-flex items-baseline gap-2">
                       <ReferenceCode code={row.reference_code} />
                       <span className="text-ink group-hover:underline">{row.title}</span>
                     </Link>
                     <span className="mt-1 flex flex-wrap items-center gap-2">
                       {kind ? null : (
-                        <span className="text-xs text-ink-subtle">{RECORD_KIND_LABELS[row.kind]}</span>
+                        <span className="text-xs text-ink-subtle">
+                          {RECORD_KIND_LABELS[row.kind]}
+                        </span>
                       )}
                       {row.client_visibility === "internal" ? <InternalMark /> : null}
                       {row.lifecycle !== "published" ? (

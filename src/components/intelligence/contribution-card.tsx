@@ -41,7 +41,8 @@ export function ContributionCard({
       <FileList files={contribution.files} />
       {contribution.handled_at ? (
         <p className="mt-3 border-t border-rule pt-2 text-xs text-ink-muted">
-          {status.label} by {name(contribution.handled_by)} {formatDateTime(contribution.handled_at)}
+          {status.label} by {name(contribution.handled_by)}{" "}
+          {formatDateTime(contribution.handled_at)}
           {contribution.handling_note ? `: ${contribution.handling_note}` : ""}
         </p>
       ) : null}

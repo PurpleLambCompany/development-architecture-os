@@ -6,7 +6,9 @@ import {
   approvalState,
   type RecordKind,
 } from "@/domain/architecture/catalog";
-import { getClientArchitectureContext } from "@/domain/architecture/context";
+import { getClientArchitectureContext, memberNames } from "@/domain/architecture/context";
+import { submitContribution } from "@/domain/intelligence/actions";
+import { getContributions } from "@/domain/intelligence/queries";
 import {
   getClientArchitecture,
   getClientElementVersions,
@@ -18,6 +20,8 @@ import { formatDate, formatDateTime } from "@/lib/format";
 import { ApprovalTag, ReferenceCode } from "@/components/architecture/badges";
 import { ApprovalResponseForm } from "@/components/architecture/client-responses";
 import { SnapshotView } from "@/components/architecture/snapshot-view";
+import { ContributionCard } from "@/components/intelligence/contribution-card";
+import { UploadForm } from "@/components/intelligence/upload-form";
 import { EngagementNav } from "@/components/portal/engagement-nav";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState, Panel } from "@/components/ui/panel";
@@ -28,14 +32,19 @@ export default async function ClientElementPage({
 }: PageProps<"/portal/[slug]/architecture/[elementId]">) {
   const { slug, elementId } = await params;
   const query = await searchParams;
-  const { engagement, canView, canRespond } = await getClientArchitectureContext(slug);
+  const { viewer, engagement, capabilities, canView, canRespond } =
+    await getClientArchitectureContext(slug);
   if (!canView) notFound();
-  const [rows, versions, relationships, pending] = await Promise.all([
+  const [rows, versions, relationships, pending, contributions] = await Promise.all([
     getClientArchitecture(engagement.id),
     getClientElementVersions(elementId),
     getClientRelationships(engagement.id),
     canRespond ? getClientPendingApprovals(engagement.id) : Promise.resolve([]),
+    getContributions(engagement.id, elementId),
   ]);
+  const canContribute = capabilities.has("submit_client_input");
+  const names = memberNames(engagement);
+  const nameOf = (id: string | null) => (id === viewer.id ? "You" : names(id));
   const row = rows.find((r) => r.element_id === elementId);
   if (!row || versions.length === 0) notFound();
 
@@ -138,6 +147,29 @@ export default async function ClientElementPage({
           </ul>
         )}
       </Panel>
+
+      {canContribute || contributions.length > 0 ? (
+        <Panel
+          title="Your input"
+          description="Add context, corrections or documents on this item. The Purple Lamb Company reviews each contribution and tells you how it was used."
+        >
+          <div className="space-y-4">
+            {canContribute ? (
+              <UploadForm
+                engagementId={engagement.id}
+                purpose="client_contribution"
+                action={submitContribution.bind(null, elementId)}
+                bodyLabel="Your input"
+                submitLabel="Send input"
+                trigger="Add input"
+              />
+            ) : null}
+            {contributions.map((c) => (
+              <ContributionCard key={c.id} contribution={c} name={nameOf} />
+            ))}
+          </div>
+        </Panel>
+      ) : null}
 
       <Panel title="History" description="Every published version stays readable.">
         <ul className="divide-y divide-rule border-y border-rule text-sm">

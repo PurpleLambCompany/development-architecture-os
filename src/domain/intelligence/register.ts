@@ -391,7 +391,11 @@ export function recordsBearingOn(
   elementId: string,
   edges: readonly RegisterEdge[],
   recordIds: ReadonlySet<string>,
-  dependencyEnds: readonly { element_id: string; from_element_id: string; to_element_id: string }[] = [],
+  dependencyEnds: readonly {
+    element_id: string;
+    from_element_id: string;
+    to_element_id: string;
+  }[] = [],
 ): Set<string> {
   const ids = new Set<string>();
   for (const e of edges) {

@@ -34,7 +34,8 @@ export default async function SignalsPage({
     return i < 0 ? SIGNAL_RULES.length : i;
   };
   const ordered = [...shown].sort(
-    (a, b) => rank(a.rule_key) - rank(b.rule_key) || a.reference_code.localeCompare(b.reference_code),
+    (a, b) =>
+      rank(a.rule_key) - rank(b.rule_key) || a.reference_code.localeCompare(b.reference_code),
   );
   const href = (s: (typeof signals)[number]) =>
     s.client_action_id
@@ -71,7 +72,9 @@ export default async function SignalsPage({
         }
       >
         {ordered.length === 0 ? (
-          <EmptyState title="No open signals">Nothing in the register trips a rule today.</EmptyState>
+          <EmptyState title="No open signals">
+            Nothing in the register trips a rule today.
+          </EmptyState>
         ) : (
           <Table>
             <thead>

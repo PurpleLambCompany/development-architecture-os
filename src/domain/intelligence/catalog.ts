@@ -482,3 +482,21 @@ export function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
+
+/** The column that carries each kind's status, in rows and in published snapshots. */
+export const STATUS_COLUMNS: Record<RecordKind, string | null> = {
+  assumption: "validation_status",
+  risk: "risk_status",
+  constraint: "constraint_status",
+  dependency: "dependency_status",
+  decision: "decision_status",
+  recommendation: null,
+  opportunity: "opportunity_status",
+};
+
+/** A record's status as published, read from its snapshot details. */
+export function snapshotStatus(kind: RecordKind, details: Record<string, unknown>): string | null {
+  const column = STATUS_COLUMNS[kind];
+  const value = column ? details[column] : null;
+  return typeof value === "string" ? value : null;
+}

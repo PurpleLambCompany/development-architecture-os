@@ -37,8 +37,7 @@ export function ElementRequestsPanel({
   nameOf: (id: string | null) => string;
   today: string;
 }) {
-  const askable =
-    element.lifecycle === "published" && element.client_visibility === "client";
+  const askable = element.lifecycle === "published" && element.client_visibility === "client";
   const requestsHref = `/internal/engagements/${slug}/intelligence/requests`;
   if (!askable && actions.length === 0 && contributions.length === 0) return null;
   return (

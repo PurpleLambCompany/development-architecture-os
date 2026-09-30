@@ -53,7 +53,9 @@ export function EscalationsPanel({
                       {x.architecture_elements.title}
                     </span>
                     {showEngagement ? (
-                      <span className="text-xs text-ink-subtle">{x.architecture_elements.engagements?.title}</span>
+                      <span className="text-xs text-ink-subtle">
+                        {x.architecture_elements.engagements?.title}
+                      </span>
                     ) : null}
                   </Link>
                 ) : null

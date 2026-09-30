@@ -1,9 +1,6 @@
 import "server-only";
 import type { AppRole } from "@/domain/roles/roles";
-import {
-  effectiveCapabilities,
-  type EngagementCapability,
-} from "@/domain/capabilities/catalog";
+import { effectiveCapabilities, type EngagementCapability } from "@/domain/capabilities/catalog";
 import { listCapabilityOverrides } from "@/domain/capabilities/queries";
 import { loadArchitecture } from "@/domain/architecture/queries";
 import { RECORD_KINDS } from "@/domain/architecture/vocabulary";

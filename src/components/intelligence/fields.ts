@@ -100,9 +100,10 @@ export function reopenFields(kind: ResolvableKind): FieldSpec[] {
 }
 
 export function escalateFields(canPublish: boolean, executives: Option[]): FieldSpec[] {
-  const levels = canPublish && executives.length > 0
-    ? (["principal_architect", "client_executive"] as const)
-    : (["principal_architect"] as const);
+  const levels =
+    canPublish && executives.length > 0
+      ? (["principal_architect", "client_executive"] as const)
+      : (["principal_architect"] as const);
   const fields: FieldSpec[] = [
     {
       name: "level",

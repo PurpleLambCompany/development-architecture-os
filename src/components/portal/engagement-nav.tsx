@@ -5,12 +5,12 @@ import { cn } from "@/lib/utils";
 
 /**
  * Client navigation from spec §7. Overview is live for every member;
- * Architecture and Decisions with view_architecture; Billing with
- * view_financials. The database enforces the same capabilities.
+ * Actions for anyone who can be asked, respond or assign; Architecture and
+ * Decisions with view_architecture; Billing with view_financials. The database enforces the same capabilities.
  */
-const LATER_SECTIONS = ["Actions", "Reviews", "Documents", "Implementation", "Messages"];
+const LATER_SECTIONS = ["Reviews", "Documents", "Implementation", "Messages"];
 
-export type PortalSection = "overview" | "architecture" | "decisions" | "billing";
+export type PortalSection = "overview" | "actions" | "architecture" | "decisions" | "billing";
 
 export async function EngagementNav({
   slug,
@@ -35,12 +35,17 @@ export async function EngagementNav({
     </Link>
   );
   const seesArchitecture = capabilities.has("view_architecture");
+  const seesActions =
+    seesArchitecture ||
+    capabilities.has("respond_to_client_actions") ||
+    capabilities.has("assign_client_actions");
   return (
     <nav
       className="-mt-4 flex flex-wrap items-center gap-x-1 border-b border-rule text-sm"
       aria-label="Engagement"
     >
       {tab(`/portal/${slug}`, "Overview", current === "overview")}
+      {seesActions ? tab(`/portal/${slug}/actions`, "Actions", current === "actions") : null}
       {seesArchitecture
         ? tab(`/portal/${slug}/architecture`, "Architecture", current === "architecture")
         : null}
