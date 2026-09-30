@@ -3970,6 +3970,481 @@ export type Database = {
           },
         ];
       };
+      method_application_addenda: {
+        Row: {
+          application_id: string;
+          body: string;
+          created_at: string;
+          created_by: string | null;
+          engagement_id: string;
+          id: string;
+        };
+        Insert: {
+          application_id: string;
+          body: string;
+          created_at?: string;
+          created_by?: string | null;
+          engagement_id: string;
+          id?: string;
+        };
+        Update: {
+          application_id?: string;
+          body?: string;
+          created_at?: string;
+          created_by?: string | null;
+          engagement_id?: string;
+          id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "method_application_addenda_application_id_engagement_id_fkey";
+            columns: ["application_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "method_applications";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "method_application_addenda_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      method_application_assets: {
+        Row: {
+          application_id: string;
+          asset_version_id: string;
+          deviation_note: string;
+        };
+        Insert: {
+          application_id: string;
+          asset_version_id: string;
+          deviation_note?: string;
+        };
+        Update: {
+          application_id?: string;
+          asset_version_id?: string;
+          deviation_note?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "method_application_assets_application_id_fkey";
+            columns: ["application_id"];
+            isOneToOne: false;
+            referencedRelation: "method_applications";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "method_application_assets_asset_version_id_fkey";
+            columns: ["asset_version_id"];
+            isOneToOne: false;
+            referencedRelation: "method_asset_versions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      method_application_contexts: {
+        Row: {
+          application_id: string;
+          context_id: string;
+        };
+        Insert: {
+          application_id: string;
+          context_id: string;
+        };
+        Update: {
+          application_id?: string;
+          context_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "method_application_contexts_application_id_fkey";
+            columns: ["application_id"];
+            isOneToOne: false;
+            referencedRelation: "method_applications";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "method_application_contexts_context_id_fkey";
+            columns: ["context_id"];
+            isOneToOne: false;
+            referencedRelation: "development_contexts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      method_application_domains: {
+        Row: {
+          application_id: string;
+          domain: Database["public"]["Enums"]["architecture_domain"];
+        };
+        Insert: {
+          application_id: string;
+          domain: Database["public"]["Enums"]["architecture_domain"];
+        };
+        Update: {
+          application_id?: string;
+          domain?: Database["public"]["Enums"]["architecture_domain"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "method_application_domains_application_id_fkey";
+            columns: ["application_id"];
+            isOneToOne: false;
+            referencedRelation: "method_applications";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      method_application_elements: {
+        Row: {
+          application_id: string;
+          captured_at: string;
+          captured_kind: Database["public"]["Enums"]["element_kind"];
+          captured_object_type_key: string | null;
+          captured_reference_code: string | null;
+          captured_title: string;
+          created_at: string;
+          created_by: string | null;
+          element_id: string | null;
+          element_removed_at: string | null;
+          engagement_id: string;
+          id: string;
+          note: string;
+          observed_version_id: string | null;
+          role: Database["public"]["Enums"]["method_application_element_role"];
+        };
+        Insert: {
+          application_id: string;
+          captured_at?: string;
+          captured_kind: Database["public"]["Enums"]["element_kind"];
+          captured_object_type_key?: string | null;
+          captured_reference_code?: string | null;
+          captured_title: string;
+          created_at?: string;
+          created_by?: string | null;
+          element_id?: string | null;
+          element_removed_at?: string | null;
+          engagement_id: string;
+          id?: string;
+          note?: string;
+          observed_version_id?: string | null;
+          role: Database["public"]["Enums"]["method_application_element_role"];
+        };
+        Update: {
+          application_id?: string;
+          captured_at?: string;
+          captured_kind?: Database["public"]["Enums"]["element_kind"];
+          captured_object_type_key?: string | null;
+          captured_reference_code?: string | null;
+          captured_title?: string;
+          created_at?: string;
+          created_by?: string | null;
+          element_id?: string | null;
+          element_removed_at?: string | null;
+          engagement_id?: string;
+          id?: string;
+          note?: string;
+          observed_version_id?: string | null;
+          role?: Database["public"]["Enums"]["method_application_element_role"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "method_application_elements_application_id_engagement_id_fkey";
+            columns: ["application_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "method_applications";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "method_application_elements_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "method_application_elements_element_fk";
+            columns: ["element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "method_application_elements_observed_version_id_fkey";
+            columns: ["observed_version_id"];
+            isOneToOne: false;
+            referencedRelation: "element_versions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      method_application_evidence: {
+        Row: {
+          application_id: string;
+          created_at: string;
+          created_by: string | null;
+          engagement_id: string;
+          evidence_source_id: string;
+          id: string;
+          instrument_version_id: string | null;
+          note: string;
+          role: Database["public"]["Enums"]["method_application_evidence_role"];
+        };
+        Insert: {
+          application_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          engagement_id: string;
+          evidence_source_id: string;
+          id?: string;
+          instrument_version_id?: string | null;
+          note?: string;
+          role: Database["public"]["Enums"]["method_application_evidence_role"];
+        };
+        Update: {
+          application_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          engagement_id?: string;
+          evidence_source_id?: string;
+          id?: string;
+          instrument_version_id?: string | null;
+          note?: string;
+          role?: Database["public"]["Enums"]["method_application_evidence_role"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "method_application_evidence_application_id_engagement_id_fkey";
+            columns: ["application_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "method_applications";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "method_application_evidence_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "method_application_evidence_evidence_source_id_engagement__fkey";
+            columns: ["evidence_source_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "evidence_sources";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "method_application_evidence_instrument_version_id_fkey";
+            columns: ["instrument_version_id"];
+            isOneToOne: false;
+            referencedRelation: "method_asset_versions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      method_application_practitioners: {
+        Row: {
+          application_id: string;
+          engagement_id: string;
+          engagement_member_id: string;
+          role: string;
+        };
+        Insert: {
+          application_id: string;
+          engagement_id: string;
+          engagement_member_id: string;
+          role: string;
+        };
+        Update: {
+          application_id?: string;
+          engagement_id?: string;
+          engagement_member_id?: string;
+          role?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "method_application_practition_application_id_engagement_id_fkey";
+            columns: ["application_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "method_applications";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "method_application_practition_engagement_member_id_engagem_fkey";
+            columns: ["engagement_member_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagement_members";
+            referencedColumns: ["id", "engagement_id"];
+          },
+        ];
+      };
+      method_application_stage_notes: {
+        Row: {
+          application_id: string;
+          id: string;
+          note: string;
+          reason: string | null;
+          stage_id: string;
+          treatment: Database["public"]["Enums"]["method_stage_treatment"];
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          application_id: string;
+          id?: string;
+          note?: string;
+          reason?: string | null;
+          stage_id: string;
+          treatment: Database["public"]["Enums"]["method_stage_treatment"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          application_id?: string;
+          id?: string;
+          note?: string;
+          reason?: string | null;
+          stage_id?: string;
+          treatment?: Database["public"]["Enums"]["method_stage_treatment"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "method_application_stage_notes_application_id_fkey";
+            columns: ["application_id"];
+            isOneToOne: false;
+            referencedRelation: "method_applications";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "method_application_stage_notes_stage_id_fkey";
+            columns: ["stage_id"];
+            isOneToOne: false;
+            referencedRelation: "method_version_stages";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "method_application_stage_notes_updated_by_fkey";
+            columns: ["updated_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      method_applications: {
+        Row: {
+          architectural_question: string;
+          closed_on: string | null;
+          completion_statement: string | null;
+          continues_application_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          dam_release_id: string | null;
+          discontinued_reason: string | null;
+          engagement_id: string;
+          engagement_wide: boolean;
+          id: string;
+          method_asset_version_id: string;
+          outside_release_reason: string | null;
+          reference_code: string;
+          retrospective: string | null;
+          selection_reason: string;
+          started_on: string | null;
+          state: Database["public"]["Enums"]["method_application_state"];
+          title: string;
+          updated_at: string;
+          version_in_release: boolean;
+        };
+        Insert: {
+          architectural_question?: string;
+          closed_on?: string | null;
+          completion_statement?: string | null;
+          continues_application_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          dam_release_id?: string | null;
+          discontinued_reason?: string | null;
+          engagement_id: string;
+          engagement_wide?: boolean;
+          id?: string;
+          method_asset_version_id: string;
+          outside_release_reason?: string | null;
+          reference_code: string;
+          retrospective?: string | null;
+          selection_reason: string;
+          started_on?: string | null;
+          state?: Database["public"]["Enums"]["method_application_state"];
+          title: string;
+          updated_at?: string;
+          version_in_release: boolean;
+        };
+        Update: {
+          architectural_question?: string;
+          closed_on?: string | null;
+          completion_statement?: string | null;
+          continues_application_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          dam_release_id?: string | null;
+          discontinued_reason?: string | null;
+          engagement_id?: string;
+          engagement_wide?: boolean;
+          id?: string;
+          method_asset_version_id?: string;
+          outside_release_reason?: string | null;
+          reference_code?: string;
+          retrospective?: string | null;
+          selection_reason?: string;
+          started_on?: string | null;
+          state?: Database["public"]["Enums"]["method_application_state"];
+          title?: string;
+          updated_at?: string;
+          version_in_release?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "method_applications_continues_fk";
+            columns: ["continues_application_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "method_applications";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "method_applications_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "method_applications_dam_release_id_fkey";
+            columns: ["dam_release_id"];
+            isOneToOne: false;
+            referencedRelation: "dam_releases";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "method_applications_engagement_id_fkey";
+            columns: ["engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "method_applications_method_asset_version_id_fkey";
+            columns: ["method_asset_version_id"];
+            isOneToOne: false;
+            referencedRelation: "method_asset_versions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       method_asset_categories: {
         Row: {
           active: boolean;
@@ -4451,6 +4926,39 @@ export type Database = {
           },
           {
             foreignKeyName: "method_version_files_version_id_fkey";
+            columns: ["version_id"];
+            isOneToOne: false;
+            referencedRelation: "method_asset_versions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      method_version_learning_sources: {
+        Row: {
+          application_id: string;
+          note: string;
+          version_id: string;
+        };
+        Insert: {
+          application_id: string;
+          note: string;
+          version_id: string;
+        };
+        Update: {
+          application_id?: string;
+          note?: string;
+          version_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "method_version_learning_sources_application_id_fkey";
+            columns: ["application_id"];
+            isOneToOne: false;
+            referencedRelation: "method_applications";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "method_version_learning_sources_version_id_fkey";
             columns: ["version_id"];
             isOneToOne: false;
             referencedRelation: "method_asset_versions";
@@ -5606,6 +6114,14 @@ export type Database = {
         };
         Returns: string;
       };
+      add_method_application_addendum: {
+        Args: { p_application_id: string; p_body: string };
+        Returns: string;
+      };
+      add_method_version_learning_source: {
+        Args: { p_application_id: string; p_note: string; p_version_id: string };
+        Returns: undefined;
+      };
       add_review_participant: {
         Args: {
           p_engagement_member_id: string;
@@ -5675,10 +6191,15 @@ export type Database = {
         };
         Returns: string;
       };
+      begin_method_application: { Args: { p_application_id: string }; Returns: undefined };
       cancel_review: { Args: { p_element_id: string; p_reason: string }; Returns: undefined };
       capability_side: {
         Args: { capability: Database["public"]["Enums"]["engagement_capability"] };
         Returns: Database["public"]["Enums"]["member_side"];
+      };
+      clear_method_application_stage_note: {
+        Args: { p_application_id: string; p_stage_id: string };
+        Returns: undefined;
       };
       clear_practice_capability_override: {
         Args: {
@@ -5818,6 +6339,14 @@ export type Database = {
           to_version_no: number;
         }[];
       };
+      complete_method_application: {
+        Args: {
+          p_application_id: string;
+          p_completion_statement: string;
+          p_retrospective?: string;
+        };
+        Returns: undefined;
+      };
       contract_financial_summary: {
         Args: { p_as_of: string; p_contract_id: string };
         Returns: {
@@ -5942,6 +6471,10 @@ export type Database = {
           title: string;
           updated_at: string;
         }[];
+      };
+      discontinue_method_application: {
+        Args: { p_application_id: string; p_reason: string };
+        Returns: undefined;
       };
       dismiss_implementation_signal: {
         Args: {
@@ -6208,6 +6741,25 @@ export type Database = {
         Args: { p_due_date?: string; p_invoice_id: string; p_issue_date: string };
         Returns: string;
       };
+      link_method_application_element: {
+        Args: {
+          p_application_id: string;
+          p_element_id: string;
+          p_note?: string;
+          p_role: Database["public"]["Enums"]["method_application_element_role"];
+        };
+        Returns: string;
+      };
+      link_method_application_evidence: {
+        Args: {
+          p_application_id: string;
+          p_evidence_source_id: string;
+          p_instrument_version_id?: string;
+          p_note?: string;
+          p_role: Database["public"]["Enums"]["method_application_evidence_role"];
+        };
+        Returns: string;
+      };
       method_version_publish_gaps: { Args: { p_version_id: string }; Returns: string[] };
       milestone_billing: {
         Args: { p_as_of: string; p_contract_id: string };
@@ -6422,7 +6974,15 @@ export type Database = {
         Returns: undefined;
       };
       remove_member_area: { Args: { p_area_id: string }; Returns: undefined };
+      remove_method_application_asset: {
+        Args: { p_application_id: string; p_asset_version_id: string };
+        Returns: undefined;
+      };
       remove_method_version_file: { Args: { p_file_id: string }; Returns: string };
+      remove_method_version_learning_source: {
+        Args: { p_application_id: string; p_version_id: string };
+        Returns: undefined;
+      };
       reopen_implementation_initiative: {
         Args: { p_element_id: string; p_rationale: string };
         Returns: undefined;
@@ -6573,6 +7133,35 @@ export type Database = {
         };
         Returns: undefined;
       };
+      set_method_application_asset: {
+        Args: { p_application_id: string; p_asset_version_id: string; p_deviation_note?: string };
+        Returns: undefined;
+      };
+      set_method_application_contexts: {
+        Args: { p_application_id: string; p_context_ids: string[] };
+        Returns: undefined;
+      };
+      set_method_application_domains: {
+        Args: {
+          p_application_id: string;
+          p_domains: Database["public"]["Enums"]["architecture_domain"][];
+        };
+        Returns: undefined;
+      };
+      set_method_application_practitioners: {
+        Args: { p_application_id: string; p_practitioners: Json };
+        Returns: undefined;
+      };
+      set_method_application_stage_note: {
+        Args: {
+          p_application_id: string;
+          p_note: string;
+          p_reason: string;
+          p_stage_id: string;
+          p_treatment: Database["public"]["Enums"]["method_stage_treatment"];
+        };
+        Returns: undefined;
+      };
       set_method_asset_origin: {
         Args: {
           p_asset_id: string;
@@ -6633,6 +7222,19 @@ export type Database = {
         };
         Returns: undefined;
       };
+      start_method_application: {
+        Args: {
+          p_architectural_question?: string;
+          p_continues_application_id?: string;
+          p_engagement_id: string;
+          p_lead_member_id?: string;
+          p_method_version_id: string;
+          p_outside_release_reason?: string;
+          p_selection_reason: string;
+          p_title: string;
+        };
+        Returns: string;
+      };
       submit_change_order: { Args: { p_change_order_id: string }; Returns: number };
       submit_client_contribution: {
         Args: { p_body: string; p_element_id: string; p_file_ids?: string[]; p_link_url?: string };
@@ -6674,6 +7276,8 @@ export type Database = {
         };
         Returns: undefined;
       };
+      unlink_method_application_element: { Args: { p_link_id: string }; Returns: undefined };
+      unlink_method_application_evidence: { Args: { p_link_id: string }; Returns: undefined };
       update_dam_release: {
         Args: {
           p_change_summary: string;
@@ -6692,6 +7296,16 @@ export type Database = {
           p_status: Database["public"]["Enums"]["implementation_status"];
         };
         Returns: string;
+      };
+      update_method_application: {
+        Args: {
+          p_application_id: string;
+          p_architectural_question: string;
+          p_engagement_wide: boolean;
+          p_selection_reason: string;
+          p_title: string;
+        };
+        Returns: undefined;
       };
       update_method_asset: {
         Args: {
