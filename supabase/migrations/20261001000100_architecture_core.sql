@@ -1866,11 +1866,12 @@ begin
     raise exception '% are written only through architecture operations', tg_table_name using errcode = '42501';
   end if;
   if tg_op = 'UPDATE' then
-    if tg_table_name = 'architecture_approvals' and old.response is not null then
-      raise exception 'An approval response is final' using errcode = '23514';
-    end if;
     if tg_table_name in ('element_versions', 'domain_assessments') then
       raise exception '% is append-only', tg_table_name using errcode = '23514';
+    end if;
+    -- Approvals: the response is written once.
+    if to_jsonb(old) ->> 'response' is not null then
+      raise exception 'An approval response is final' using errcode = '23514';
     end if;
   end if;
   return new;
