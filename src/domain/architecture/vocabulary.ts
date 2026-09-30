@@ -519,7 +519,8 @@ export const RELATIONSHIP_TYPES = [
     inverseLabel: "examined in",
     symmetric: false,
     acyclic: false,
-    definition: "The review's agenda: an element or Project Intelligence record the review looks at.",
+    definition:
+      "The review's agenda: an element or Project Intelligence record the review looks at.",
   },
   {
     key: "raises",
@@ -741,7 +742,11 @@ export const PHASE_5_RULE_SPEC: readonly (readonly [
       "implementation_initiative",
     ],
   ],
-  ["documents", ["deliverable"], ["@element", "review", "deliverable", "implementation_initiative"]],
+  [
+    "documents",
+    ["deliverable"],
+    ["@element", "review", "deliverable", "implementation_initiative"],
+  ],
   ["implements", ["implementation_initiative"], ["@core"]],
   ["initiates", ["decision", "recommendation"], ["implementation_initiative"]],
   ["validates", ["review"], ["implementation_initiative"]],

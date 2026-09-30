@@ -42,10 +42,7 @@ const intelligenceMigration = readFileSync(
   "utf8",
 );
 const phase5Migration = readFileSync(
-  join(
-    process.cwd(),
-    "supabase/migrations/20261003000100_reviews_deliverables_implementation.sql",
-  ),
+  join(process.cwd(), "supabase/migrations/20261003000100_reviews_deliverables_implementation.sql"),
   "utf8",
 );
 const seed = readFileSync(join(process.cwd(), "supabase/seed.sql"), "utf8");
@@ -257,7 +254,9 @@ describe("pairing rules", () => {
     // examines: Review -> any element or Project Intelligence record.
     expect(isAllowedPairing("examines", rec("review"), obj("capability"))).toBe(true);
     expect(isAllowedPairing("examines", rec("review"), rec("risk"))).toBe(true);
-    expect(isAllowedPairing("examines", rec("review"), rec("implementation_initiative"))).toBe(true);
+    expect(isAllowedPairing("examines", rec("review"), rec("implementation_initiative"))).toBe(
+      true,
+    );
     expect(isAllowedPairing("examines", rec("deliverable"), obj("capability"))).toBe(false);
     // raises: Review -> a new judgment record or an implementation initiative.
     expect(isAllowedPairing("raises", rec("review"), rec("risk"))).toBe(true);
@@ -267,26 +266,36 @@ describe("pairing rules", () => {
     expect(isAllowedPairing("documents", rec("deliverable"), obj("capability"))).toBe(true);
     expect(isAllowedPairing("documents", rec("review"), obj("capability"))).toBe(false);
     // implements: Implementation Initiative -> core object only.
-    expect(isAllowedPairing("implements", rec("implementation_initiative"), obj("capability"))).toBe(
-      true,
+    expect(
+      isAllowedPairing("implements", rec("implementation_initiative"), obj("capability")),
+    ).toBe(true);
+    expect(isAllowedPairing("implements", rec("implementation_initiative"), rec("risk"))).toBe(
+      false,
     );
-    expect(isAllowedPairing("implements", rec("implementation_initiative"), rec("risk"))).toBe(false);
     // initiates: Decision or Recommendation -> Implementation Initiative.
     expect(isAllowedPairing("initiates", rec("decision"), rec("implementation_initiative"))).toBe(
       true,
     );
-    expect(isAllowedPairing("initiates", rec("risk"), rec("implementation_initiative"))).toBe(false);
-    // validates: Review -> Implementation Initiative (pairing exists even though it is restricted-write).
-    expect(isAllowedPairing("validates", rec("review"), rec("implementation_initiative"))).toBe(true);
-    expect(isAllowedPairing("validates", rec("deliverable"), rec("implementation_initiative"))).toBe(
+    expect(isAllowedPairing("initiates", rec("risk"), rec("implementation_initiative"))).toBe(
       false,
     );
+    // validates: Review -> Implementation Initiative (pairing exists even though it is restricted-write).
+    expect(isAllowedPairing("validates", rec("review"), rec("implementation_initiative"))).toBe(
+      true,
+    );
+    expect(
+      isAllowedPairing("validates", rec("deliverable"), rec("implementation_initiative")),
+    ).toBe(false);
     // Existing pairings extend to the three new kinds.
     expect(isAllowedPairing("threatens", rec("risk"), rec("implementation_initiative"))).toBe(true);
     expect(isAllowedPairing("underpins", rec("assumption"), rec("deliverable"))).toBe(true);
-    expect(isAllowedPairing("part_of", rec("implementation_initiative"), rec("implementation_initiative"))).toBe(
-      true,
-    );
+    expect(
+      isAllowedPairing(
+        "part_of",
+        rec("implementation_initiative"),
+        rec("implementation_initiative"),
+      ),
+    ).toBe(true);
   });
 });
 

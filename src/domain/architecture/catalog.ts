@@ -35,11 +35,7 @@ export type OpportunityStatus = Enums["opportunity_status"];
 export type SkillProficiency = Enums["skill_proficiency"];
 export type BaselineStatus = Enums["baseline_status"];
 export type RelationshipCategory =
-  | "structure"
-  | "design_flow"
-  | "intelligence"
-  | "lineage"
-  | "implementation";
+  "structure" | "design_flow" | "intelligence" | "lineage" | "implementation";
 
 /** Derived per published version (private.approval_state). Never stored. */
 export type ApprovalState =
