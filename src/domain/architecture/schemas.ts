@@ -72,7 +72,8 @@ const elementFields = {
   provenance,
   sourceReference: text(1000),
   ipClassification,
-  clientVisibility: visibility,
+  // Offered only to publishers; left out, the current visibility is kept.
+  clientVisibility: visibility.optional(),
 };
 
 export const elementSchema = z.object(elementFields);
@@ -211,7 +212,7 @@ export const evidenceSourceSchema = z
     summary: text(4000),
     notes: text(4000),
     ipClassification,
-    clientVisibility: visibility,
+    clientVisibility: visibility.optional(),
   })
   .refine((v) => !(v.ipClassification === "tplco_method_ip" && v.clientVisibility === "client"), {
     path: ["clientVisibility"],
@@ -228,7 +229,7 @@ export const relationshipSchema = z
       .transform((v) => (v === "" ? null : v)),
     description: text(1000),
     provenance: provenance.default("architect_judgment"),
-    clientVisibility: visibility,
+    clientVisibility: visibility.optional(),
   })
   .refine((v) => !(v.requiredProficiency && v.relationshipType !== "requires"), {
     path: ["requiredProficiency"],

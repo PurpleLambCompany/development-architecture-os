@@ -108,8 +108,8 @@ function spine(v: z.output<typeof elementSchema>) {
     provenance: v.provenance,
     source_reference: v.sourceReference,
     ip_classification: v.ipClassification,
-    client_visibility: v.clientVisibility,
-  } as const;
+    ...(v.clientVisibility ? { client_visibility: v.clientVisibility } : {}),
+  };
 }
 
 // Core objects ------------------------------------------------------------------
@@ -412,7 +412,7 @@ function evidenceRow(v: z.output<typeof evidenceSourceSchema>) {
     summary: v.summary,
     notes: v.notes,
     ip_classification: v.ipClassification,
-    client_visibility: v.clientVisibility,
+    ...(v.clientVisibility ? { client_visibility: v.clientVisibility } : {}),
   };
 }
 
@@ -456,7 +456,7 @@ export async function addRelationship(
         required_proficiency: v.requiredProficiency,
         description: v.description,
         provenance: v.provenance,
-        client_visibility: v.clientVisibility,
+        ...(v.clientVisibility ? { client_visibility: v.clientVisibility } : {}),
       })
       .select("id")
       .single(),
@@ -693,14 +693,32 @@ export async function createBaseline(engagementId: string, input: unknown) {
   );
 }
 
-export async function addBaselineItem(baselineId: string, elementId: string, input: unknown) {
-  return run(baselineItemSchema, input, (supabase, v) =>
-    supabase.from("architecture_baseline_items").insert({
+/** Add one published version to a draft baseline; the element comes from the version. */
+export async function addBaselineItem(baselineId: string, input: unknown) {
+  return run(baselineItemSchema, input, async (supabase, v) => {
+    const { data: version, error } = await supabase
+      .from("element_versions")
+      .select("element_id")
+      .eq("id", v.elementVersionId)
+      .maybeSingle();
+    if (error) return { error };
+    if (!version) {
+      return {
+        error: {
+          code: "P0002",
+          message: "Version not found",
+          details: "",
+          hint: "",
+          name: "PostgrestError",
+        } as PostgrestError,
+      };
+    }
+    return supabase.from("architecture_baseline_items").insert({
       baseline_id: baselineId,
-      element_id: elementId,
+      element_id: version.element_id,
       element_version_id: v.elementVersionId,
-    } as never),
-  );
+    } as never);
+  });
 }
 
 /** Add the latest published version of every published element not yet in the baseline. */

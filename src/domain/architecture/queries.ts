@@ -205,7 +205,7 @@ export async function listDomainAssessments(engagementId: string) {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("domain_assessments")
-    .select("*, profiles:assessed_by(first_name, last_name, email)")
+    .select("*")
     .eq("engagement_id", engagementId)
     .order("assessed_at", { ascending: false });
   if (error) throw error;
@@ -335,7 +335,7 @@ export async function getBaseline(baselineId: string) {
   const { data, error } = await supabase
     .from("architecture_baselines")
     .select(
-      "*, architecture_baseline_items(element_id, element_version_id), architecture_baseline_assessments(domain, domain_assessment_id), architecture_baseline_relationships(relationship_id)",
+      "*, architecture_baseline_items(element_id, element_version_id), architecture_baseline_assessments(domain_assessment_id), architecture_baseline_relationships(relationship_id)",
     )
     .eq("id", baselineId)
     .maybeSingle();
@@ -379,7 +379,7 @@ export async function getReviewQueue() {
       .eq("ai_review_state", "pending"),
     supabase
       .from("architecture_statements")
-      .select("id, element_id, body, engagement_id, engagements(slug, title)")
+      .select("id, element_id, body, engagement_id")
       .eq("ai_review_state", "pending"),
     supabase
       .from("architecture_approvals")
@@ -390,10 +390,18 @@ export async function getReviewQueue() {
       .order("requested_at"),
   ]);
   for (const r of [inReview, aiElements, aiStatements, awaiting]) if (r.error) throw r.error;
+  const statementEngagements = [...new Set((aiStatements.data ?? []).map((s) => s.engagement_id))];
+  const { data: engagements, error } = statementEngagements.length
+    ? await supabase.from("engagements").select("id, slug, title").in("id", statementEngagements)
+    : { data: [], error: null };
+  if (error) throw error;
   return {
     inReview: inReview.data ?? [],
     aiElements: aiElements.data ?? [],
-    aiStatements: aiStatements.data ?? [],
+    aiStatements: (aiStatements.data ?? []).map((s) => ({
+      ...s,
+      engagements: engagements?.find((e) => e.id === s.engagement_id) ?? null,
+    })),
     awaiting: awaiting.data ?? [],
   };
 }
@@ -480,7 +488,7 @@ export async function getClientBaselines(engagementId: string) {
   const { data, error } = await supabase
     .from("architecture_baselines")
     .select(
-      "id, label, description, frozen_at, architecture_baseline_items(element_id, element_version_id)",
+      "id, label, description, frozen_at, architecture_baseline_items(element_id, element_version_id), architecture_approvals(id, response, approval_source, responded_at)",
     )
     .eq("engagement_id", engagementId)
     .eq("status", "frozen")

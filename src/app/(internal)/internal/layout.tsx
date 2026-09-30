@@ -49,10 +49,12 @@ export default async function InternalLayout({ children }: LayoutProps<"/interna
                   <NavLink href="/internal/finance">Portfolio</NavLink>
                 </NavGroup>
               ) : null}
+              <NavGroup label="Architecture">
+                <NavLink href="/internal/architecture">Architecture</NavLink>
+                <NavLink href="/internal/intelligence">Intelligence</NavLink>
+                <NavLink href="/internal/reviews">Reviews</NavLink>
+              </NavGroup>
               <NavGroup label="Later phases">
-                <NavPlaceholder>Architecture</NavPlaceholder>
-                <NavPlaceholder>Intelligence</NavPlaceholder>
-                <NavPlaceholder>Reviews</NavPlaceholder>
                 <NavPlaceholder>Deliverables</NavPlaceholder>
                 <NavPlaceholder>Method Library</NavPlaceholder>
                 <NavPlaceholder>Portfolio</NavPlaceholder>
@@ -70,6 +72,7 @@ export default async function InternalLayout({ children }: LayoutProps<"/interna
             <Link href="/internal">Dashboard</Link>
             <Link href="/internal/organizations">Organizations</Link>
             <Link href="/internal/engagements">Engagements</Link>
+            <Link href="/internal/architecture">Architecture</Link>
             {hasFinance ? <Link href="/internal/finance">Finance</Link> : null}
           </nav>
           <span className="hidden md:block" />
