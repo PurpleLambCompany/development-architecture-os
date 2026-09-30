@@ -8,6 +8,13 @@ import {
 } from "@/domain/engagements/catalog";
 import { getEngagementBySlug } from "@/domain/engagements/queries";
 import { getMyEngagementCapabilities } from "@/domain/capabilities/queries";
+import { PROVENANCE_CLIENT_LABELS } from "@/domain/architecture/catalog";
+import {
+  getClientDecisions,
+  getClientPendingApprovals,
+  getDomainStates,
+} from "@/domain/architecture/queries";
+import { MaturityMark } from "@/components/architecture/badges";
 import { ROLE_LABELS } from "@/domain/roles/roles";
 import { EngagementStatusTag } from "@/components/engagements/engagement-status";
 import { formatMoney } from "@/domain/finance/money";
@@ -39,10 +46,24 @@ export default async function ClientEngagementPage({ params }: PageProps<"/porta
     ? await getEngagementFinances(engagement.id, getBusinessToday())
     : null;
   const summary = finances?.contract ? finances.summary : null;
+  // Published domain states are shown to every client member of the engagement.
+  const domainStates = await getDomainStates(engagement.id);
+  const canRespond =
+    capabilities.has("view_architecture") && capabilities.has("approve_architecture");
+  const [pendingApprovals, decisions] = canRespond
+    ? await Promise.all([
+        getClientPendingApprovals(engagement.id),
+        getClientDecisions(engagement.id),
+      ])
+    : [[], []];
+  const openDecisions = decisions.filter(
+    (d) => d.decision_status === "open" || d.decision_status === "recommended",
+  ).length;
+  const awaitingCount = pendingApprovals.length + openDecisions;
 
   return (
     <div className="space-y-8">
-      <EngagementNav slug={engagement.slug} current="overview" seesBilling={seesBilling} />
+      <EngagementNav slug={engagement.slug} engagementId={engagement.id} current="overview" />
 
       <PageHeader
         eyebrow={[
@@ -78,27 +99,60 @@ export default async function ClientEngagementPage({ params }: PageProps<"/porta
 
       <Panel
         title="Where we are in the architecture"
-        description={`Each domain moves through ${MATURITY_STATES.join(", ")}.`}
+        description={`Each domain moves through ${MATURITY_STATES.join(", ")}. The state is TPLCo's dated assessment.`}
       >
         <ol className="grid grid-cols-1 gap-px overflow-hidden rounded-sm border border-rule bg-rule md:grid-cols-4">
-          {ARCHITECTURE_DOMAINS.map((domain, index) => (
-            <li key={domain.key} className="bg-surface px-5 py-5">
-              <p className="text-xs text-ink-subtle tabular-nums">0{index + 1}</p>
-              <p className="mt-1 font-serif text-base leading-snug text-ink">{domain.label}</p>
-              <p className="mt-3 text-xs font-medium tracking-wide text-ink-subtle uppercase">
-                State
-              </p>
-              <p className="text-sm text-ink-muted">Not yet recorded</p>
-            </li>
-          ))}
+          {ARCHITECTURE_DOMAINS.map((domain, index) => {
+            const state = domainStates.find((s) => s.domain === domain.key);
+            return (
+              <li key={domain.key} className="space-y-2 bg-surface px-5 py-5">
+                <p className="text-xs text-ink-subtle tabular-nums">0{index + 1}</p>
+                <p className="font-serif text-base leading-snug text-ink">{domain.label}</p>
+                <p className="text-xs font-medium tracking-wide text-ink-subtle uppercase">State</p>
+                {state ? (
+                  <>
+                    <MaturityMark maturity={state.maturity} />
+                    <p className="text-sm text-ink-muted">{state.rationale}</p>
+                    <p className="text-xs text-ink-subtle">
+                      {PROVENANCE_CLIENT_LABELS.architect_judgment} ·{" "}
+                      {formatDate(state.assessed_at.slice(0, 10))}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm text-ink-muted">Not yet recorded</p>
+                )}
+              </li>
+            );
+          })}
         </ol>
       </Panel>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-        <Panel title="Decisions and actions required">
-          <EmptyState title="Nothing requires your attention">
-            Requests, approvals and decisions will appear here.
-          </EmptyState>
+        <Panel
+          title="Decisions and actions required"
+          actions={
+            canRespond && awaitingCount > 0 ? (
+              <ButtonLink
+                href={`/portal/${engagement.slug}/decisions`}
+                variant="secondary"
+                size="sm"
+              >
+                Respond
+              </ButtonLink>
+            ) : null
+          }
+        >
+          {canRespond && awaitingCount > 0 ? (
+            <p className="text-sm text-ink">
+              {awaitingCount} item{awaitingCount === 1 ? "" : "s"} awaiting your response:{" "}
+              {pendingApprovals.length} approval request{pendingApprovals.length === 1 ? "" : "s"}{" "}
+              and {openDecisions} decision{openDecisions === 1 ? "" : "s"}.
+            </p>
+          ) : (
+            <EmptyState title="Nothing requires your attention">
+              Requests, approvals and decisions will appear here.
+            </EmptyState>
+          )}
         </Panel>
         <Panel title="Delivered and implemented">
           <EmptyState title="No deliverables yet">

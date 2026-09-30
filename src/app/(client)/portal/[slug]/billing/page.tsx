@@ -43,7 +43,7 @@ export default async function ClientBillingPage({ params }: PageProps<"/portal/[
 
   return (
     <div className="space-y-8">
-      <EngagementNav slug={engagement.slug} current="billing" seesBilling />
+      <EngagementNav slug={engagement.slug} engagementId={engagement.id} current="billing" />
       <PageHeader
         eyebrow={engagement.organizations?.name ?? "Billing"}
         title="Billing"

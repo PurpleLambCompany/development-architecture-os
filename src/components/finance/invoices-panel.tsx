@@ -12,7 +12,7 @@ import { CREDIT_NOTE_STATUS, INVOICE_STATE } from "@/domain/finance/catalog";
 import { formatMoney, toDecimalString } from "@/domain/finance/money";
 import type { LoadedFinances } from "@/domain/finance/queries";
 import { formatDate } from "@/lib/format";
-import { ActionButton, ActionForm } from "@/components/finance/action-form";
+import { ActionButton, ActionForm } from "@/components/ui/action-form";
 import { InvoiceDraftForm, type BillableSource } from "@/components/finance/invoice-draft-form";
 import { EmptyState, Panel } from "@/components/ui/panel";
 import { StatusTag } from "@/components/ui/status-tag";

@@ -37,7 +37,7 @@ export default async function ClientInvoicePage({
 
   return (
     <div className="space-y-8">
-      <EngagementNav slug={engagement.slug} current="billing" seesBilling />
+      <EngagementNav slug={engagement.slug} engagementId={engagement.id} current="billing" />
       <article className="mx-auto max-w-3xl rounded-sm border border-rule bg-surface px-10 py-10">
         <header className="flex flex-wrap items-start justify-between gap-6 border-b border-rule pb-6">
           <div>

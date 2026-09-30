@@ -16,6 +16,8 @@ import {
   getMyEngagementCapabilities,
   listCapabilityOverrides,
 } from "@/domain/capabilities/queries";
+import { DOMAIN_SLUGS } from "@/domain/architecture/catalog";
+import { getDomainStates } from "@/domain/architecture/queries";
 import { formatMoney } from "@/domain/finance/money";
 import { getBusinessToday, getEngagementFinances } from "@/domain/finance/queries";
 import { listAssignableUsers } from "@/domain/memberships/queries";
@@ -25,6 +27,8 @@ import {
   type CapabilityCell,
   type CapabilityRow,
 } from "@/components/engagements/capability-matrix";
+import { ArchitectureNav } from "@/components/architecture/architecture-nav";
+import { MaturityMark } from "@/components/architecture/badges";
 import { EngagementStatusTag } from "@/components/engagements/engagement-status";
 import { AddTeamMemberForm, RemoveTeamMemberButton } from "@/components/engagements/team-controls";
 import { ButtonLink } from "@/components/ui/button";
@@ -61,6 +65,7 @@ export default async function EngagementPage({
     ? await getEngagementFinances(engagement.id, getBusinessToday())
     : null;
   const summary = finances?.contract ? finances.summary : null;
+  const domainStates = await getDomainStates(engagement.id);
   const capabilityRows: CapabilityRow[] = engagement.engagement_members
     .filter((m) => m.status === "active")
     .sort((a, b) => a.side.localeCompare(b.side))
@@ -118,6 +123,7 @@ export default async function EngagementPage({
           ) : null
         }
       />
+      <ArchitectureNav slug={engagement.slug} current="engagement" />
 
       <Panel title="Engagement">
         <div className="space-y-6">
@@ -226,15 +232,42 @@ export default async function EngagementPage({
         </Panel>
       ) : null}
 
-      <Panel title="Architecture" description="The four domains are structured in a later phase.">
+      <Panel
+        title="Architecture"
+        description="Each domain's latest assessed state. Domain maturity is an architect's dated judgment."
+        actions={
+          <ButtonLink
+            href={`/internal/engagements/${engagement.slug}/architecture`}
+            variant="secondary"
+            size="sm"
+          >
+            Open architecture
+          </ButtonLink>
+        }
+      >
         <ol className="grid grid-cols-1 gap-px overflow-hidden rounded-sm border border-rule bg-rule sm:grid-cols-2">
-          {ARCHITECTURE_DOMAINS.map((domain, index) => (
-            <li key={domain.key} className="bg-surface px-5 py-4">
-              <p className="text-xs text-ink-subtle tabular-nums">0{index + 1}</p>
-              <p className="mt-1 font-serif text-base text-ink">{domain.label}</p>
-              <p className="mt-1 text-sm text-ink-muted">{domain.summary}</p>
-            </li>
-          ))}
+          {ARCHITECTURE_DOMAINS.map((domain, index) => {
+            const state = domainStates.find((s) => s.domain === domain.key);
+            return (
+              <li key={domain.key} className="bg-surface px-5 py-4">
+                <p className="text-xs text-ink-subtle tabular-nums">0{index + 1}</p>
+                <Link
+                  href={`/internal/engagements/${engagement.slug}/architecture/${DOMAIN_SLUGS[domain.key]}`}
+                  className="mt-1 block font-serif text-base text-ink hover:underline"
+                >
+                  {domain.label}
+                </Link>
+                <p className="mt-1 text-sm text-ink-muted">{domain.summary}</p>
+                <p className="mt-3 text-sm">
+                  {state ? (
+                    <MaturityMark maturity={state.maturity} />
+                  ) : (
+                    <span className="text-ink-subtle">Not yet assessed</span>
+                  )}
+                </p>
+              </li>
+            );
+          })}
         </ol>
       </Panel>
     </div>

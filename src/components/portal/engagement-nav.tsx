@@ -1,27 +1,27 @@
 import Link from "next/link";
+import { getMyEngagementCapabilities } from "@/domain/capabilities/queries";
 import { NavPlaceholder } from "@/components/shell/nav-link";
 import { cn } from "@/lib/utils";
 
-/** Client navigation from spec §7. Overview and (with view_financials) Billing are live. */
-const LATER_SECTIONS = [
-  "Architecture",
-  "Decisions",
-  "Actions",
-  "Reviews",
-  "Documents",
-  "Implementation",
-  "Messages",
-];
+/**
+ * Client navigation from spec §7. Overview is live for every member;
+ * Architecture and Decisions with view_architecture; Billing with
+ * view_financials. The database enforces the same capabilities.
+ */
+const LATER_SECTIONS = ["Actions", "Reviews", "Documents", "Implementation", "Messages"];
 
-export function EngagementNav({
+export type PortalSection = "overview" | "architecture" | "decisions" | "billing";
+
+export async function EngagementNav({
   slug,
+  engagementId,
   current,
-  seesBilling,
 }: {
   slug: string;
-  current: "overview" | "billing";
-  seesBilling: boolean;
+  engagementId: string;
+  current: PortalSection;
 }) {
+  const capabilities = await getMyEngagementCapabilities(engagementId);
   const tab = (href: string, label: string, active: boolean) => (
     <Link
       href={href}
@@ -34,13 +34,22 @@ export function EngagementNav({
       {label}
     </Link>
   );
+  const seesArchitecture = capabilities.has("view_architecture");
   return (
     <nav
       className="-mt-4 flex flex-wrap items-center gap-x-1 border-b border-rule text-sm"
       aria-label="Engagement"
     >
       {tab(`/portal/${slug}`, "Overview", current === "overview")}
-      {seesBilling ? tab(`/portal/${slug}/billing`, "Billing", current === "billing") : null}
+      {seesArchitecture
+        ? tab(`/portal/${slug}/architecture`, "Architecture", current === "architecture")
+        : null}
+      {seesArchitecture
+        ? tab(`/portal/${slug}/decisions`, "Decisions", current === "decisions")
+        : null}
+      {capabilities.has("view_financials")
+        ? tab(`/portal/${slug}/billing`, "Billing", current === "billing")
+        : null}
       {LATER_SECTIONS.map((section) => (
         <span key={section} className="px-0 py-0.5">
           <NavPlaceholder>{section}</NavPlaceholder>

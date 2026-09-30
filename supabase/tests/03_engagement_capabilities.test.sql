@@ -68,8 +68,8 @@ select pg_temp.act_as('sponsor@meridian.test');
 select is(
   pg_temp.caps('e0000000-0000-4000-8000-000000000001'),
   array['approve_architecture', 'approve_change_orders', 'manage_client_team', 'pay_invoices',
-        'view_confidential_deliverables', 'view_financials'],
-  'Executive Sponsor: all capabilities, including financial visibility'
+        'view_architecture', 'view_confidential_deliverables', 'view_financials'],
+  'Executive Sponsor: all client capabilities, including financial visibility and architecture'
 );
 select pg_temp.reset_actor();
 
@@ -77,26 +77,26 @@ select pg_temp.act_as('finance@meridian.test');
 select is(
   pg_temp.caps('e0000000-0000-4000-8000-000000000001'),
   array['pay_invoices', 'view_financials'],
-  'Client Finance: financial visibility and payment, no architecture approval'
+  'Client Finance: financial visibility and payment, no architecture viewing or approval'
 );
 select pg_temp.reset_actor();
 
 select pg_temp.act_as('lead@harbor.test');
 select is(
   pg_temp.caps('e0000000-0000-4000-8000-000000000003'),
-  array['approve_architecture', 'manage_client_team', 'view_confidential_deliverables'],
-  'Client Project Lead: project authority, no financial visibility by default'
+  array['approve_architecture', 'manage_client_team', 'view_architecture', 'view_confidential_deliverables'],
+  'Client Project Lead: project authority and architecture, no financial visibility by default'
 );
 select pg_temp.reset_actor();
 
 select pg_temp.act_as('contributor@meridian.test');
-select is(pg_temp.caps('e0000000-0000-4000-8000-000000000001'), '{}'::text[],
-  'Client Contributor: no capabilities');
+select is(pg_temp.caps('e0000000-0000-4000-8000-000000000001'), array['view_architecture'],
+  'Client Contributor: sees published architecture only');
 select pg_temp.reset_actor();
 
 select pg_temp.act_as('viewer@meridian.test');
-select is(pg_temp.caps('e0000000-0000-4000-8000-000000000001'), '{}'::text[],
-  'Client Viewer: no capabilities');
+select is(pg_temp.caps('e0000000-0000-4000-8000-000000000001'), array['view_architecture'],
+  'Client Viewer: sees published architecture only');
 select is(pg_temp.caps('e0000000-0000-4000-8000-000000000003'), '{}'::text[],
   'no capabilities on another tenant''s engagement');
 select pg_temp.reset_actor();
@@ -119,10 +119,10 @@ select pg_temp.reset_actor();
 select pg_temp.act_as('advisor@consulting.test');
 select is(
   pg_temp.caps('e0000000-0000-4000-8000-000000000003'),
-  array['approve_architecture', 'manage_client_team', 'view_confidential_deliverables'],
+  array['approve_architecture', 'manage_client_team', 'view_architecture', 'view_confidential_deliverables'],
   'a multi-organization person gets Project Lead capabilities at Harbor'
 );
-select is(pg_temp.caps('e0000000-0000-4000-8000-000000000001'), '{}'::text[],
+select is(pg_temp.caps('e0000000-0000-4000-8000-000000000001'), array['view_architecture'],
   'and only Contributor capabilities at Meridian: roles never carry across organizations');
 select pg_temp.reset_actor();
 
@@ -145,8 +145,9 @@ select is((select count(*)::int from public.engagement_members
 select pg_temp.reset_actor();
 
 select pg_temp.act_as('researcher@tplco.test');
-select is(pg_temp.caps('e0000000-0000-4000-8000-000000000001'), array['view_confidential_deliverables'],
-  'Researcher: no financial visibility on an assigned engagement');
+select is(pg_temp.caps('e0000000-0000-4000-8000-000000000001'),
+  array['edit_architecture', 'view_confidential_deliverables'],
+  'Researcher: drafts architecture, no financial visibility on an assigned engagement');
 select is(pg_temp.caps('e0000000-0000-4000-8000-000000000003'), '{}'::text[],
   'Researcher: nothing on an unassigned engagement');
 select ok(not private.can_view_engagement_financials('e0000000-0000-4000-8000-000000000001'),
@@ -218,7 +219,7 @@ select ok(not ('view_financials' = any (pg_temp.caps('e0000000-0000-4000-8000-00
   'the revoked capability is gone on that engagement');
 select ok('view_financials' = any (pg_temp.caps('e0000000-0000-4000-8000-000000000002')),
   'but the same person keeps it on their other engagement');
-select is((select count(*)::int from public.role_capability_defaults where role = 'executive_sponsor'), 6,
+select is((select count(*)::int from public.role_capability_defaults where role = 'executive_sponsor'), 7,
   'the Executive Sponsor role definition is unchanged');
 select throws_ok(
   $$ insert into public.engagement_member_capability_overrides (engagement_member_id, capability, granted)

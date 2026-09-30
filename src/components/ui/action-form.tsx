@@ -12,17 +12,19 @@ import { cn } from "@/lib/utils";
 export type FieldSpec = {
   name: string;
   label: string;
-  type?: "text" | "money" | "date" | "number" | "textarea" | "select" | "url";
+  type?: "text" | "money" | "date" | "number" | "textarea" | "select" | "url" | "checkboxes";
   options?: { value: string; label: string }[];
   hint?: string;
   placeholder?: string;
   wide?: boolean;
 };
 
-type Values = Record<string, string>;
+type Values = Record<string, string | string[]>;
+
+const emptyValue = (field: FieldSpec) => (field.type === "checkboxes" ? [] : "");
 
 /**
- * A small form for one finance action. Values are sent as text; the server
+ * A small form for one action. Values are sent as text; the server
  * action validates them (money to minor units, dates) and the database
  * enforces every rule. Server field errors are shown next to their fields.
  * With `trigger`, the form stays folded behind a button until needed.
@@ -41,7 +43,7 @@ export function ActionForm({
   action: (input: Values) => Promise<ActionResult<unknown>>;
   submitLabel: string;
   variant?: "primary" | "secondary" | "danger";
-  defaultValues?: Values;
+  defaultValues?: Partial<Values>;
   trigger?: string;
   confirm?: string;
   className?: string;
@@ -52,7 +54,9 @@ export function ActionForm({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const form = useForm<Values>({
-    defaultValues: Object.fromEntries(fields.map((f) => [f.name, defaultValues[f.name] ?? ""])),
+    defaultValues: Object.fromEntries(
+      fields.map((f) => [f.name, defaultValues[f.name] ?? emptyValue(f)]),
+    ),
   });
 
   if (!open) {
@@ -81,7 +85,9 @@ export function ActionForm({
         }
         return;
       }
-      form.reset(Object.fromEntries(fields.map((f) => [f.name, defaultValues[f.name] ?? ""])));
+      form.reset(
+        Object.fromEntries(fields.map((f) => [f.name, defaultValues[f.name] ?? emptyValue(f)])),
+      );
       if (trigger) setOpen(false);
       router.refresh();
     });
@@ -112,7 +118,21 @@ export function ActionForm({
               error={message}
               className={field.wide || field.type === "textarea" ? "sm:col-span-2" : undefined}
             >
-              {field.type === "textarea" ? (
+              {field.type === "checkboxes" ? (
+                <div id={id} className="flex flex-wrap gap-x-5 gap-y-2 pt-1 text-sm">
+                  {(field.options ?? []).map((option) => (
+                    <label key={option.value} className="flex items-center gap-2 text-ink">
+                      <input
+                        type="checkbox"
+                        value={option.value}
+                        className="size-4 accent-accent"
+                        {...form.register(field.name)}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              ) : field.type === "textarea" ? (
                 <Textarea {...common} placeholder={field.placeholder} />
               ) : field.type === "select" ? (
                 <Select {...common}>

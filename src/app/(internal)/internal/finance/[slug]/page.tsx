@@ -40,7 +40,7 @@ import {
   listFinanceNotes,
   type LoadedFinances,
 } from "@/domain/finance/queries";
-import { ActionButton, ActionForm, type FieldSpec } from "@/components/finance/action-form";
+import { ActionButton, ActionForm, type FieldSpec } from "@/components/ui/action-form";
 import { CashPanels } from "@/components/finance/cash-panels";
 import { InvoicesPanel } from "@/components/finance/invoices-panel";
 import { InternalSummary } from "@/components/finance/summary-panels";
