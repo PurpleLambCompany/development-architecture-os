@@ -24,9 +24,7 @@ Treat `DSA_OS_MASTER_BUILD_SPEC.md` as the authoritative product specification.
 If code and the specification conflict, surface the conflict before making an expensive architectural change.
 
 ## Current Build Phase
-**Phase 2 complete — Phase 3 planning**
-
-Phases 1 (Foundation) and 2 (Commercial Engagement) are merged. Phase 3 (Architecture Core) is at proposal stage (`docs/product/PHASE_3_PROPOSAL.md`, branch `phase-3-architecture-core`). Do not create Phase 3 migrations or application code until the proposal is approved. Do not build AI/Architecture Intelligence.
+**Phase 3 — Architecture Core** (implementation approved 2026-09-30; Phases 1 and 2 merged). Build on `phase-3-architecture-core` following `docs/product/PHASE_3_PROPOSAL.md` §17. Do not build AI/Architecture Intelligence, Phase 4 experience features, Phase 5 implementation/deliverables or Phase 6 Method Library functionality.
 
 Only build the currently approved phase unless explicitly instructed otherwise.
 

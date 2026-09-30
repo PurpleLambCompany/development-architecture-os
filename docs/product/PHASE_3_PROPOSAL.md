@@ -1,6 +1,6 @@
 # Phase 3 — Architecture Core: Proposal
 
-**Status:** Revision 3. Direction approved 2026-09-30 with revisions (§16). The §4 object vocabulary and §9 relationship vocabulary are awaiting final review. No migrations or application code until implementation is approved.
+**Status:** Approved for implementation 2026-09-30 (revision 3 with the final vocabulary corrections). Being built on this branch.
 **Branch:** `phase-3-architecture-core` · **Date:** 2026-09-30
 **Builds on:** Phase 1 (engagements, roles, capabilities, RLS) and Phase 2 (commercial engagement), both merged.
 **Governing documents:** `DSA_OS_MASTER_BUILD_SPEC.md` §3, §5.2, §6, §8, §14–§15, §18–§20, §26–§27; ADR-0008 (engagement capabilities); ADR-0009 (provenance).
