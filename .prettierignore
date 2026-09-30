@@ -1,0 +1,9 @@
+pnpm-lock.yaml
+.next
+node_modules
+supabase/.temp
+*.sql
+DSA_OS_MASTER_BUILD_SPEC.md
+CLAUDE.md
+AGENTS.md
+docs/product/DSA_OS_FIRST_CLAUDE_PROMPT.txt

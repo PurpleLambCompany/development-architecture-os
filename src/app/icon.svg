@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Temporary neutral DSA OS mark: four domains on a grid. Not final branding. -->
+  <rect width="32" height="32" rx="4" fill="#2d2a47"/>
+  <g fill="#f4f1ea">
+    <rect x="7" y="7" width="8" height="8"/>
+    <rect x="17" y="7" width="8" height="8" opacity="0.72"/>
+    <rect x="7" y="17" width="8" height="8" opacity="0.72"/>
+    <rect x="17" y="17" width="8" height="8" opacity="0.45"/>
+  </g>
+</svg>

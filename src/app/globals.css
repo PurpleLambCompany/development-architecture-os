@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+/*
+ * DSA OS design tokens.
+ * Institutional, calm and structured: warm paper canvas, ink typography,
+ * hairline rules, one restrained accent. No gradients, no decorative color.
+ */
+@theme {
+  --color-canvas: #f6f4ef;
+  --color-surface: #ffffff;
+  --color-surface-muted: #faf9f6;
+  --color-ink: #1c1b19;
+  --color-ink-muted: #5c5850;
+  --color-ink-subtle: #8a857b;
+  --color-rule: #e4e0d7;
+  --color-rule-strong: #cdc7ba;
+  --color-accent: #2d2a47;
+  --color-accent-hover: #3d3960;
+  --color-accent-soft: #ecebf2;
+  --color-positive: #3f6b4f;
+  --color-positive-soft: #e9f0eb;
+  --color-attention: #8a6a2c;
+  --color-attention-soft: #f5efe2;
+  --color-negative: #8a3b34;
+  --color-negative-soft: #f6e9e7;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-source-serif), Georgia, "Times New Roman", serif;
+
+  --radius-sm: 2px;
+  --radius-md: 3px;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  ::selection {
+    background: var(--color-accent-soft);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}

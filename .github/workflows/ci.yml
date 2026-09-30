@@ -1,0 +1,70 @@
+# Continuous integration for DSA OS. Every job must pass for a pull request
+# to show a passing state. To block merging on failure, mark the "App" and
+# "Database" checks as required in the branch protection rule for main.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: App
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Placeholder values so the build can validate configuration. No
+      # secrets are needed and nothing connects to a real project.
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+      SUPABASE_SECRET_KEY: ci-placeholder
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: pnpm check (lint, typecheck, format, unit tests)
+        run: pnpm check
+      - name: pnpm test
+        run: pnpm test
+      - name: pnpm build
+        run: pnpm build
+
+  database:
+    name: Database
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Start local Supabase (applies migrations and seed)
+        run: >-
+          pnpm exec supabase start
+          -x logflare,vector,studio,imgproxy,edge-runtime,realtime,supavisor,postgres-meta
+      - name: pnpm db:test (pgTAP RLS and capability tests)
+        run: pnpm db:test
+      - name: Generated database types are up to date
+        run: |
+          pnpm db:types
+          git diff --exit-code -- src/types/database.ts
+      - name: Stop Supabase
+        if: always()
+        run: pnpm exec supabase stop --no-backup
