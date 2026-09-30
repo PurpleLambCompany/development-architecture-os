@@ -101,3 +101,80 @@ None outstanding from D1–D16; all were settled by Kerrick's final approval of 
 ## 8. Recommended next step
 
 CI has been green on PR #5 throughout the build (the handful of mid-build reds were confirmed, via job logs, to be expected transient states — a not-yet-updated capability mirror, pending Prettier formatting — not real defects, and were not re-flagged after the first explanatory comment). This report, the six new ADRs (0034–0039) and the new database doc are the last pieces of Kerrick's explicit approval instruction before his own review. Per that instruction, this PR is **not** being merged — it is ready and waiting for Kerrick's final review and explicit merge instruction.
+
+## 9. Acceptance-review corrective work (2026-09-30)
+
+A manual browser UX acceptance review found four real defects the automated suite (pgTAP/vitest/build) had not caught, because every one of them was invisible to a purely internal-role, static-fixture test run. All four are now fixed, on the same branch and PR, still in draft, not merged.
+
+### Defect 1 — Implementation Initiative detail page 500s (blocker)
+
+`getEscalations` in `src/domain/implementation/queries.ts` was copy-pasted from Phase 4's `intelligence` equivalent and embedded `architecture_elements!implementation_escalations_element_fk(...)` in its PostgREST select. Phase 4's matching FK genuinely points at `architecture_elements`; Phase 5's `implementation_escalations_element_fk` deliberately points at `implementation_initiatives` instead (escalations only ever concern initiatives — this is correct schema, not a bug), so the embed hint named a relationship that does not exist, and PostgREST refused every call with `PGRST200`. Every Implementation Initiative detail page 500'd, on every initiative, in every engagement — schema-level, not data-dependent, exactly as the review reported.
+
+The one caller (`.../implementation/[initiativeId]/page.tsx`) never reads `.architecture_elements` off an escalation row — it already has the initiative element in hand — so the smaller, correct fix was to drop the unused embed rather than write the two-hop traversal nobody would consume. The still-used `client_actions!implementation_escalations_action_fk(...)` embed is untouched. The schema/migration was not changed; the FK was correct, the query was wrong.
+
+Verified: all three seeded initiatives (IMP-001, IMP-002, IMP-003, `harbor-community-expansion`) now render `200` (confirmed with Playwright against a running `pnpm dev`, not inferred from the fix alone).
+
+### Defect 2 — client Implementation status was stale and self-contradicting (blocker)
+
+`update_implementation_status` and `resolve_implementation_initiative` updated the live `implementation_initiatives` row but never touched `element_versions`/`latest_version_id`, so `client_implementation()` (which reads the frozen `client_snapshot` of the latest **published** version) never reflected a status change made after publication. The seeded IMP-001 (operational, two achieved checkpoints) and IMP-002 (walked through the full validation gate to `validated`) both still read `not_started` on the client portal — directly contradicting their own displayed checkpoint notes.
+
+Fix, following Phase 4's `resolve_intelligence_record(..., p_publish default false, ...)` pattern exactly (new migration `20261004000000_implementation_status_publish.sql`):
+
+- Both functions gained `p_publish boolean default false` and `p_change_summary text default null`, and now return the new version id (`uuid`) instead of `void`.
+- When `p_publish = true`, the status-changing update is followed, in the same transaction, by a call to the existing `publish_element_version(...)` — no parallel snapshot mechanism was built. `update_implementation_status` additionally requires `publish_architecture` only when `p_publish = true` (its base capability stays `manage_implementation`); `resolve_implementation_initiative` already required `publish_architecture` unconditionally.
+- Publication stays an explicit, opt-in, caller's choice: `p_publish` defaults to `false`, and a plain status change never mutates an already-published `element_versions` row in place — a new version is always created, never rewritten.
+- `src/domain/implementation/{schemas,actions}.ts` gained the `publish`/`changeSummary` fields, mirroring the Intelligence domain's `resolveSchema`/`resolveRecord` shape (including the same `yesNo` transform).
+- The initiative-detail page's "Update status" and "Resolve" forms gained a `publish` select and `changeSummary` field, factored into a shared `publishFields(...)` helper matching the Intelligence resolve-with-publish UI pattern (`resolveFields` in `src/components/intelligence/fields.ts`) for consistency. Checkpoint display was not touched by this change and still shows plain achieved/not-achieved facts — no percentage, progress bar or health score was introduced anywhere near it.
+- `supabase/seed.sql`: IMP-001's `update_implementation_status(..., 'operational', ..., true, ...)` and IMP-002's `resolve_implementation_initiative(..., 'validated', ..., true, ...)` now publish immediately, so their client-facing snapshot matches their live status straight out of `supabase db reset`.
+
+Verified empirically, not just by reading the SQL: after `supabase db reset`, a direct query of `element_versions.client_snapshot` for both initiatives showed `operational`/`validated` matching their live rows, and the client portal (`sponsor@harbor.test`, `/portal/harbor-community-expansion/implementation`) shows IMP-001 **OPERATIONAL** with its achieved "Agreement executed" checkpoint, and IMP-002 **VALIDATED** — no contradiction on either card.
+
+### Defect 3 — Review participant names always showed "TPLCo"
+
+`.../reviews/[reviewId]/page.tsx` called `nameOf(p.engagement_member_id)`, but `nameOf` (from `memberNames(engagement)`) is keyed by `user_id`, not by the `engagement_members` row's own id — every lookup missed and fell back to `memberNames`'s generic `"TPLCo"` default. The "add participant" dropdown on the same page already resolved this correctly (`nameOf(m.user_id)` from `availableMembers`). Fixed by resolving each participant's `engagement_member_id` to its `user_id` via `engagement.engagement_members` — the same list the dropdown already uses — before the `nameOf(...)` call. `memberNames`'s fallback behavior itself (including the `"TPLCo"` text) was left exactly as it was; only the call site's input was wrong.
+
+Verified: REV-001 ("Expansion Readiness Review") now shows its four seeded participants by real name (Adrienne Cole, Julian Reyes, Richard Amsel, Nadia Farouk) — confirmed with Playwright, zero occurrences of "TPLCo" on the page.
+
+### Defect 4 — Client Contributor Phase 5 visibility
+
+The acceptance review's own initial framing guessed the symptom was over-inclusion ("Contributors get blanket access to everything"). Static reading suggested the opposite, and this was **confirmed empirically before any fix was written**: a throwaway Client Contributor was added to Harbor with the Application area assigned, and queried directly against `client_implementation`/`client_reviews`/`client_deliverables` — all three returned **zero rows**, despite IMP-001 implementing, REV-001 examining, and DLV-001 documenting an Application-domain object directly. **The actual bug was under-inclusion, not over-inclusion**: an area-limited Contributor saw none of Phase 5, in any area, ever. Kerrick's original report was corrected on this point, not merely trusted either way.
+
+Root cause: every client Phase 5 read model already gated on `private.element_client_readable`, the same helper every Phase 3/4 client policy goes through (ADR-0030), which for a plain Contributor collapses to `private.element_in_member_areas`. That function's `concerned` CTE only recognized the Phase 3/4 relationship vocabulary (`underpins`/`threatens`/`constrains`/`mitigates`/`affects`/`addresses`/`advances`/`pursues`) — not Phase 5's `implements`/`documents`/`examines` — so a Phase 5 record's `concerned` set was always empty and no area ever matched.
+
+Fix (new migration `20261004000100_phase5_area_visibility.sql`, ADR-0040), entirely in the database — `element_client_readable` and the three `client_*` functions were not touched, and no React/TypeScript code participates in this authorization decision:
+
+- `implements`, `documents` and `examines` were added to the `concerned` CTE's relationship-type list, resolving Initiative→object, Deliverable→object and Review→object directly through the same existing walk used for Phase 3/4.
+- A Review examining an Implementation Initiative (rather than an object) needed a second path: two small additional CTEs resolve the examined initiative's own area membership (what it implements, and its `part_of` ancestry), mirroring the existing recursive `ancestry` CTE's style, and OR that into the Review's own visibility — a Review is visible when it examines an object in-area, or an Initiative that is itself visible.
+- This does not weaken Phase 3/4 behavior: the added relationship types are Phase 5's own vocabulary, which no Phase 3/4 record uses. pgTAP suites 12–15 were re-run after the change and are unaffected (all still passing).
+
+New pgTAP suite `20_phase5_area_visibility.test.sql` (18 assertions) covers: a full-architecture client user seeing all client-visible Phase 5 records; an area-limited Contributor seeing exactly the records structurally connected to their assigned area (direct `implements`/`documents`/`examines`, and the Review→Initiative path specifically, isolated from the direct-object path by reassigning the Contributor to an area with no direct link); the same Contributor seeing nothing once reassigned to an unrelated area; and cross-engagement isolation (a Meridian client, with or without an area, sees none of Harbor's Phase 5 records). The fixture (a Harbor Contributor + area assignments) is self-contained to the suite and rolled back with it, per this repo's established pattern (`14_contributor_areas.test.sql`), not added to the persistent seed.
+
+Verified empirically both before and after the fix, against the running database, not only via pgTAP.
+
+### Tests added
+
+- `18_implementation.test.sql`: +10 assertions (43 → 53) covering `update_implementation_status`'s `p_publish` — false leaves the client snapshot and version id untouched, true publishes a new version whose snapshot reflects the new status, and the prior version row is read back unchanged (immutability).
+- `19_implementation_validation.test.sql`: +8 assertions (26 → 34) covering the same `p_publish` behavior on `resolve_implementation_initiative`.
+- `20_phase5_area_visibility.test.sql`: new file, 18 assertions, described above.
+- `src/domain/implementation/schemas.test.ts`: new file, 7 unit tests — `publish` defaults to `false` and only becomes `true` on an explicit `"yes"`, and `resolveInitiativeSchema` still requires a non-empty rationale regardless of `publish`.
+
+### Second verification pass (after the corrective work)
+
+1. `npx supabase db reset` — clean, all 16 migrations and the (further-updated) seed apply.
+2. `npx supabase test db` — **24 files, 911 assertions, all passing** (23 files/875 assertions before this pass; +1 new file, +36 assertions, nothing removed or weakened).
+3. `pnpm check` — **green**: lint, typecheck, `format:check`, and **139 vitest tests across 16 files** (132/15 before this pass).
+4. `pnpm build` — **green**, all 44 routes compile, including every Implementation Initiative detail route.
+5. `pnpm db:types` — drift found and regenerated/committed, exactly as expected from the two functions' new parameters and `uuid` return type; no other drift.
+6. Manual browser pass (Playwright against `pnpm dev`, demo credentials): all three Implementation Initiative detail pages 200; REV-001 shows real participant names with zero "TPLCo" occurrences; the client portal shows IMP-001 OPERATIONAL and IMP-002 VALIDATED with no checkpoint/status contradiction; DLV-001's internal detail page, the internal architecture and intelligence registers, and the client portal's architecture, actions and overview pages all still render 200 with no regression.
+
+### New ADR
+
+ADR-0040, "Area-limited client visibility extends to Phase 5 records" — the Defect 4 fix is a permanent authorization rule about how area-scoping interacts with Phase 5's element kinds, in the same family as ADR-0030, and difficult to reverse once client demo access depends on it.
+
+### Unresolved questions
+
+None. All four defects were fully specified by Kerrick's acceptance-review instructions, including the explicit correction path for Defect 4's actual direction, and no structural conflict with the existing contributor-area model was found — the fix extends `element_in_member_areas` along the grain it was already built on.
+
+### Recommended next step
+
+Unchanged from §8: this PR remains in draft, not merged, waiting for Kerrick's review and explicit merge instruction. CI should be checked on the final pushed commit before that review; see the accompanying report for its state at push time.

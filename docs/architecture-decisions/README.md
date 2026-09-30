@@ -43,5 +43,6 @@ One decision per file, numbered in order. A record is never rewritten after it i
 | [0037](0037-implementation-checkpoints-are-subordinate-records.md) | Implementation Checkpoints are subordinate records, not elements           | Accepted                                  |
 | [0038](0038-phase-5-capabilities.md)                               | Phase 5 capabilities                                                       | Accepted                                  |
 | [0039](0039-implementation-tables-are-a-separate-namespace.md)     | Implementation's tables are a separate namespace from Project Intelligence | Accepted                                  |
+| [0040](0040-phase5-area-visibility.md)                             | Area-limited client visibility extends to Phase 5 records                  | Accepted                                  |
 
 Template: Context, Decision, Consequences.
