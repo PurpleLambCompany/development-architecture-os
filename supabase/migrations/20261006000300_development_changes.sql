@@ -49,9 +49,10 @@ as $$
   -- Log rows used where the domain tables keep no system time for the event.
   log as (
     select l.created_at, l.actor_user_id, l.entity_type, l.entity_id,
-           l.metadata_json -> 'before' as b, l.metadata_json -> 'after' as r
+           l.metadata_json -> 'before' as b, coalesce(l.metadata_json -> 'after', l.metadata_json -> 'record') as r
     from public.activity_log l, allowed
-    where allowed.ok and l.engagement_id = p_engagement_id and l.action_type = 'update'
+    where allowed.ok and l.engagement_id = p_engagement_id
+      and (l.action_type = 'update' or (l.action_type = 'insert' and l.entity_type = 'reviews'))
       and l.entity_type in ('reviews', 'implementation_checkpoints', 'method_applications')
   ),
   changes (occurred_at, change_type, subject_type, subject_id, version_id, version_no, related_type, related_id,
@@ -161,7 +162,11 @@ as $$
     from public.client_contributions c where c.engagement_id = p_engagement_id
     union all
     -- Reviews scheduled, held and cancelled, in system time (never held_at).
-    select l.created_at,
+    -- A hold is dated by its capture, which is taken in the holding operation.
+    select case when l.r ->> 'review_status' = 'held'
+                then coalesce((select min(c.captured_at) from public.review_examined_versions c
+                               where c.review_element_id = l.entity_id), l.created_at)
+                else l.created_at end,
            case l.r ->> 'review_status' when 'held' then 'review_held' when 'cancelled' then 'review_cancelled'
                 else 'review_scheduled' end,
            'element', l.entity_id, null, null, null, null, l.actor_user_id, null

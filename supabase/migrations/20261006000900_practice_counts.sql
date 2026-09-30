@@ -57,7 +57,7 @@ as $$
     from versions v left join closed c on c.version_id = v.id
     group by v.id
   )
-  -- Stage treatments across closed applications.
+  -- Stage treatments across closed applications, for versions that have any.
   select 'stage_treatment', v.id, v.version_label, s.key, s.title, s.ordinal, t.treatment::text,
          null::uuid, null::text, null::text,
          (select count(*)::int from public.method_application_stage_notes sn
@@ -73,6 +73,7 @@ as $$
   join n_by_version nv on nv.version_id = v.id
   join public.method_version_stages s on s.version_id = v.id
   cross join unnest(enum_range(null::public.method_stage_treatment)) t(treatment)
+  where nv.n > 0
   union all
   -- Methods applied together within the same engagement, per version pair.
   select 'co_use', v.id, v.version_label, null, null, null, null,

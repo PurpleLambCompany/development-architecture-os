@@ -161,6 +161,7 @@ rollback;
 
 begin;
 set local session_replication_role = replica;
+delete from public.review_examined_versions where captured_at >= (select at from started);
 delete from public.architecture_relationships
 where engagement_id = 'e0000000-0000-4000-8000-000000000001' and created_at >= (select at from started);
 delete from public.implementation_status_changes
