@@ -3,7 +3,6 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CLIENT_ROLES, INTERNAL_ROLES, type AppRole } from "@/domain/roles/roles";
 import {
-  ENGAGEMENT_CAPABILITIES,
   ROLE_CAPABILITY_DEFAULTS,
   canManageCapability,
   capabilitySide,
@@ -13,13 +12,16 @@ import {
 
 describe("role capability defaults", () => {
   it("match the defaults seeded by the migration", () => {
+    // Every defaults insert, across all migrations, in order.
     const dir = join(process.cwd(), "supabase/migrations");
-    const file = readdirSync(dir).find((f) => f.endsWith("_engagement_capabilities.sql"));
-    const sql = readFileSync(join(dir, file!), "utf8");
-    const block = sql.slice(sql.indexOf("insert into public.role_capability_defaults"));
-    const pairs = [...block.slice(0, block.indexOf(";")).matchAll(/\('(\w+)',\s*'(\w+)'\)/g)];
     const fromSql: Record<string, string[]> = {};
-    for (const [, role, capability] of pairs) (fromSql[role!] ??= []).push(capability!);
+    for (const file of readdirSync(dir).sort()) {
+      const sql = readFileSync(join(dir, file), "utf8");
+      for (const block of sql.split("insert into public.role_capability_defaults").slice(1)) {
+        const pairs = block.slice(0, block.indexOf(";")).matchAll(/\('(\w+)',\s*'(\w+)'\)/g);
+        for (const [, role, capability] of pairs) (fromSql[role!] ??= []).push(capability!);
+      }
+    }
 
     for (const role of [...INTERNAL_ROLES, ...CLIENT_ROLES]) {
       expect([...(fromSql[role] ?? [])].sort(), role).toEqual(
@@ -33,6 +35,13 @@ describe("role capability defaults", () => {
       ROLE_CAPABILITY_DEFAULTS[role].includes("view_financials"),
     );
     expect(withFinancials).toEqual(["executive_sponsor", "client_finance"]);
+  });
+
+  it("keep financial management internal", () => {
+    expect(capabilitySide("manage_financials")).toBe("internal");
+    for (const role of CLIENT_ROLES) {
+      expect(ROLE_CAPABILITY_DEFAULTS[role]).not.toContain("manage_financials");
+    }
   });
 
   it("never give an internal role a client-only capability", () => {
@@ -60,7 +69,7 @@ describe("effectiveCapabilities", () => {
       { capability: "pay_invoices", granted: false },
     ]);
     expect(sponsor).not.toContain("pay_invoices");
-    expect(sponsor).toHaveLength(ENGAGEMENT_CAPABILITIES.length - 1);
+    expect(sponsor).toHaveLength(ROLE_CAPABILITY_DEFAULTS.executive_sponsor.length - 1);
   });
 
   it("does not mutate the role definition", () => {

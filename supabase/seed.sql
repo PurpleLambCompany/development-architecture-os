@@ -223,3 +223,195 @@ insert into public.method_assets (title, category, methodology_domain, version, 
     'Index of strategic models with applicability conditions and known failure modes.',
     '10000000-0000-4000-8000-000000000002'
   );
+
+-- -----------------------------------------------------------------------------
+-- Phase 2: commercial engagement
+--
+-- Money moves only through the finance operations, exactly as in the app, so
+-- the seed exercises the same rules. Each operation runs as the person who
+-- would perform it. Dates are relative to today so that "past due" and
+-- "not yet due" stay meaningful whenever the seed is loaded.
+--
+-- Meridian, Regional Innovation District (USD):
+--   contract 150,000 + CO-1 12,000 (approved in the portal) = 162,000
+--   CO-2 8,500 submitted, awaiting the sponsor
+--   invoice 1  30,000  deposit            paid in full
+--   invoice 2  30,000  diagnostic          credit note 2,000; 18,000 applied; 10,000 past due
+--   invoice 3  57,000  capability + CO-1   7,000 applied; 50,000 not yet due; payment link
+--   payment 3  5,000 received unapplied; 1,000 refunded; 4,000 credit on account
+--   a draft invoice for the strategic model milestone (internal only)
+-- Harbor: executed contract with an externally approved change order.
+-- Meridian Workforce: a draft contract (internal only).
+-- -----------------------------------------------------------------------------
+create function pg_temp.act_as(user_id uuid)
+returns void
+language sql
+as $$
+  select set_config('request.jwt.claims', json_build_object('sub', user_id, 'role', 'authenticated')::text, false);
+$$;
+
+-- Meridian, Regional Innovation District -------------------------------------
+insert into public.contracts (
+  id, engagement_id, title, currency, original_value_minor, payment_structure, payment_terms_days,
+  deposit_minor, effective_date, start_date, end_date, notes, created_by
+) values (
+  'c0000000-0000-4000-8000-000000000001',
+  'e0000000-0000-4000-8000-000000000001',
+  'Development Architecture Intensive: Regional Innovation District',
+  'USD', 15000000, 'milestone', 30, 3000000,
+  current_date - 120, current_date - 118, current_date + 120,
+  'Signed by the Authority''s Executive Director.',
+  '10000000-0000-4000-8000-000000000002'
+);
+
+insert into public.payment_milestones (
+  id, contract_id, sequence, title, description, amount_minor, due_date, trigger_type, stage_label, status
+) values
+  ('d0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000001', 1,
+   'Deposit on signing', 'Due on execution of the agreement.', 3000000, current_date - 80, 'on_signing',
+   null, 'ready_to_invoice'),
+  ('d0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000001', 2,
+   'Diagnostic completion', 'Knowledge and capability diagnostic delivered.', 3000000, current_date - 30, 'on_event',
+   'Knowledge Architecture', 'ready_to_invoice'),
+  ('d0000000-0000-4000-8000-000000000003', 'c0000000-0000-4000-8000-000000000001', 3,
+   'Capability architecture', 'Capability architecture presented to the steering group.', 4500000, current_date + 20, 'on_event',
+   'Capability Architecture', 'ready_to_invoice'),
+  ('d0000000-0000-4000-8000-000000000004', 'c0000000-0000-4000-8000-000000000001', 4,
+   'Strategic model', 'Strategic model architecture accepted.', 3000000, current_date + 60, 'on_date',
+   'Strategic Model Architecture', 'planned'),
+  ('d0000000-0000-4000-8000-000000000005', 'c0000000-0000-4000-8000-000000000001', 5,
+   'Final architecture', 'Application architecture and handover.', 1500000, current_date + 110, 'on_date',
+   'Application Architecture', 'planned');
+
+insert into public.change_orders (id, contract_id, title, description, scope_impact, schedule_impact, amount_minor) values
+  ('c1000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000001',
+   'Health system stakeholder track',
+   'Adds a dedicated stakeholder track for the regional health system.',
+   'Four additional working sessions and a health-system capability annex.',
+   'No change to the final delivery date.', 1200000),
+  ('c1000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000001',
+   'Governance charter drafting',
+   'Drafting of the district governance charter for board adoption.',
+   'Adds charter drafting and two board review cycles.',
+   'Extends Strategic Model Architecture by two weeks.', 850000);
+
+insert into public.invoices (id, contract_id, memo) values
+  ('f0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000001', 'Deposit due on signing.'),
+  ('f0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000001', 'Diagnostic completion milestone.'),
+  ('f0000000-0000-4000-8000-000000000003', 'c0000000-0000-4000-8000-000000000001',
+   'Capability architecture milestone and change order CO-1.'),
+  ('f0000000-0000-4000-8000-000000000004', 'c0000000-0000-4000-8000-000000000001', 'Strategic model milestone.');
+
+insert into public.invoice_lines (invoice_id, position, description, amount_minor, payment_milestone_id) values
+  ('f0000000-0000-4000-8000-000000000001', 1, 'Deposit on signing', 3000000, 'd0000000-0000-4000-8000-000000000001'),
+  ('f0000000-0000-4000-8000-000000000002', 1, 'Diagnostic completion', 3000000, 'd0000000-0000-4000-8000-000000000002'),
+  ('f0000000-0000-4000-8000-000000000003', 1, 'Capability architecture', 4500000, 'd0000000-0000-4000-8000-000000000003'),
+  ('f0000000-0000-4000-8000-000000000004', 1, 'Strategic model', 3000000, 'd0000000-0000-4000-8000-000000000004');
+
+select pg_temp.act_as('10000000-0000-4000-8000-000000000002');  -- Principal Architect
+select public.execute_contract('c0000000-0000-4000-8000-000000000001', current_date - 120, 'Eleanor Vance', 'Executive Director');
+select public.set_contract_status('c0000000-0000-4000-8000-000000000001', 'active');
+select public.issue_invoice('f0000000-0000-4000-8000-000000000001', current_date - 110, current_date - 80);
+select public.submit_change_order('c1000000-0000-4000-8000-000000000001');
+select public.issue_invoice('f0000000-0000-4000-8000-000000000002', current_date - 60, current_date - 30);
+
+select pg_temp.act_as('20000000-0000-4000-8000-000000000001');  -- Meridian Executive Sponsor
+select public.approve_change_order('c1000000-0000-4000-8000-000000000001');
+
+select pg_temp.act_as('10000000-0000-4000-8000-000000000006');  -- Finance Administrator
+insert into public.invoice_lines (invoice_id, position, description, amount_minor, change_order_id) values
+  ('f0000000-0000-4000-8000-000000000003', 2, 'CO-1 Health system stakeholder track', 1200000,
+   'c1000000-0000-4000-8000-000000000001');
+select public.issue_invoice('f0000000-0000-4000-8000-000000000003', current_date - 10);
+insert into public.invoice_payment_links (invoice_id, url, provider, provider_reference) values
+  ('f0000000-0000-4000-8000-000000000003', 'https://pay.example.com/i/tpl-demo-0003', 'Example Pay', 'demo-0003');
+
+select public.record_payment(
+  'c0000000-0000-4000-8000-000000000001', 3000000, current_date - 95, 'wire', 'WIRE-20417',
+  'Meridian Regional Development Authority', null, null, null,
+  jsonb_build_array(jsonb_build_object('invoice_id', 'f0000000-0000-4000-8000-000000000001', 'amount_minor', 3000000))
+);
+
+insert into public.credit_notes (id, invoice_id, amount_minor, reason) values
+  ('f1000000-0000-4000-8000-000000000001', 'f0000000-0000-4000-8000-000000000002', 200000,
+   'Two diagnostic interviews were not held; credited by agreement.');
+select public.issue_credit_note('f1000000-0000-4000-8000-000000000001', current_date - 40);
+
+-- One wire split across two invoices.
+select public.record_payment(
+  'c0000000-0000-4000-8000-000000000001', 2500000, current_date - 20, 'ach', 'ACH-88213',
+  'Meridian Regional Development Authority', null, null, null,
+  jsonb_build_array(
+    jsonb_build_object('invoice_id', 'f0000000-0000-4000-8000-000000000002', 'amount_minor', 1800000),
+    jsonb_build_object('invoice_id', 'f0000000-0000-4000-8000-000000000003', 'amount_minor', 700000)
+  )
+);
+
+-- Received before it was needed: held as credit on account, part refunded.
+select public.record_payment(
+  'c0000000-0000-4000-8000-000000000001', 500000, current_date - 5, 'check', 'Check 10442',
+  'Meridian Regional Development Authority'
+);
+select public.record_refund(
+  'c0000000-0000-4000-8000-000000000001', 100000, current_date - 2, 'ach',
+  'Duplicate portion of check 10442 returned at the client''s request.',
+  (select id from public.payments where reference = 'Check 10442'), 'ACH-R-5510'
+);
+
+select public.submit_change_order('c1000000-0000-4000-8000-000000000002');
+select public.schedule_invoice('f0000000-0000-4000-8000-000000000004', current_date + 30);
+
+insert into public.finance_notes (engagement_id, entity_type, entity_id, body) values
+  ('e0000000-0000-4000-8000-000000000001', 'invoice', 'f0000000-0000-4000-8000-000000000002',
+   'Controller confirmed the remaining diagnostic balance goes out with the next ACH run.');
+
+-- Harbor, Community Expansion Architecture -----------------------------------------
+insert into public.contracts (
+  id, engagement_id, title, currency, original_value_minor, payment_structure, payment_terms_days,
+  effective_date, start_date, end_date, created_by
+) values (
+  'c0000000-0000-4000-8000-000000000002',
+  'e0000000-0000-4000-8000-000000000003',
+  'Embedded Development Partner: Community Expansion',
+  'USD', 8000000, 'installments', 15,
+  current_date - 150, current_date - 150, current_date + 240,
+  '10000000-0000-4000-8000-000000000002'
+);
+insert into public.payment_milestones (id, contract_id, sequence, title, amount_minor, due_date, trigger_type, status) values
+  ('d0000000-0000-4000-8000-000000000011', 'c0000000-0000-4000-8000-000000000002', 1,
+   'Quarter 1 installment', 2000000, current_date - 20, 'on_date', 'ready_to_invoice'),
+  ('d0000000-0000-4000-8000-000000000012', 'c0000000-0000-4000-8000-000000000002', 2,
+   'Quarter 2 installment', 2000000, current_date + 70, 'on_date', 'planned'),
+  ('d0000000-0000-4000-8000-000000000013', 'c0000000-0000-4000-8000-000000000002', 3,
+   'Quarter 3 installment', 2000000, current_date + 160, 'on_date', 'planned'),
+  ('d0000000-0000-4000-8000-000000000014', 'c0000000-0000-4000-8000-000000000002', 4,
+   'Quarter 4 installment', 2000000, current_date + 240, 'on_date', 'planned');
+insert into public.change_orders (id, contract_id, title, description, amount_minor) values
+  ('c1000000-0000-4000-8000-000000000011', 'c0000000-0000-4000-8000-000000000002',
+   'Measurement system pilot', 'Adds a pilot of the measurement system in the first new region.', 650000);
+insert into public.invoices (id, contract_id, memo) values
+  ('f0000000-0000-4000-8000-000000000011', 'c0000000-0000-4000-8000-000000000002', 'First quarterly installment.');
+insert into public.invoice_lines (invoice_id, description, amount_minor, payment_milestone_id) values
+  ('f0000000-0000-4000-8000-000000000011', 'Quarter 1 installment', 2000000, 'd0000000-0000-4000-8000-000000000011');
+
+select pg_temp.act_as('10000000-0000-4000-8000-000000000002');
+select public.execute_contract('c0000000-0000-4000-8000-000000000002', current_date - 150, 'Richard Amsel', 'President');
+select public.issue_invoice('f0000000-0000-4000-8000-000000000011', current_date - 35);
+select public.submit_change_order('c1000000-0000-4000-8000-000000000011');
+select public.record_external_change_order_approval(
+  'c1000000-0000-4000-8000-000000000011', 'Richard Amsel', 'President', current_date - 12,
+  'signed_document', null, 'Countersigned change order, email of ' || to_char(current_date - 12, 'YYYY-MM-DD')
+);
+
+-- Meridian, Workforce Capability Program: still being drafted ----------------------
+insert into public.contracts (
+  id, engagement_id, title, currency, original_value_minor, payment_structure, created_by
+) values (
+  'c0000000-0000-4000-8000-000000000003',
+  'e0000000-0000-4000-8000-000000000002',
+  'Development Architecture Sprint: Workforce Capability',
+  'USD', 4200000, 'milestone',
+  '10000000-0000-4000-8000-000000000002'
+);
+
+select set_config('request.jwt.claims', '', false);

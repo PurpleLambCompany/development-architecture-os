@@ -16,6 +16,7 @@ export const ENGAGEMENT_CAPABILITIES = [
   "approve_architecture",
   "manage_client_team",
   "view_confidential_deliverables",
+  "manage_financials",
 ] as const satisfies readonly EngagementCapability[];
 
 export const CAPABILITY_LABELS: Record<EngagementCapability, string> = {
@@ -25,12 +26,14 @@ export const CAPABILITY_LABELS: Record<EngagementCapability, string> = {
   approve_architecture: "Approve architecture",
   manage_client_team: "Manage client team",
   view_confidential_deliverables: "View confidential deliverables",
+  manage_financials: "Manage financials",
 };
 
 export const FINANCIAL_CAPABILITIES = [
   "view_financials",
   "approve_change_orders",
   "pay_invoices",
+  "manage_financials",
 ] as const satisfies readonly EngagementCapability[];
 
 export function isFinancialCapability(capability: EngagementCapability): boolean {
@@ -39,19 +42,23 @@ export function isFinancialCapability(capability: EngagementCapability): boolean
 
 /** The side a capability is restricted to, or null when either side may hold it. */
 export function capabilitySide(capability: EngagementCapability): MemberSide | null {
-  return capability === "pay_invoices" || capability === "approve_change_orders" ? "client" : null;
+  if (capability === "pay_invoices" || capability === "approve_change_orders") return "client";
+  if (capability === "manage_financials") return "internal";
+  return null;
 }
 
 /** Role defaults: the role definition. Mirrors public.role_capability_defaults. */
 export const ROLE_CAPABILITY_DEFAULTS: Record<AppRole, readonly EngagementCapability[]> = {
   system_administrator: [
     "view_financials",
+    "manage_financials",
     "approve_architecture",
     "manage_client_team",
     "view_confidential_deliverables",
   ],
   principal_architect: [
     "view_financials",
+    "manage_financials",
     "approve_architecture",
     "manage_client_team",
     "view_confidential_deliverables",
@@ -59,7 +66,7 @@ export const ROLE_CAPABILITY_DEFAULTS: Record<AppRole, readonly EngagementCapabi
   architect: ["view_confidential_deliverables"],
   researcher: ["view_confidential_deliverables"],
   project_administrator: ["manage_client_team", "view_confidential_deliverables"],
-  finance_administrator: ["view_financials"],
+  finance_administrator: ["view_financials", "manage_financials"],
   executive_sponsor: [
     "view_financials",
     "approve_change_orders",

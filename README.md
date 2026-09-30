@@ -9,7 +9,7 @@ DSA OS is a standalone application. It shares no code, database, environment var
 - Architecture decisions: [`docs/architecture-decisions/`](docs/architecture-decisions/)
 - Database schema and access rules: [`docs/database/`](docs/database/)
 
-**Current phase:** Phase 1 — Foundation (auth, organizations, roles, engagements, access control).
+**Current phase:** Phase 2 — Commercial Engagement (contracts, change orders, payment plan, invoices, credit notes, payments, allocations, refunds). Phase 1 (foundation: auth, organizations, roles, engagements, access control) is complete.
 
 ## Stack
 
@@ -62,20 +62,22 @@ All demo accounts use the password **`dsa-demo-password`** (local only; the seed
 
 Seeded engagements: _Regional Innovation District_ (Meridian, active, full team), _Workforce Capability Program_ (Meridian, proposed, sponsor only on the client side), _Community Expansion Architecture_ (Harbor, active). `finance@harbor.test` and `contributor@harbor.test` are deliberately unassigned, so they see no engagements. `advisor@consulting.test` belongs to two client organizations and is assigned to one engagement in each. `lead@meridian.test` has a `view_financials` override on the Regional Innovation District, so they see its financial area although Project Leads do not by default.
 
+Seeded finances (dates relative to the day the seed is loaded): the Regional Innovation District has an active USD 150,000 contract, an approved change order (CO-1, +12,000, approved in the portal) and one awaiting the sponsor (CO-2, +8,500), five milestones, three issued invoices (one paid, one with a credit note and 10,000 past due, one partly paid with a payment link), a draft invoice scheduled for later, a wire split across two invoices, and a check held as credit on account with part refunded. Harbor has an executed contract with an unpaid installment and a change order approved outside the portal. The Workforce Capability Program has a draft contract (visible only internally).
+
 ## Scripts
 
-| Command                                  | What it does                                               |
-| ---------------------------------------- | ---------------------------------------------------------- |
-| `pnpm dev` / `pnpm build` / `pnpm start` | Next.js                                                    |
-| `pnpm lint`                              | ESLint                                                     |
-| `pnpm typecheck`                         | Route type generation + `tsc --noEmit`                     |
-| `pnpm format` / `pnpm format:check`      | Prettier                                                   |
-| `pnpm test`                              | Vitest unit tests (`src/**/*.test.ts`)                     |
-| `pnpm check`                             | lint + typecheck + format check + unit tests               |
-| `pnpm db:start` / `pnpm db:stop`         | Local Supabase                                             |
-| `pnpm db:reset`                          | Re-apply all migrations and the seed                       |
-| `pnpm db:test`                           | pgTAP tests for RLS and database rules (`supabase/tests/`) |
-| `pnpm db:types`                          | Regenerate `src/types/database.ts` from the local schema   |
+| Command                                  | What it does                                                           |
+| ---------------------------------------- | ---------------------------------------------------------------------- |
+| `pnpm dev` / `pnpm build` / `pnpm start` | Next.js                                                                |
+| `pnpm lint`                              | ESLint                                                                 |
+| `pnpm typecheck`                         | Route type generation + `tsc --noEmit`                                 |
+| `pnpm format` / `pnpm format:check`      | Prettier                                                               |
+| `pnpm test`                              | Vitest unit tests (`src/**/*.test.ts`)                                 |
+| `pnpm check`                             | lint + typecheck + format check + unit tests                           |
+| `pnpm db:start` / `pnpm db:stop`         | Local Supabase                                                         |
+| `pnpm db:reset`                          | Re-apply all migrations and the seed                                   |
+| `pnpm db:test`                           | pgTAP tests for RLS, finance rules and concurrency (`supabase/tests/`) |
+| `pnpm db:types`                          | Regenerate `src/types/database.ts` from the local schema               |
 
 ## Continuous integration
 
@@ -94,8 +96,8 @@ src/
     (public)/login/         sign in (password or emailed link)
     auth/confirm/           verifies invitation / sign-in / recovery links server-side
     account/set-password/   first password after accepting an invitation
-    (internal)/internal/    TPLCo workspace: dashboard, organizations, engagements, settings
-    (client)/portal/        client environment: engagement overview
+    (internal)/internal/    TPLCo workspace: dashboard, organizations, engagements, finance, settings
+    (client)/portal/        client environment: engagement overview, billing, invoices
   components/ui/            design-system primitives
   components/…              feature components (forms, team controls, shell)
   domain/                   business logic, schemas (Zod), queries and server actions — no React
@@ -107,7 +109,7 @@ supabase/
   tests/                    pgTAP tests
   templates/                auth email templates
 docs/
-  product/                  spec companions, Phase 1 proposal
+  product/                  spec companions, phase proposals and reports
   architecture-decisions/   ADRs
   database/                 schema and RLS reference
 ```
@@ -119,6 +121,7 @@ docs/
 - Engagement permissions are evaluated through capabilities (role defaults plus per-member overrides), and financial visibility is separate from project access ([ADR-0008](docs/architecture-decisions/0008-engagement-capabilities.md)).
 - Access is invite-only; the service-role key is used only to create invited accounts ([ADR-0005](docs/architecture-decisions/0005-invite-only-authentication.md)).
 - Every change to organizations, memberships, engagements and teams is recorded in an append-only activity log.
+- Finances: money is stored in integer minor units with its currency, and business dates use `BUSINESS_TIME_ZONE` (America/Chicago) ([ADR-0010](docs/architecture-decisions/0010-money-and-business-dates.md)). Price, billing and cash are separate records; payments count against an invoice only through explicit allocations ([ADR-0011](docs/architecture-decisions/0011-allocations-credit-notes-refunds.md)). Money moves only through database operations that lock the contract and re-check every invariant; nobody writes cash records directly ([ADR-0012](docs/architecture-decisions/0012-finance-operations-and-integrity.md), [finance.md](docs/database/finance.md)). DSA OS stores no card or bank credentials; payment links are HTTPS references to an external provider.
 
 ## Deploying (when ready)
 
@@ -126,4 +129,4 @@ docs/
 2. `pnpm exec supabase link --project-ref <ref>` then `pnpm exec supabase db push` to apply migrations. Do **not** run `seed.sql` against it.
 3. In the Supabase dashboard: turn off "Allow new users to sign up", set the Site URL to the production domain and add `<site-url>/auth/confirm` to the redirect URLs, set minimum password length to 12, and copy the three templates from `supabase/templates/` into Auth → Email Templates. Configure SMTP with the `SUPABASE_AUTH_SMTP_*` values described in `.env.example`. The domain and sender are configuration only; nothing in the code names them.
 4. Create the TPLCo organization and the first System Administrator: see [`docs/database/bootstrap.md`](docs/database/bootstrap.md).
-5. Create a new Vercel project for this repository and set the four application variables from `.env.example`, with `NEXT_PUBLIC_SITE_URL` set to the production domain.
+5. Create a new Vercel project for this repository and set the application variables from `.env.example` (including `BUSINESS_TIME_ZONE`), with `NEXT_PUBLIC_SITE_URL` set to the production domain.

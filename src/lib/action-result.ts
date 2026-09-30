@@ -35,6 +35,12 @@ export function fromDatabaseError(error: PostgrestError, slugField?: string): Ac
         : fail("That record already exists.");
     case "23514":
       return fail(error.message);
+    case "P0002":
+      return fail("That record was not found, or you do not have access to it.");
+    case "23503":
+      return fail("That refers to a record from a different contract or engagement.");
+    case "22023":
+      return fail(error.message);
     default:
       console.error("Database error", error);
       return fail("Something went wrong. Please try again.");

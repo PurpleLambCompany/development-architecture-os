@@ -12,7 +12,12 @@ import {
   effectiveCapabilities,
   type EngagementCapability,
 } from "@/domain/capabilities/catalog";
-import { listCapabilityOverrides } from "@/domain/capabilities/queries";
+import {
+  getMyEngagementCapabilities,
+  listCapabilityOverrides,
+} from "@/domain/capabilities/queries";
+import { formatMoney } from "@/domain/finance/money";
+import { getBusinessToday, getEngagementFinances } from "@/domain/finance/queries";
 import { listAssignableUsers } from "@/domain/memberships/queries";
 import { ROLE_LABELS, canManageEngagement } from "@/domain/roles/roles";
 import {
@@ -49,6 +54,13 @@ export default async function EngagementPage({
     : [];
 
   const overrides = await listCapabilityOverrides(engagement.id);
+  // Financial figures only for people holding view_financials here; the
+  // database would return nothing to anyone else.
+  const myCapabilities = await getMyEngagementCapabilities(engagement.id);
+  const finances = myCapabilities.has("view_financials")
+    ? await getEngagementFinances(engagement.id, getBusinessToday())
+    : null;
+  const summary = finances?.contract ? finances.summary : null;
   const capabilityRows: CapabilityRow[] = engagement.engagement_members
     .filter((m) => m.status === "active")
     .sort((a, b) => a.side.localeCompare(b.side))
@@ -146,6 +158,40 @@ export default async function EngagementPage({
           ) : null}
         </div>
       </Panel>
+
+      {finances ? (
+        <Panel
+          title="Finances"
+          description="Kept separate from project progress."
+          actions={
+            <ButtonLink href={`/internal/finance/${engagement.slug}`} variant="secondary" size="sm">
+              Open finance workspace
+            </ButtonLink>
+          }
+        >
+          {summary ? (
+            <DetailList
+              items={[
+                {
+                  label: "Revised contract value",
+                  value: formatMoney(summary.revised_value_minor, summary.currency),
+                },
+                {
+                  label: "Net invoiced",
+                  value: formatMoney(summary.net_invoiced_minor, summary.currency),
+                },
+                {
+                  label: "Outstanding invoices",
+                  value: formatMoney(summary.outstanding_balance_minor, summary.currency),
+                },
+                { label: "Past due", value: formatMoney(summary.past_due_minor, summary.currency) },
+              ]}
+            />
+          ) : (
+            <p className="text-sm text-ink-muted">No contract yet.</p>
+          )}
+        </Panel>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <TeamPanel
