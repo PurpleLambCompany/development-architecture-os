@@ -1,6 +1,6 @@
 # Database schema (Phase 1)
 
-> Phase 2 financial tables, functions and rules are documented in [finance.md](finance.md), and Phase 3 architecture tables, operations and read models in [architecture.md](architecture.md).
+> Phase 2 financial tables, functions and rules are documented in [finance.md](finance.md), Phase 3 architecture tables, operations and read models in [architecture.md](architecture.md), and the Phase 6 Method Library in [method-library.md](method-library.md).
 
 Migrations: `20260929230000_phase1_foundation.sql`, `20260929233000_engagement_capabilities.sql`.
 
@@ -80,6 +80,8 @@ Trigger: client-only capabilities cannot be granted to internal members. Audited
 ### `method_assets` (stub)
 
 `id`, `title`, `category`, `methodology_domain`, `version`, `status` (`draft`/`active`/`retired`), `description`, `ip_classification` (default `tplco_method_ip`), `owner_user_id`. Internal only; no UI until Phase 6.
+
+Reshaped in Phase 6: the content columns moved to immutable versions, `owner_user_id` became `steward_user_id`, and existing rows became legacy assets. See [method-library.md](method-library.md) and ADR-0041.
 
 ### `activity_log`
 

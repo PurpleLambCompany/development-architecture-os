@@ -1,6 +1,6 @@
 # Row Level Security, roles and capabilities (Phase 1)
 
-> Phase 2 financial access rules are documented in [finance.md](finance.md), Phase 3 architecture access rules in [architecture.md](architecture.md), and Phase 4 Project Intelligence, client actions and contributor areas in [intelligence.md](intelligence.md).
+> Phase 2 financial access rules are documented in [finance.md](finance.md), Phase 3 architecture access rules in [architecture.md](architecture.md), Phase 4 Project Intelligence, client actions and contributor areas in [intelligence.md](intelligence.md), and Phase 6 Method Library access, practice capabilities and the client boundary in [method-library.md](method-library.md).
 
 Every table has RLS enabled. Policies call `SECURITY DEFINER` helpers in the unexposed `private` schema (ADR-0003). `anon` has no privileges on any table. Tests (`pnpm db:test`, also run in CI): `01_phase1_rls.test.sql`, `02_multi_organization.test.sql`, `03_engagement_capabilities.test.sql` in `supabase/tests/`.
 
@@ -92,3 +92,7 @@ Architects, Researchers and Finance Administrators have read access to assigned 
 | A client user only sees their own engagement   | ✓                                  | ✓                                    |
 | A client user cannot access Method/IP          | ✓ (`method_assets` returns 0 rows) | ✓ (`/internal/*` redirects)          |
 | Repository isolated from Peephole              | n/a                                | separate repo, env, Supabase project |
+
+## Phase 6: the Method Library
+
+The Phase 1 rows above for `method_assets` ("Manage method assets: System Admin, Principal Architect") are superseded. Since Phase 6, every Method Library table is readable by internal members only and written only through operations gated by the practice capabilities `author_methodology` and `publish_methodology`, held through TPLCo organization membership (ADR-0044). System Administrators hold neither by default. Client users still read no Method Library row. See [method-library.md](method-library.md).

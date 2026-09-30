@@ -16,3 +16,7 @@ Object type keys become database keys, reference prefixes and the software vocab
 ## Consequences
 
 - Labels can be reworded without a migration; keys cannot. Renaming or removing an attribute needs a migration that rewrites stored rows.
+
+## Amendment (Phase 6, 2026-09-30)
+
+The Method Library does not govern this vocabulary (Phase 6 decision D27). Object types and relationship types remain migration-managed reference tables; the phrase "so the Method Library can govern them later" is superseded. A DAM release documents the vocabulary it was published against: `publish_dam_release` writes `dam_releases.vocabulary_record`, built by `private.architecture_vocabulary_record()` from the domains, element kinds, object types and relationship types in force at that moment, and never changes it. No Phase 6 operation writes to `architecture_object_types`, `relationship_types` or `relationship_rules`. See ADR-0042. The rest of this decision is unchanged.

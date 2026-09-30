@@ -4,12 +4,12 @@
 -- Client read models are the only client path to anything methodological:
 --
 --   client_engagement_methodology  the engagement's DAM release label and
---                                  title. Nothing else (D21)
+--                                  title. Nothing else (D22)
 --   client_acceptance_criteria     agreed, client-visible criteria on
 --                                  elements the caller may already read,
 --                                  and the criteria captured for validations
 --                                  the caller may already read. Never the
---                                  informing Standard (D24)
+--                                  informing Standard (D20)
 --
 -- Both are security definer and return only what the caller may see. No
 -- client policy exists on any Method Library or practice table (ADR-0022).

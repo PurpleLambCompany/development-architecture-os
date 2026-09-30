@@ -9,7 +9,10 @@ import {
   type MethodApplicationElementRole,
   type MethodLineageRole,
 } from "@/domain/methodology/catalog";
-import { getElementPracticeContext } from "@/domain/methodology/queries";
+import {
+  getElementPracticeContext,
+  getTemplateDeliverableTypes,
+} from "@/domain/methodology/queries";
 import type { Database } from "@/types/database";
 import { InternalMark } from "@/components/architecture/badges";
 import { ApplicationStateTag, FormBadge } from "@/components/methodology/badges";
@@ -30,6 +33,7 @@ export async function PracticePanel({
   kind,
   editable,
   methodologyDerived,
+  deliverableType,
   title = "Practice",
 }: {
   slug: string;
@@ -38,11 +42,14 @@ export async function PracticePanel({
   editable: boolean;
   /** The element or one of its statements is methodology_derived (D19). */
   methodologyDerived: boolean;
+  /** For a Deliverable: only Templates of its type can be produced from. */
+  deliverableType?: Database["public"]["Enums"]["deliverable_type"];
   title?: string;
 }) {
-  const [rows, assets] = await Promise.all([
+  const [rows, assets, templateTypes] = await Promise.all([
     getElementPracticeContext(elementId),
     listMethodAssets(),
+    deliverableType ? getTemplateDeliverableTypes() : Promise.resolve(new Map<string, string>()),
   ]);
   const applications = rows.filter((r) => r.source === "application");
   const lineage = rows.filter((r) => r.source === "lineage");
@@ -54,7 +61,10 @@ export async function PracticePanel({
           a.form === LINEAGE_RULES[role].form &&
           a.status === "active" &&
           a.method_asset_versions?.lifecycle === "published" &&
-          !a.method_asset_versions.legacy,
+          !a.method_asset_versions.legacy &&
+          (role !== "produced_from" ||
+            !deliverableType ||
+            templateTypes.get(a.method_asset_versions.id) === deliverableType),
       )
       .map((a) => ({
         value: `${role}:${a.method_asset_versions!.id}`,
@@ -169,8 +179,9 @@ export async function PracticePanel({
           ) : null}
           {editable && roles.length > 0 && options.length === 0 ? (
             <p className="text-sm text-ink-subtle">
-              No published {roles.map((r) => LINEAGE_RULES[r].form).join(" or ")} versions to record
-              yet.
+              {deliverableType
+                ? "No published Template produces this kind of Deliverable yet."
+                : `No published ${roles.map((r) => LINEAGE_RULES[r].form).join(" or ")} versions to record yet.`}
             </p>
           ) : null}
         </section>

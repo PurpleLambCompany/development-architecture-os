@@ -230,6 +230,7 @@ export default async function DeliverableDetailPage({
       />
 
       <PracticePanel
+        deliverableType={row.deliverable_type}
         slug={slug}
         elementId={element.id}
         kind={element.kind}

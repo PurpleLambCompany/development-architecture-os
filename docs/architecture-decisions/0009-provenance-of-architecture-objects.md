@@ -29,3 +29,7 @@ Alongside the type, objects will record: who recorded it and when; the source re
 - `methodology_derived` content must respect the Method/IP boundary: the derived object may be client-visible while the Method content it came from stays internal.
 - Client-facing views will be able to filter and label content by provenance, and AI output can be held back from clients until reviewed.
 - Adding a provenance type later requires a new ADR.
+
+## Amendment (Phase 6, 2026-09-30)
+
+`methodology_derived` is read narrowly: content literally taken from TPLCo's Method, such as a Model instantiated into architecture. It does not cover work merely discovered while using a method or structured by a template. Publishing an element whose provenance, or any of whose statements, is `methodology_derived` requires `instantiates` lineage to a published Model version, or one since superseded (Phase 6 decision D19). See ADR-0047. The list of provenance types is unchanged.

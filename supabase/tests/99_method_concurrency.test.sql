@@ -10,7 +10,10 @@
 --      the locked reference counter, so they are distinct and sequential;
 --   4. agree a criterion while another session supersedes it: the criterion
 --      lock serializes them, so the supersession sees the agreement; then
---      supersede the same criterion twice at once: the second is refused.
+--      supersede the same criterion twice at once: the second is refused;
+--   5. two publish_methodology holders revoke each other at once: the
+--      practice lock serializes them, the second no longer holds the
+--      capability, and one holder remains (D11).
 --
 -- The racing sessions COMMIT, so this file removes exactly what they wrote at
 -- the end (with triggers disabled for the cleanup only) and restores the
@@ -62,13 +65,19 @@ select public.create_dam_release('9.9', 'Concurrency release', 'Concurrency test
 select public.set_dam_release_member(:'release_id', :'model_a_v');
 select count(*) as release_members from public.dam_release_members where release_id = :'release_id' \gset
 select public.agree_acceptance_criterion(:'crit_2', 'Executive Sponsor', current_date);
+select m.id as principal_membership from public.organization_members m join public.organizations o on o.id = m.organization_id
+where o.type = 'tplco' and m.user_id = '10000000-0000-4000-8000-000000000002' \gset
+select m.id as architect_membership from public.organization_members m join public.organizations o on o.id = m.organization_id
+where o.type = 'tplco' and m.user_id = '10000000-0000-4000-8000-000000000003' \gset
+select public.set_practice_capability_override(:'architect_membership', 'publish_methodology', true,
+  'Concurrency test: a second holder');
 commit;
 
 begin;
 
 create extension if not exists dblink with schema extensions;
 
-select plan(14);
+select plan(17);
 
 create function pg_temp.connect(name text, user_email text)
 returns void
@@ -199,6 +208,26 @@ select extensions.dblink_exec('a', 'commit');
 select is(pg_temp.finish_query('b'), 'Only an agreed criterion is superseded; edit a proposal directly',
   'and is then refused');
 
+-- -----------------------------------------------------------------------------
+-- 5. Two holders revoke each other's publish_methodology at once
+-- -----------------------------------------------------------------------------
+select extensions.dblink_disconnect('a');
+select extensions.dblink_disconnect('b');
+select pg_temp.connect('a', 'principal@tplco.test');
+select pg_temp.connect('b', 'architect@tplco.test');
+select extensions.dblink_exec('a', 'begin');
+select * from extensions.dblink('a', format($sql$
+  select public.set_practice_capability_override(%L::uuid, 'publish_methodology', false, 'Race')::text $sql$,
+  :'architect_membership')) as r(v text);
+select ok(pg_temp.start_and_check_blocked('b', format($sql$
+  select public.set_practice_capability_override(%L::uuid, 'publish_methodology', false, 'Race') $sql$,
+  :'principal_membership')), 'a revocation waits for the other holder''s revocation in progress');
+select extensions.dblink_exec('a', 'commit');
+select is(pg_temp.finish_query('b'), 'You do not hold publish_methodology',
+  'and is then refused, because its author no longer holds the capability');
+select is(private.practice_capability_holder_count('publish_methodology'), 1,
+  'exactly one publish_methodology holder remains');
+
 select * from finish();
 
 -- -----------------------------------------------------------------------------
@@ -234,6 +263,7 @@ delete from public.method_assets where key like 'conc-%';
 delete from public.architecture_reference_counters
 where engagement_id = 'e0000000-0000-4000-8000-000000000001' and prefix in ('MUS', 'ACR');
 insert into public.architecture_reference_counters select * from saved_counters;
+delete from public.practice_member_capability_overrides where created_at >= (select at from started);
 delete from public.activity_log where created_at >= (select at from started);
 commit;
 drop table started;

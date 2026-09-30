@@ -145,7 +145,8 @@ select pg_temp.act_as('sysadmin@tplco.test');
 select is(pg_temp.caps(), '', 'the System Administrator is back to no authority');
 
 -- Authority can move, but a holder only ever acts on others, so at least one
--- holder always remains (the last-holder guard backs this up).
+-- holder always remains (the last-holder guard backs this up; suite 99 races
+-- two holders revoking each other).
 select pg_temp.act_as('principal@tplco.test');
 select public.set_practice_capability_override(pg_temp.tplco_membership('architect@tplco.test'),
   'publish_methodology', true, 'Second authority');

@@ -61,6 +61,16 @@ export const getApproachGuidance = cache(async (elementId: string): Promise<Appr
   };
 });
 
+/** The deliverable type each Template version produces, by version id. */
+export const getTemplateDeliverableTypes = cache(async () => {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("template_version_specs")
+    .select("version_id, deliverable_type");
+  if (error) throw error;
+  return new Map<string, string>((data ?? []).map((t) => [t.version_id, t.deliverable_type]));
+});
+
 export const getMethodLibrary = cache(async () => {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("method_library");

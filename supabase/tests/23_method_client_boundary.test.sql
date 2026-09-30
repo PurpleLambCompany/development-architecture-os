@@ -6,8 +6,8 @@
 -- anonymous session reads a single row or storage object from the Method
 -- Library or the practice tables, or anything through the internal read
 -- models. The only client-readable methodology is the release label and
--- title (D21), architect-authored approach statements under existing
--- statement rules (D22), and agreed criteria through
+-- title (D22), architect-authored approach statements under existing
+-- statement rules (D21), and agreed criteria through
 -- client_acceptance_criteria, never the informing Standard (D24). Client
 -- snapshots keep their pre-Phase 6 key set (ADR-0022).
 -- =============================================================================
@@ -267,7 +267,7 @@ select throws_ok($$ select public.start_method_application('e0000000-0000-4000-8
   (select id from pg_temp.ids where name = 'mv'), 'x', 'y') $$, 'P0002', null, 'or start an application');
 
 -- -----------------------------------------------------------------------------
--- The release label and title, and nothing else (D21)
+-- The release label and title, and nothing else (D22)
 -- -----------------------------------------------------------------------------
 select is((select release_label || ' | ' || release_title from public.client_engagement_methodology('e0000000-0000-4000-8000-000000000001')),
   '1.0 | Development Architecture Method™ 1.0', 'a client reads the release label and title of their engagement');
