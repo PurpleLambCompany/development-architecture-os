@@ -17,3 +17,7 @@ Implementation needs the same stewardship/triage, append-only history, and escal
 
 - Project Intelligence and Implementation can evolve independently — a Phase 6+ change to one's stewardship or signal shape never risks the other.
 - This is the more expensive direction to reverse: if a future phase decides the two should in fact share tables, merging two independently-evolved table sets is a larger migration than the reverse (splitting a shared table) would have been. This was accepted knowingly in exchange for keeping the intelligence and implementation layers conceptually and physically distinct, per Kerrick's stated boundary between them.
+
+## Amendment (Phase 7A, 2026-09-30)
+
+The implementation namespace stays separate for governed records and dismissals. `implementation_signals` and `implementation_signal_dismissals` are unchanged, and `not_material` and `deferred` judgments on `implementation_past_target` still go through `dismiss_implementation_signal` (ADR-0056). The Development Edge envelope (`edge_items`) and `edge_judgments` read across the Project Intelligence, Implementation, architecture, Review, Deliverable, criteria and practice namespaces without writing any of them; each rule names the namespace whose tables are its primary source as its `home` (ADR-0051). No implementation record is written by an intelligence operation, or the reverse. This is consistent with this ADR's separation of storage.

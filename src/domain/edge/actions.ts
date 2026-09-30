@@ -8,6 +8,7 @@ import { fail, fromDatabaseError, fromZodError, ok, type ActionResult } from "@/
 import { requireViewer } from "@/lib/auth/viewer";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createRecord } from "@/domain/architecture/actions";
+import { createReview } from "@/domain/reviews/actions";
 import type { RecordKind } from "@/domain/architecture/catalog";
 import { judgmentSchema, markBriefedSchema, type EdgeItemRef } from "./schemas";
 
@@ -80,17 +81,14 @@ export async function judgeEdgeEvent(
 /**
  * Promote: create the governed record through its own operation (which checks
  * its own capability), and only once it exists record the promotion (§15.3).
+ * The item is re-checked first, so a stale promotion creates nothing.
  */
-export async function promoteEdgeItem(
+async function promote(
   engagementId: string,
-  slug: string,
-  kind: RecordKind,
   item: EdgeItemRef,
-  input: Record<string, unknown>,
-): Promise<ActionResult<unknown>> {
+  create: () => Promise<ActionResult<unknown>>,
+): Promise<ActionResult<string>> {
   await requireViewer();
-  // Refuse before creating anything when the item is no longer current, so a
-  // stale promotion never leaves a record without its judgment.
   const supabase = await createSupabaseServerClient();
   const { data: current, error: readError } = await supabase.rpc("edge_items", {
     p_engagement_id: engagementId,
@@ -106,10 +104,11 @@ export async function promoteEdgeItem(
       "This item has changed or been judged since the page loaded. Reload the Edge and promote it again.",
     );
   }
-  const created = await createRecord(engagementId, kind, input);
+  const created = await create();
   if (!created.ok) return created;
-  const elementId = created.data as string | undefined;
-  if (!elementId) return created;
+  const elementId = created.data;
+  if (typeof elementId !== "string")
+    return fail("The record was created, but its id was not returned.");
   const { error } = await supabase.rpc("record_edge_judgment", {
     p_engagement_id: engagementId,
     p_rule_key: item.ruleKey,
@@ -121,7 +120,34 @@ export async function promoteEdgeItem(
   });
   if (error) return fromDatabaseError(error);
   refresh();
-  redirect(`/internal/engagements/${encodeURIComponent(slug)}/architecture/elements/${elementId}`);
+  return ok(elementId);
+}
+
+/** Promote into a new Project Intelligence record (a Risk or a Decision). */
+export async function promoteEdgeItem(
+  engagementId: string,
+  slug: string,
+  kind: RecordKind,
+  item: EdgeItemRef,
+  input: Record<string, unknown>,
+): Promise<ActionResult<unknown>> {
+  const result = await promote(engagementId, item, () => createRecord(engagementId, kind, input));
+  if (!result.ok) return result;
+  redirect(
+    `/internal/engagements/${encodeURIComponent(slug)}/architecture/elements/${result.data}`,
+  );
+}
+
+/** Promote by scheduling a Review. */
+export async function promoteToReview(
+  engagementId: string,
+  slug: string,
+  item: EdgeItemRef,
+  input: Record<string, unknown>,
+): Promise<ActionResult<unknown>> {
+  const result = await promote(engagementId, item, () => createReview(engagementId, input));
+  if (!result.ok) return result;
+  redirect(`/internal/engagements/${encodeURIComponent(slug)}/reviews/${result.data}`);
 }
 
 /** Set the viewer's own briefing mark. Only this explicit act moves it. */

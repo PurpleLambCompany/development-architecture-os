@@ -9,6 +9,8 @@ import { elementTypeLabel } from "@/components/architecture/relationships-panel"
 import { getEscalations, getSignals } from "@/domain/intelligence/queries";
 import { EscalationsPanel } from "@/components/intelligence/escalations-panel";
 import { createReview } from "@/domain/reviews/actions";
+import { promoteToReview } from "@/domain/edge/actions";
+import { edgeRuleLabel } from "@/domain/edge/rules";
 import { REVIEW_TYPES, REVIEW_TYPE_LABELS, reviewStatus } from "@/domain/reviews/catalog";
 import { getReviewRegister } from "@/domain/reviews/queries";
 import { ActionForm } from "@/components/ui/action-form";
@@ -25,8 +27,10 @@ import { Table, Td, Th } from "@/components/ui/table";
  */
 export default async function ReviewsPage({
   params,
+  searchParams,
 }: PageProps<"/internal/engagements/[slug]/reviews">) {
   const { slug } = await params;
+  const query = await searchParams;
   const { engagement, canPublish, canManageReviews } = await getInternalArchitectureContext(slug);
   const [architecture, queue, baselines, escalations, signals, sessions] = await Promise.all([
     loadArchitecture(engagement.id),
@@ -37,6 +41,27 @@ export default async function ReviewsPage({
     getReviewRegister(engagement.id),
   ]);
   const nameOf = memberNames(engagement);
+  // Promotion from the Development Edge (ADR-0056): scheduling the Review is
+  // the governed operation; the Edge item is then judged "promoted" to it.
+  const param = (key: string) => (typeof query[key] === "string" ? (query[key] as string) : null);
+  const promoting =
+    canManageReviews &&
+    param("promoteRule") &&
+    param("promoteType") &&
+    param("promoteId") &&
+    param("promoteFp")
+      ? {
+          ruleKey: param("promoteRule")!,
+          subjectType: param("promoteType")!,
+          subjectId: param("promoteId")!,
+          fingerprint: param("promoteFp")!,
+        }
+      : null;
+  const promotedFrom = promoting
+    ? [edgeRuleLabel(promoting.ruleKey), architecture.byId.get(promoting.subjectId)?.reference_code]
+        .filter(Boolean)
+        .join(": ")
+    : null;
   const inReview = architecture.elements.filter((e) => e.lifecycle === "in_review");
   const drafts = architecture.elements.filter((e) => e.lifecycle === "draft");
   const aiElements = architecture.elements.filter((e) => e.ai_review_state === "pending");
@@ -69,7 +94,11 @@ export default async function ReviewsPage({
 
       <Panel
         title="Review sessions"
-        description="Executive and Architecture Reviews: scheduled, held and cancelled, with their agenda and participants."
+        description={
+          promotedFrom
+            ? `Promoted from the Development Edge (${promotedFrom}). The item is marked promoted once this Review is scheduled.`
+            : "Executive and Architecture Reviews: scheduled, held and cancelled, with their agenda and participants."
+        }
         actions={
           canManageReviews ? (
             <ActionForm
@@ -89,10 +118,19 @@ export default async function ReviewsPage({
                 },
                 { name: "summary", label: "Summary", type: "textarea" },
               ]}
-              defaultValues={{ reviewType: "executive_review" }}
-              action={createReview.bind(null, engagement.id)}
+              defaultValues={{
+                reviewType: "executive_review",
+                ...(promotedFrom
+                  ? { summary: `Raised from the Development Edge: ${promotedFrom}.` }
+                  : {}),
+              }}
+              action={
+                promoting
+                  ? promoteToReview.bind(null, engagement.id, slug, promoting)
+                  : createReview.bind(null, engagement.id)
+              }
               submitLabel="Schedule review"
-              trigger="Schedule a review"
+              trigger={promoting ? undefined : "Schedule a review"}
             />
           ) : null
         }

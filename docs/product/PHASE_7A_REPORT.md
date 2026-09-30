@@ -24,7 +24,7 @@ Kerrick approved [`PHASE_7A_PROPOSAL.md`](PHASE_7A_PROPOSAL.md) Revision 2 and a
 - **Development Edge page** (`/internal/engagements/[slug]/edge`): "Since you last reviewed" (changes and new events since the private mark, folded when long, with "Mark reviewed through" the newest change shown); lens and kind-of-claim filters; human-flagged events in their own panel; "To consider", ordered by governed facts with every position explained; a judged view. One triggering change is one event, with its consequences grouped beneath it, hubs collapsed, "Why this is here" and "What would resolve it".
 - **Contextual surfaces** (§16): Bearing on this element (open records, then Edge events and the served-outcomes fact); Impact trace on `impact_trace`, grouped by category with weak links labeled; Correspondence on initiatives; "Since this Review was held" and "Before this Review" with the captured version of each examined element; Currency on Deliverables; "Reflected in architecture?" on Decisions; "This evidence bears on" on evidence sources; Practice conditions on Method Applications; "Revised since the latest judgment" on domain pages; "In practice" counts on Method Assets.
 - **Engagement overview and landing**: an Edge summary showing only human-flagged and elevated events, and "Engagements with something to consider". The Signals page links to the Edge.
-- **Judging and promotion**: per line, or the whole event on the Edge page. Promotion opens the ordinary record form pre-filled, creates nothing until submitted, re-checks that the item is still current, records the `promoted` judgment naming the new record and opens it.
+- **Judging and promotion**: per line, or the whole event on the Edge page. Promotion (record a Risk, record a Decision, or schedule a Review) opens the ordinary form pre-filled, creates nothing until submitted, re-checks that the item is still current, records the `promoted` judgment naming the new record and opens it.
 
 ## 2. Files changed
 
@@ -60,7 +60,7 @@ Detail is in [`docs/database/edge.md`](../database/edge.md).
 
 | Check                      | Result                                                                                 |
 | -------------------------- | -------------------------------------------------------------------------------------- |
-| `pnpm db:test` (pgTAP)     | 46 files, 1,586 assertions, all pass (before 7A: 33 files, 1,320). New: 13 suites, 266 |
+| `pnpm db:test` (pgTAP)     | 46 files, 1,587 assertions, all pass (before 7A: 33 files, 1,320). New: 13 suites, 267 |
 | `pnpm check` (Vitest)      | 28 files, 220 tests, all pass (41 new in `src/domain/edge/`)                           |
 | `pnpm check` (lint, types) | ESLint, `next typegen` + `tsc --noEmit` and Prettier all clean                         |
 | `pnpm build`               | Production build succeeds                                                              |
@@ -110,6 +110,12 @@ During browser acceptance:
 10. The first briefing listed every seeded change in full; it now folds after two changes per record and eight records.
 11. The Method Application panel description named rules it does not carry; stage treatments are ordered followed, adapted, skipped.
 
+From the documentation pass (reading the code against the proposal):
+
+12. An Ambient item on a record a person had flagged was lifted into the human-flagged tier, contradicting §16 ("Ambient items appear here and nowhere else"). Ambient is now checked first; a pgTAP assertion was added.
+13. Promotion offered a Recommendation, which is not in the proposal's list, and did not offer scheduling a Review, which is. It now offers Risk, Decision and Review, and was re-accepted in the browser (IMP-001's condition promoted into REV-003).
+14. `docs/database/reviews-deliverables-implementation.md` listed `dismiss_implementation_signal` under `manage_implementation`; the function has always required `edit_architecture` (documentation error from Phase 5, corrected).
+
 Before browser acceptance, the full suite caught formatting drift in six committed Edge modules (fixed), and building the database tests surfaced fixture and enum mistakes in the tests themselves, not product defects.
 
 ## 8. Clarifications within the approved design
@@ -123,6 +129,14 @@ Before browser acceptance, the full suite caught formatting drift in six committ
 7. `development_changes` dates "Review scheduled" from the Review's insert record.
 8. The D-38 served-outcomes fact is shown from one Intended Outcome, as a fact, never a condition.
 9. Internal capability overrides have no page in the application today (the matrix manages client members), so S11's withdrawal of `edit_architecture` from the Researcher was set up in the database, as the pgTAP suite does.
+10. The examined-set guard also refuses deleting an `examines` from a held Review (stricter than §11.4). Briefing marks have a select-only owner policy, with every write through `mark_briefed_through` (stricter than §19).
+11. Hubs in `impact_trace` are identified by the via element's object type (the five hub types of §7.3 rule 6); the matrix's `hub_target` column is stored and drift-tested but not read by the trace. The invalidated `underpins` walk is a `direct` matrix row with a recurse-when-invalidated condition, so the matrix shows three `recursive` rows while four walks recurse, as approved.
+12. The catalog lists `method_basis_superseded` with a Method Application subject; its `release_moved` variant uses the engagement as subject (item 1). `item_key` also hashes the trigger key.
+13. Proposal names that differ from the code: `dismiss_signal` is `dismiss_intelligence_signal`; `development_changes` reads client answers from `client_action_responses`.
+
+## 8a. Open point for Kerrick
+
+**Promotion into an acceptance criterion.** §15.1 lists "proposed a criterion" among promotions, but also records every promotion as "the created element's id", and acceptance criteria are not elements (ADR-0046). The two cannot both hold without a schema change (a `promoted_criterion_id` column or a generalized reference on `edge_judgments`). Phase 7A therefore does not offer criterion promotion: a person can propose the criterion directly and judge the item. This is recorded in ADR-0056 and left for your decision rather than changed silently.
 
 ## 9. Explicit Phase 7B exclusions
 

@@ -1,6 +1,6 @@
 # Database schema (Phase 1)
 
-> Phase 2 financial tables, functions and rules are documented in [finance.md](finance.md), Phase 3 architecture tables, operations and read models in [architecture.md](architecture.md), and the Phase 6 Method Library in [method-library.md](method-library.md).
+> Phase 2 financial tables, functions and rules are documented in [finance.md](finance.md), Phase 3 architecture tables, operations and read models in [architecture.md](architecture.md), the Phase 6 Method Library in [method-library.md](method-library.md), and the Phase 7A Deterministic Development Edge in [edge.md](edge.md).
 
 Migrations: `20260929230000_phase1_foundation.sql`, `20260929233000_engagement_capabilities.sql`.
 
@@ -86,6 +86,18 @@ Reshaped in Phase 6: the content columns moved to immutable versions, `owner_use
 ### `activity_log`
 
 Append-only audit trail written by triggers on `organizations`, `organization_members`, `engagements`, `engagement_members`, `engagement_member_capability_overrides`. Stores the actor, action (`insert`/`update`/`delete`), entity, and before/after snapshots in `metadata_json`.
+
+## Phase 7A tables
+
+Documented in full in [edge.md](edge.md). Only what a person did or a governed operation fixed is stored; every Edge item, tier, order and impact path is computed on read.
+
+| Table                                    | Holds                                                                                              | Written by                                                |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `relationship_impact_rules`              | The governed relationship-impact direction matrix: link, direction, assessment, propagation, depth | migrations only                                           |
+| `review_examined_versions`               | The exact version of each element a Review examined, captured at the hold; not a baseline          | `hold_review` only; immutable                             |
+| `edge_judgments`                         | Append-only human judgments on Edge items: kind, reason, expiry, promoted record, who and when     | `record_edge_judgment`, `record_edge_event_judgment`      |
+| `edge_briefing_marks`                    | One user's private "briefed through" time per engagement                                           | `mark_briefed_through` only; own row only; not logged     |
+| `acceptance_criteria.agreed_recorded_at` | New column: the system time of the agreement operation (`agreed_on` stays the business date)       | the criterion guard on agreement, and a one-time backfill |
 
 ## Functions
 

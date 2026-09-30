@@ -48,3 +48,11 @@ Kerrick's Q4 decision separates two things. A reusable methodological Standard i
 - The state values and `ACR` codes are permanent; agreed criteria are never deleted.
 - An acceptance criterion is not an architecture element, a Method Asset, a task, a checkpoint, a Review or a score. It has no assignee, due date, progress, per-criterion evidence links or pass or fail, and no `acceptance_criterion` statement kind exists.
 - Phase 6 changes one Phase 5 operation, `record_review_validation`, by addition only (ADR-0036 amendment).
+
+## Amendment (Phase 7A, 2026-09-30)
+
+`agreed_on` stays the business (effective) date entered by the user. `acceptance_criteria.agreed_recorded_at` (migration `20261006000250_criterion_agreement_time.sql`) is the system time of the governed agreement operation, used by Change intelligence (OD-2). The two are never conflated.
+
+- `private.guard_acceptance_criterion` sets `agreed_recorded_at` to `clock_timestamp()` when a proposed criterion becomes agreed, clears any value supplied on insert, and freezes it with the other agreement fields.
+- A one-time backfill (`private.backfill_criterion_agreement_times`) set it for criteria already agreed from the authoritative `activity_log` row that moved each from `proposed` to `agreed`, and left it null where no such row exists. In seed data that row carries the seed transaction's time.
+- `criteria_predate_revision` compares only `agreed_recorded_at` with substantive revisions, and produces no item for a criterion whose agreement time was not recorded. `development_changes` dates an agreement by `agreed_recorded_at`. No Edge read derives agreement time from `activity_log`.

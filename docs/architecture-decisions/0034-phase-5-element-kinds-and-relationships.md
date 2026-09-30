@@ -16,3 +16,7 @@ Phase 5 governs realizing approved architecture into operating reality: Reviews 
 
 - Reference codes, versioning, publication, evidence links and statements work identically for Reviews, Deliverables and Implementation Initiatives, with no Phase-5-specific exceptions in that machinery.
 - The reference prefixes and relationship types are permanent vocabulary; removing or renaming any of them later is a migration touching every element or relationship that used them, not a local change.
+
+## Amendment (Phase 7A, 2026-09-30)
+
+A Review's agenda (`examines`) closes when the Review is held (OD-7). The trigger `private.guard_examined_set` on `architecture_relationships` refuses a new `examines` from a held Review, and refuses retiring or deleting an existing one, with "The examined set closed when this Review was held. Use a later Review for further examination." Existing relationships are preserved, including those that Reviews held before Phase 7A gained after their hold, and `hold_review` captures the exact version of each examined element (ADR-0054). Further formal examination uses a later Review. The validation gate (ADR-0035, ADR-0036) therefore means "examined at the hold": a held Review can validate an initiative only if it examined the initiative, or a core object it implements, when it was held.

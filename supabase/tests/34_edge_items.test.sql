@@ -5,7 +5,7 @@
 -- =============================================================================
 begin;
 
-select plan(22);
+select plan(23);
 
 create function pg_temp.as_user(user_email text) returns void language plpgsql as $$
 begin
@@ -57,6 +57,11 @@ select is((select count(*)::int from items where tier = 'human_flagged'
 select is((select count(*)::int from items i join private.edge_rules() c using (rule_key)
            where c.list_tier = 'ambient' and i.tier = 'elevated'),
   0, 'an Ambient rule is never elevated');
+select is((select count(*)::int from items i join private.edge_rules() c using (rule_key)
+           where c.list_tier = 'ambient' and i.tier <> 'ambient'
+             -- release_moved is the one variant listed at Attention (§5.2 #22).
+             and i.variant is distinct from 'release_moved'),
+  0, 'an Ambient rule stays Ambient, even on a flagged record (§16)');
 
 -- S3: one revision of APP-001, one event.
 select is((select count(distinct trigger_key)::int from items where eng = 'harbor' and trigger_subject_id = pg_temp.h('APP-001')

@@ -26,7 +26,12 @@ import { StatusTag } from "@/components/ui/status-tag";
 import { judgmentFields } from "./judgment-fields";
 import { edgeSubjectHref } from "./links";
 
-const RECORD_KINDS_FOR_PROMOTION = ["risk", "decision", "recommendation"] as const;
+/** The governed operations an item may be promoted into (§15.1, Q6). Each yields an element. */
+const PROMOTIONS = [
+  { key: "risk", label: "Record a Risk" },
+  { key: "decision", label: "Record a Decision" },
+  { key: "review", label: "Schedule a Review" },
+] as const;
 
 function labels(event: EdgeEvent): string {
   const lenses = event.lenses.map((l) => EDGE_LENS_LABELS[l as EdgeLens] ?? l).join(", ");
@@ -112,14 +117,17 @@ function ConsequenceRow({
   sharedJudgment?: boolean;
 }) {
   const item = line.primary;
-  const promoteHref = (kind: string) =>
-    `/internal/engagements/${slug}/intelligence?${new URLSearchParams({
-      new: kind,
+  const promoteHref = (kind: string) => {
+    const params = {
       promoteRule: item.rule_key,
       promoteType: item.subject_type,
       promoteId: item.subject_id,
       promoteFp: item.fingerprint,
-    }).toString()}`;
+    };
+    return kind === "review"
+      ? `/internal/engagements/${slug}/reviews?${new URLSearchParams(params).toString()}`
+      : `/internal/engagements/${slug}/intelligence?${new URLSearchParams({ new: kind, ...params }).toString()}`;
+  };
   return (
     <li className="py-2">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -189,10 +197,10 @@ function ConsequenceRow({
                 Promote
               </summary>
               <ul className="mt-2 space-y-1">
-                {RECORD_KINDS_FOR_PROMOTION.map((kind) => (
-                  <li key={kind}>
-                    <Link href={promoteHref(kind)} className="text-ink-muted hover:underline">
-                      Record a {kind}
+                {PROMOTIONS.map((p) => (
+                  <li key={p.key}>
+                    <Link href={promoteHref(p.key)} className="text-ink-muted hover:underline">
+                      {p.label}
                     </Link>
                   </li>
                 ))}

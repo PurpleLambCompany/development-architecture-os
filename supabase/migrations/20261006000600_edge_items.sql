@@ -308,13 +308,15 @@ as $$
   ),
   tiered as (
     select f.*,
-           case when f.human_reason is not null then 'human_flagged'
-                when f.base_tier = 'ambient' then 'ambient'
+           -- Ambient first: an Ambient item appears in context and nowhere else
+           -- (§16), even on a record a person has flagged.
+           case when f.base_tier = 'ambient' then 'ambient'
+                when f.human_reason is not null then 'human_flagged'
                 when f.attention_high then 'elevated'
                 when (f.governance ->> 'd')::date <= p.as_of + p.horizon then 'elevated'
                 else f.base_tier end as tier,
-           case when f.human_reason is not null then f.human_reason
-                when f.base_tier = 'ambient' then 'ambient_rule'
+           case when f.base_tier = 'ambient' then 'ambient_rule'
+                when f.human_reason is not null then f.human_reason
                 when f.attention_high then 'attention_high'
                 when (f.governance ->> 'd')::date <= p.as_of + p.horizon then 'governance_within_horizon'
                 else 'rule_default' end as tier_reason
