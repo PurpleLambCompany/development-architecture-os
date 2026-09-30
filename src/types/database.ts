@@ -6408,6 +6408,20 @@ export type Database = {
         };
         Returns: undefined;
       };
+      client_acceptance_criteria: {
+        Args: { p_engagement_id: string };
+        Returns: {
+          agreed_on: string;
+          body: string;
+          criterion_id: string;
+          governed_element_id: string;
+          governed_reference_code: string;
+          governed_title: string;
+          reference_code: string;
+          state: Database["public"]["Enums"]["acceptance_criterion_state"];
+          validation_relationship_ids: string[];
+        }[];
+      };
       client_architecture: {
         Args: { p_engagement_id: string };
         Returns: {
@@ -6486,6 +6500,13 @@ export type Database = {
           response_comment: string;
           version_id: string;
           version_no: number;
+        }[];
+      };
+      client_engagement_methodology: {
+        Args: { p_engagement_id: string };
+        Returns: {
+          release_label: string;
+          release_title: string;
         }[];
       };
       client_implementation: {
@@ -6729,6 +6750,25 @@ export type Database = {
           p_rule_key: string;
         };
         Returns: string;
+      };
+      element_practice_context: {
+        Args: { p_element_id: string };
+        Returns: {
+          application_code: string;
+          application_id: string;
+          application_state: Database["public"]["Enums"]["method_application_state"];
+          application_title: string;
+          asset_id: string;
+          asset_title: string;
+          form: Database["public"]["Enums"]["method_asset_form"];
+          legacy: boolean;
+          note: string;
+          record_id: string;
+          role: string;
+          source: string;
+          version_id: string;
+          version_label: string;
+        }[];
       };
       element_reference_prefix: {
         Args: {
@@ -6991,6 +7031,62 @@ export type Database = {
           p_role: Database["public"]["Enums"]["method_application_evidence_role"];
         };
         Returns: string;
+      };
+      method_application_register: {
+        Args: { p_engagement_id: string };
+        Returns: {
+          application_id: string;
+          asset_id: string;
+          asset_title: string;
+          closed_on: string;
+          element_link_count: number;
+          evidence_link_count: number;
+          lead_member_id: string;
+          reference_code: string;
+          started_on: string;
+          state: Database["public"]["Enums"]["method_application_state"];
+          title: string;
+          version_id: string;
+          version_in_release: boolean;
+          version_label: string;
+        }[];
+      };
+      method_library: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          application_count: number;
+          architectural_question: string;
+          asset_id: string;
+          category_key: string;
+          context_keys: string[];
+          current_version_id: string;
+          domains: Database["public"]["Enums"]["architecture_domain"][];
+          form: Database["public"]["Enums"]["method_asset_form"];
+          has_draft: boolean;
+          key: string;
+          lineage_count: number;
+          origin: Database["public"]["Enums"]["method_asset_origin"];
+          release_labels: string[];
+          status: string;
+          title: string;
+          version_label: string;
+          version_lifecycle: Database["public"]["Enums"]["method_asset_version_lifecycle"];
+        }[];
+      };
+      method_usage: {
+        Args: { p_asset_id: string };
+        Returns: {
+          application_count: number;
+          applications: Json;
+          legacy: boolean;
+          lifecycle: Database["public"]["Enums"]["method_asset_version_lifecycle"];
+          lineage: Json;
+          lineage_count: number;
+          release_labels: string[];
+          version_id: string;
+          version_label: string;
+          version_no: number;
+        }[];
       };
       method_version_publish_gaps: { Args: { p_version_id: string }; Returns: string[] };
       milestone_billing: {
