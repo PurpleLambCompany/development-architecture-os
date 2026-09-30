@@ -17,6 +17,7 @@ import {
   reopenInitiativeSchema,
   resolveInitiativeSchema,
   triageSchema,
+  updateInitiativeDetailsSchema,
   updateStatusSchema,
 } from "./schemas";
 
@@ -69,6 +70,34 @@ export async function createInitiative(engagementId: string, input: unknown) {
       ...(v.ownerMemberId ? { p_owner_member_id: v.ownerMemberId } : {}),
       ...(v.summary ? { p_summary: v.summary } : {}),
     }),
+  );
+}
+
+/** An update or delete that RLS silently filtered out means no permission. */
+function expectRow<T>(result: { data: T[] | null; error: PostgrestError | null }): Work<T> {
+  if (result.error) return { error: result.error };
+  if (!result.data?.length) {
+    return {
+      error: { code: "42501", message: "No permission", details: "", hint: "", name: "PostgrestError" } as PostgrestError,
+    };
+  }
+  return { data: result.data[0], error: null };
+}
+
+/** Direct edit of category, target date and owner (manage_implementation). */
+export async function updateInitiativeDetails(elementId: string, input: unknown) {
+  return run(updateInitiativeDetailsSchema, input, async (supabase, v) =>
+    expectRow(
+      await supabase
+        .from("implementation_initiatives")
+        .update({
+          category: v.category,
+          target_operational_on: v.targetOperationalOn,
+          owner_member_id: v.ownerMemberId,
+        })
+        .eq("element_id", elementId)
+        .select("element_id"),
+    ),
   );
 }
 

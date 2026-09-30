@@ -51,6 +51,9 @@ import {
 import { recordsBearingOn } from "@/domain/intelligence/register";
 import { clientMembersWith } from "@/domain/intelligence/views";
 import { RECORD_KINDS } from "@/domain/architecture/vocabulary";
+import { getDeliverableRegister } from "@/domain/deliverables/queries";
+import { getImplementationRegister } from "@/domain/implementation/queries";
+import { getReviewRegister } from "@/domain/reviews/queries";
 import { ActivityList } from "@/components/architecture/activity-list";
 import { ArchitectureNav } from "@/components/architecture/architecture-nav";
 import {
@@ -84,6 +87,11 @@ import {
   ImpactPanel,
   StewardshipPanel,
 } from "@/components/intelligence/element-panels";
+import {
+  DocumentedInPanel,
+  ImplementationPanel,
+  ReviewedInPanel,
+} from "@/components/architecture/phase5-panels";
 import { ElementRequestsPanel } from "@/components/intelligence/element-requests";
 import { ActionButton, ActionForm } from "@/components/ui/action-form";
 import { ButtonLink } from "@/components/ui/button";
@@ -117,6 +125,9 @@ export default async function ElementPage({
     statements,
     respondents,
     executives,
+    implementationRows,
+    reviewRows,
+    deliverableRows,
   ] = await Promise.all([
     getElementDetail(engagement.id, element.id),
     listEvidence(engagement.id),
@@ -131,6 +142,9 @@ export default async function ElementPage({
     getStatementOptions(engagement.id),
     clientMembersWith(engagement, ["view_architecture", "respond_to_client_actions"]),
     clientMembersWith(engagement, ["view_architecture", "approve_architecture"]),
+    getImplementationRegister(engagement.id),
+    getReviewRegister(engagement.id),
+    getDeliverableRegister(engagement.id),
   ]);
   const preview = query.preview === "1" ? await previewClientSnapshot(element.id) : null;
   const versionId = typeof query.version === "string" ? query.version : null;
@@ -455,6 +469,20 @@ export default async function ElementPage({
         canEdit={canEdit}
         canPublish={canPublish}
         frozen={frozen}
+      />
+
+      <ImplementationPanel
+        slug={slug}
+        elementId={element.id}
+        architecture={architecture}
+        rows={implementationRows}
+      />
+      <ReviewedInPanel slug={slug} elementId={element.id} architecture={architecture} rows={reviewRows} />
+      <DocumentedInPanel
+        slug={slug}
+        elementId={element.id}
+        architecture={architecture}
+        rows={deliverableRows}
       />
 
       <ElementRequestsPanel

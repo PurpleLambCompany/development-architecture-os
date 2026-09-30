@@ -44,6 +44,13 @@ const idList = z.preprocess(
 
 const CATEGORY_KEYS = IMPLEMENTATION_CATEGORIES.map((c) => c.key) as [string, ...string[]];
 
+/** Direct edits to the initiative's own working fields (manage_implementation). */
+export const updateInitiativeDetailsSchema = z.object({
+  category: z.enum(CATEGORY_KEYS).default("other"),
+  targetOperationalOn: optionalDate,
+  ownerMemberId: optionalId,
+});
+
 export const createInitiativeSchema = z.object({
   title: required(300),
   implementsElementIds: idList.refine(
