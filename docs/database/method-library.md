@@ -224,6 +224,7 @@ The engagement capability enum, tables and functions are unchanged. Engagement-s
   - the engagement's release label and title, through `client_engagement_methodology`;
   - agreed, client-visible acceptance criteria through `client_acceptance_criteria`: code, body, state, agreement date, the governed element's code and client-snapshot title, and the validations the client can already see that captured each criterion. Proposed criteria, the informing Standard, the agreement party and validation notes are never returned. Superseded or withdrawn criteria appear only when a readable validation captured them;
   - architect-authored `approach` statements, through the existing, unchanged client snapshot under ordinary statement visibility (ADR-0049).
+- Method Applications are internal practice and provenance records, never client-readable. Client Contributor area filtering therefore does not apply to them; area restrictions keep governing the client-facing Architecture and other client-visible records under their existing rules (D32, clarified).
 - Nothing else. Clients can read `engagements.dam_release_id` through the existing engagement policy, but it resolves to no row. Client snapshots keep their pre-Phase 6 key sets and never contain lineage or any library field (ADR-0022).
 
 ## Storage: `method-library`

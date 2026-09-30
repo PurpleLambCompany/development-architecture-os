@@ -1030,7 +1030,7 @@ Every fact about the development remains an element. The Method Library can be r
 | **Deliverables**                         | Deliverable → Template, `produced_from` lineage (pinned version). Application → Deliverable, `produced`. Confidentiality and visibility are unchanged. Template content never enters the deliverable file automatically (no generation)                                                                                                                                                                                                                                     |
 | **Validation (`validates`)**             | The gate is unchanged (ADR-0036): a held Review validates an Implementation Initiative only. `record_review_validation` also captures the agreed acceptance criteria in force, those on the initiative and on the core objects it implements, into `validation_criteria`, with an optional note per criterion and no verdict (§15, D34)                                                                                                                                     |
 | **Implementation status publication**    | Unchanged. Client status updates never mention Method Applications                                                                                                                                                                                                                                                                                                                                                                                                          |
-| **Area-limited Contributors (ADR-0040)** | Method Applications are readable to anyone with `can_read_architecture` on the engagement. **Area limits are not applied to applications in Phase 6**; a Contributor sees an application but its element links are filtered through `element_in_member_areas` in the read model. A Contributor cannot create applications without `edit_architecture` (D32)                                                                                                                 |
+| **Area-limited Contributors (ADR-0040)** | Method Applications are internal practice records and never client-readable, so Client Contributor area filtering does not apply to them. Area restrictions continue to govern the client-facing Architecture and other client-visible records under their existing rules. Internal members who can read the engagement's architecture read its applications; writes need `edit_architecture` (D32, clarified)                                                              |
 
 ---
 
@@ -1500,7 +1500,7 @@ Deliberately minimal.
   - freeze after closure; addenda;
   - `MUS` codes;
   - captured references survive deletion of a linked draft, including on closed applications (D30);
-  - area-filtered detail for Contributors;
+  - no application or link row is readable by a Client Contributor or any other client role (D32, clarified);
   - lineage form ↔ role ↔ kind;
   - the `methodology_derived` publish check.
 - **`23_method_client_boundary.sql`**
@@ -1549,7 +1549,7 @@ Deliberately minimal.
 - as Architect: apply, link, close, delete a linked draft after closure, approach statement, propose acceptance criteria;
 - as Researcher: read-only library;
 - as System Administrator: no publish;
-- as Contributor: area-filtered application;
+- as Contributor: no Method Application or Method/IP is reachable; client-visible records stay area-limited;
 - as client: only the release line and authored statements.
 
 Results are written up as in Phase 5.
@@ -1966,16 +1966,18 @@ Each decision gives the question, the recommendation, the alternatives, the cons
 - **Consequences:** "how well was the method applied" is judged in retrospectives, not Reviews, for now.
 - **Reversibility:** easy to add later.
 
-**D32. Area-limited Contributor visibility.**
+**D32. Method Application visibility (clarified 2026-09-30).**
 
 - **Question:** how do ADR-0040 area limits apply to applications?
-- **Recommendation:**
-  - applications are visible to anyone who can read the engagement's architecture;
-  - element links in read models are filtered by `element_in_member_areas`;
-  - creation requires `edit_architecture`.
-- **Alternatives:** hide whole applications unless every link is in-area (hides practice unnecessarily); no filtering (leaks element titles out of area).
-- **Consequences:** a Contributor may see an application with some links hidden, shown as "N items outside your areas".
-- **Reversibility:** easy.
+- **Decision (clarified by Kerrick at final acceptance; a clarification, not a change to the security model):**
+  - Method Applications are internal TPLCo practice and provenance records. They are never client-readable, by any client role.
+  - Client Contributor area filtering therefore does not apply directly to Method Application records. Applications are not exposed to Client Contributors, or to any other client role, to make an area clause operational.
+  - Client area restrictions continue to apply to the client-facing Architecture and other client-visible engagement records under their existing rules (ADR-0030, ADR-0040).
+  - Client-safe communication about methodology happens only through the approved surfaces: DAM release identity, deliberately authored and published approach statements, and agreed client-visible Acceptance Criteria.
+  - Method Assets, Method Applications, methodology lineage, components, adaptations and proprietary Method/IP remain structurally inaccessible to clients.
+  - Internal members who can read the engagement's architecture read its applications; creation and every write require `edit_architecture`.
+- **Superseded wording:** Revision 2 said applications were visible to "anyone who can read the engagement's architecture" with element links filtered by `element_in_member_areas` for Contributors. That wording implied client access and is withdrawn.
+- **Reversibility:** not applicable; the client boundary is a standing rule.
 
 ### Provenance and lineage
 

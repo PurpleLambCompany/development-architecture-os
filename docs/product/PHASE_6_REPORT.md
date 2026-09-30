@@ -85,7 +85,6 @@ Each was re-verified in the browser after the fix.
 
 ## 6. Known limitations
 
-- D32 area filtering for applications has no population to act on (see §7).
 - Files in the library are served through an authenticated internal route under the bucket policy, not through signed URLs.
 - There is no evidence upload for criterion agreement beyond choosing an existing Evidence Source.
 - Not built, as instructed: AI, automated method selection or scoring, Pattern extraction, certification or licensing, document management, LMS, DAM phases and a dynamic ontology.
@@ -94,7 +93,11 @@ Differences from the proposal's wording, all within the approved decisions and r
 
 ## 7. Unresolved questions
 
-- **D32 and the client boundary.** D32 says an application is visible to anyone who can read the engagement's architecture, with Contributor area filtering. The standing rule that clients never see Method/IP means applications are internal-only, and internal members carry no area limits, so the area filter has nothing to act on. It was built internal-only; this is reversible if a different reading is intended.
+None. The D32 question raised at acceptance was resolved by Kerrick as a clarification (below).
+
+### D32 clarification (2026-09-30)
+
+Method Applications are internal TPLCo practice and provenance records and are never client-readable. Client Contributor area filtering therefore does not apply directly to them, and they are not exposed to any client role to make an area clause operational. Area restrictions continue to apply to the client-facing Architecture and other client-visible engagement records under their existing rules. Clients learn about methodology only through DAM release identity, published approach statements and agreed client-visible Acceptance Criteria. Method Assets, Method Applications, methodology lineage, components, adaptations and proprietary Method/IP remain structurally inaccessible to clients. The implementation already behaved this way; only the proposal, ADR-0043, `docs/database/method-library.md` and this report were reworded. No RLS, schema or application code changed.
 
 ## 8. Recommended next step
 
