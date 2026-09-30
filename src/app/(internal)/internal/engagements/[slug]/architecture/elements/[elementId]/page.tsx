@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { getApproachGuidance } from "@/domain/methodology/queries";
 import { notFound } from "next/navigation";
+import { getApproachGuidance } from "@/domain/methodology/queries";
 import { formatDate, formatDateTime } from "@/lib/format";
 import {
   deleteElement,

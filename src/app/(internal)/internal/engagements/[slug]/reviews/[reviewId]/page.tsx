@@ -1,4 +1,3 @@
-import { getApproachGuidance } from "@/domain/methodology/queries";
 import { notFound } from "next/navigation";
 import {
   publishElement,
@@ -21,7 +20,13 @@ import {
   reviewStatus,
 } from "@/domain/reviews/catalog";
 import { getReviewParticipants, getReviewRegister } from "@/domain/reviews/queries";
-import { formatDateTime } from "@/lib/format";
+import { setValidationCriterionNote } from "@/domain/methodology/actions";
+import {
+  getApproachGuidance,
+  getCriteriaInForce,
+  getValidationCriteria,
+} from "@/domain/methodology/queries";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { ArchitectureNav } from "@/components/architecture/architecture-nav";
 import { ElementLink, LifecycleTag, ReferenceCode } from "@/components/architecture/badges";
 import { elementTypeLabel } from "@/components/architecture/relationships-panel";
@@ -29,6 +34,7 @@ import { RelationshipsPanel } from "@/components/architecture/relationships-pane
 import { StatementsPanel } from "@/components/architecture/statements-panel";
 import { VersionsPanel } from "@/components/architecture/versions-panel";
 import { ActivityList } from "@/components/architecture/activity-list";
+import { PracticePanel } from "@/components/methodology/practice-panel";
 import { ActionButton, ActionForm } from "@/components/ui/action-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { DetailList, EmptyState, Panel } from "@/components/ui/panel";
@@ -93,6 +99,11 @@ export default async function ReviewDetailPage({
       !alreadyValidated.has(i.id) &&
       (examinedIds.has(i.id) || (implementsTarget.get(i.id) ?? []).some((t) => examinedIds.has(t))),
   );
+
+  const [candidateCriteria, captured] = await Promise.all([
+    Promise.all(validationCandidates.map((i) => getCriteriaInForce(i.id))),
+    validates.length > 0 ? getValidationCriteria(engagement.id) : Promise.resolve([]),
+  ]);
 
   const engagementMembers = engagement.engagement_members.filter((m) => m.status === "active");
   const availableMembers = engagementMembers.filter(
@@ -284,19 +295,104 @@ export default async function ReviewDetailPage({
             action={recordReviewValidation.bind(null, element.id)}
             submitLabel="Record validation"
             trigger="Validate initiative"
-            confirm="Record that this review validates the chosen initiative's operating reality?"
+            confirm="Record that this review validates the chosen initiative's operating reality? The agreed acceptance criteria in force are captured with it."
           />
+          <div className="mt-4 space-y-3 text-sm">
+            <p className="text-xs tracking-wide text-ink-subtle uppercase">
+              Would be validated against
+            </p>
+            {validationCandidates.map((i, n) => {
+              const criteria = candidateCriteria[n] ?? [];
+              return (
+                <div key={i.id} className="space-y-1">
+                  <p className="text-ink">
+                    {i.reference_code} · {i.title}
+                  </p>
+                  {criteria.length === 0 ? (
+                    <p className="text-attention">
+                      No agreed acceptance criteria are in force. The validation is still valid; it
+                      will record that none were agreed.
+                    </p>
+                  ) : (
+                    <ul className="space-y-1 pl-4 text-ink-muted">
+                      {criteria.map((c) => (
+                        <li key={c.id}>
+                          <span className="font-mono text-xs">{c.reference_code}</span> {c.body}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </Panel>
       ) : null}
 
       {validates.length > 0 ? (
-        <Panel title="Validated">
-          <ul className="space-y-1 text-sm">
+        <Panel
+          title="Validated"
+          description="Each validation with the agreed acceptance criteria it was judged against. Notes record how each was met; there is no pass or fail."
+        >
+          <ul className="space-y-4 text-sm">
             {validates.map((r) => {
               const target = architecture.byId.get(r.target_element_id);
+              const against = captured
+                .filter((c) => c.validation_relationship_id === r.id)
+                .sort((a, b) =>
+                  (a.acceptance_criteria?.reference_code ?? "").localeCompare(
+                    b.acceptance_criteria?.reference_code ?? "",
+                    undefined,
+                    { numeric: true },
+                  ),
+                );
               return target ? (
-                <li key={r.id}>
+                <li key={r.id} className="space-y-2">
                   <ElementLink slug={slug} element={target} />
+                  {against.length === 0 ? (
+                    <p className="text-ink-subtle">
+                      No agreed acceptance criteria were in force when this was validated.
+                    </p>
+                  ) : (
+                    <ul className="space-y-2 border-l-2 border-rule pl-4">
+                      {against.map((c) => (
+                        <li key={c.criterion_id} className="space-y-1">
+                          <p className="text-ink">
+                            <span className="font-mono text-xs text-ink-subtle">
+                              {c.acceptance_criteria?.reference_code}
+                            </span>{" "}
+                            {c.acceptance_criteria?.body}
+                          </p>
+                          {c.note ? (
+                            <p className="text-ink-muted">
+                              {c.note}
+                              {c.note_updated_at ? (
+                                <span className="text-xs text-ink-subtle">
+                                  {" "}
+                                  · {formatDate(c.note_updated_at)}
+                                </span>
+                              ) : null}
+                            </p>
+                          ) : null}
+                          {canPublish ? (
+                            <ActionForm
+                              trigger={c.note ? "Edit note" : "Add note"}
+                              submitLabel="Save note"
+                              action={setValidationCriterionNote.bind(null, r.id, c.criterion_id)}
+                              fields={[
+                                {
+                                  name: "note",
+                                  label: "How this criterion was met",
+                                  type: "textarea",
+                                },
+                              ]}
+                              defaultValues={{ note: c.note }}
+                            />
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </li>
               ) : null;
             })}
@@ -331,6 +427,17 @@ export default async function ReviewDetailPage({
         canPublish={canPublish}
         nameOf={nameOf}
         today={new Date().toISOString().slice(0, 10)}
+      />
+
+      <PracticePanel
+        slug={slug}
+        elementId={element.id}
+        kind={element.kind}
+        editable={canEdit && !frozen}
+        methodologyDerived={
+          element.provenance === "methodology_derived" ||
+          detail.statements.some((st) => st.provenance === "methodology_derived")
+        }
       />
 
       {detail.activity.length > 0 ? (
