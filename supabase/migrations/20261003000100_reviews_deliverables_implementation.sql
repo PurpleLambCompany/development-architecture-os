@@ -1724,7 +1724,9 @@ begin
     raise exception 'Only a resolved initiative can be reopened' using errcode = '23514';
   end if;
   perform private.set_implementation_context('reopened', p_rationale);
-  update public.implementation_initiatives set implementation_status = 'in_progress' where element_id = e.id;
+  update public.implementation_initiatives
+  set implementation_status = 'in_progress', actual_operational_on = null
+  where element_id = e.id;
   perform private.clear_implementation_context();
   perform private.end_architecture_operation();
 end;
