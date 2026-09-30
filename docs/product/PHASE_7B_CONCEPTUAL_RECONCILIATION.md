@@ -1,6 +1,8 @@
 # Phase 7B — Bounded AI Architecture Intelligence: Conceptual Reconciliation
 
-**Status:** Revision 1, for Kerrick's review. **This is an investigation, not a proposal.** It creates no migration, schema, table, enum, function, ADR, application code, prompt, provider SDK, model connection, embedding, vector store, agent, background job or monitoring service. `CLAUDE.md`'s Phase 7B hold is unchanged. No `PHASE_7B_PROPOSAL.md` exists or is implied.
+**Status:** Revision 2, **accepted in principle** by Kerrick on 2026-09-30, with his decisions on B-1 to B-31 and one added governing principle (§0). **This is an investigation, not a proposal.** It creates no migration, schema, table, enum, function, ADR, application code, prompt, provider SDK, model connection, embedding, vector store, agent, background job or monitoring service. `CLAUDE.md`'s Phase 7B hold is unchanged. The next document is [`PHASE_7B_1_PROPOSAL.md`](PHASE_7B_1_PROPOSAL.md) (7B.1 only); no 7B.2 proposal exists.
+
+**Changed in Revision 2:** §0 added; §1, §12.3, §29 and §34 now record the decisions. Where a decision changed a recommendation (B-10, B-13), the earlier text is kept and marked as superseded so the reasoning stays visible.
 
 **Read against:** `main` at `a052830` (Phase 7A merged as `85ecf13`; status PR `a052830`).
 
@@ -14,6 +16,60 @@
 **Conventions.** Repository claims cite `path:line`, ADRs, migrations or functions. External technology claims cite official sources with the access date (all accessed 2026-09-30; see §19). **[Inference]** marks architectural judgment rather than documented fact. Questions for Kerrick are numbered **B-1** to **B-31** in §34; each earlier section points to the questions it raises.
 
 **Source reliability note for §19.** OpenAI's documentation was read through a fetch tool that summarises pages; direct download was blocked by this environment's network policy. Items quoted verbatim are marked. §19.12 lists what could not be verified and must be checked by hand before any proposal relies on it.
+
+---
+
+## 0. Kerrick's decisions (2026-09-30)
+
+Kerrick reviewed Revision 1 and accepted it in principle with the decisions below. They govern every later 7B document. "Approve" means the §34 recommendation stands as written.
+
+| Question                                  | Decision                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| B-1 Engagement authorisation              | **Approve with clarification.** A versioned, engagement-level external-processing authorisation, default No, recording who authorised it, when, and the governing or contractual basis. Enabling it is capability-gated                                                                                                                                                                                            |
+| B-2 Eligible data classes                 | **Approve.** Initially eligible: published Architecture, authorised working Architecture, Project Intelligence, and minimum necessary Evidence metadata. Excluded: file contents, Method/IP, finance, raw activity logs and any other unapproved class. Eligibility does not mean automatic inclusion in every request                                                                                             |
+| B-3 Provider abstraction                  | **Approve with direction.** A thin provider-neutral adapter. OpenAI may be the first evaluated provider, subject to B-4. DSA must not depend on OpenAI-hosted state or proprietary agent infrastructure                                                                                                                                                                                                            |
+| B-4 Contractual prerequisites             | **Approve.** Seed or synthetic data only until the applicable contractual and privacy requirements (including DPA/ZDR where policy requires them) are satisfied for real engagement processing                                                                                                                                                                                                                     |
+| B-5 Provenance vocabulary                 | **Approve.** No new `provenance_type` value                                                                                                                                                                                                                                                                                                                                                                        |
+| B-6 `generated_analysis`                  | **Approve.** Not used in 7B                                                                                                                                                                                                                                                                                                                                                                                        |
+| B-7 Inference record                      | **Approve.** One inference model; ephemeral by default; persisted only for defined inference kinds                                                                                                                                                                                                                                                                                                                 |
+| B-8 Prompts                               | **Approve.** Versioned in the repository                                                                                                                                                                                                                                                                                                                                                                           |
+| B-9 Prompt-governance capability          | **Approve.** None in 7B                                                                                                                                                                                                                                                                                                                                                                                            |
+| B-10 Capability to use AI                 | **Changed.** Do **not** reuse `edit_architecture`. Introduce a distinct engagement capability, working name `use_architecture_intelligence`. Editing Architecture and invoking external AI are separate authorities. Default conservatively to Principal Architect and Architect, keep the existing override pattern, and never grant AI use merely because a user can read or edit Architecture                   |
+| B-11 Model identity                       | **Approve.** Record the resolved provider and model identity as text; rerun evaluation when the effective model changes materially                                                                                                                                                                                                                                                                                 |
+| B-12 `suggested` / `model`                | **Approve.** Activate the vocabulary                                                                                                                                                                                                                                                                                                                                                                               |
+| B-13 `contest`                            | **Hold.** Do not add `contest`. The 7A vocabulary already has `disagree`; the 7B.1 proposal must show whether `contest` has a genuinely different governance meaning and lifecycle consequence. If not, reuse `disagree`; if so, surface it as a difficult-to-reverse decision before adding the value. _Carried into [`PHASE_7B_1_PROPOSAL.md`](PHASE_7B_1_PROPOSAL.md) §17, which recommends reusing `disagree`_ |
+| B-14 Edge projection                      | **Approve.** Persisted inferences may project onto the Edge as `suggested`, outside deterministic tiers                                                                                                                                                                                                                                                                                                            |
+| B-15 Inference kinds                      | **Approve as the initial closed set:** `explanation`, `tension`, `evidence_bearing`, `review_brief`, `realization_reading`. Each is to be defined precisely in the proposal before any permanent vocabulary is created. `link_suggestion` is not in the set                                                                                                                                                        |
+| B-16 File contents                        | **Approve.** No file or image content processing in 7B                                                                                                                                                                                                                                                                                                                                                             |
+| B-17 Web search                           | **Approve.** None in 7B                                                                                                                                                                                                                                                                                                                                                                                            |
+| B-18 Development Environment Intelligence | **Approve.** DEI, continuous monitoring and competitive intelligence move to a later dedicated phase and reconciliation                                                                                                                                                                                                                                                                                            |
+| B-19 Method/IP                            | **Approve.** Separate explicit TPLCo authorisation, excluded by default. Engagement AI authorisation never implicitly authorises Method Library or Method Application content                                                                                                                                                                                                                                      |
+| B-20 Tool Contract                        | **Approve.** Read-only; no MCP server or client; no AI mutation tools                                                                                                                                                                                                                                                                                                                                              |
+| B-21 Audit                                | **Approve.** Audit metadata only, for security, provenance, reliability, evaluation and cost; never employee productivity or performance surveillance                                                                                                                                                                                                                                                              |
+| B-22 Client-facing AI                     | **Approve.** None in 7B                                                                                                                                                                                                                                                                                                                                                                                            |
+| B-23 Client disclosure                    | **Deferred** until client-visible AI-drafted material is actually in scope                                                                                                                                                                                                                                                                                                                                         |
+| B-24 Method recommendation                | **Approve.** None                                                                                                                                                                                                                                                                                                                                                                                                  |
+| B-25 Background processing                | **Approve.** None                                                                                                                                                                                                                                                                                                                                                                                                  |
+| B-26 Development Context                  | **Approve.** Does not steer AI in 7B                                                                                                                                                                                                                                                                                                                                                                               |
+| B-27 Notifications                        | **Approve.** None                                                                                                                                                                                                                                                                                                                                                                                                  |
+| B-28 Cross-engagement / Pattern Library   | **Approve.** None                                                                                                                                                                                                                                                                                                                                                                                                  |
+| B-29 Naming                               | **Approve.** The subsystem name is **Architecture Intelligence**. "DSA Architect" may remain a future UX or product concept, not the architectural subsystem name                                                                                                                                                                                                                                                  |
+| B-30 Phase split                          | **Approve.** 7B.1 and 7B.2, each with its own proposal, implementation approval, tests, browser acceptance and merge approval                                                                                                                                                                                                                                                                                      |
+| B-31 AI finding                           | **Approve.** An AI finding is a model-produced, structured, cited interpretation grounded in governed DSA state. It never becomes Architecture, Evidence, Project Intelligence, a Review or an Acceptance Criterion automatically. Only a person may promote it, through the existing governed operations                                                                                                          |
+
+### 0.1 Added governing principle: eligibility is not inclusion
+
+Kerrick added, verbatim in substance:
+
+> AI data eligibility and AI context inclusion are separate concepts. An engagement or data class being authorised for external processing means it **may** be used. It does not mean that data is automatically sent with every request. The Intelligence Gateway must assemble the minimum sufficient authorised context for each invocation.
+>
+> **AUTHORIZED TO LEAVE DSA ≠ AUTOMATICALLY INCLUDED IN MODEL CONTEXT**
+
+This governs tool design, context assembly, privacy, cost and provenance. It sharpens P7-Q20 (context-minimised access) into a design rule: the authorisation is a ceiling, never a default payload.
+
+### 0.2 Next step decided
+
+Update this document (this revision), resolve or carry B-13, then prepare `PHASE_7B_1_PROPOSAL.md` only. No 7B.2 proposal, no implementation, no SDK, no provider connection, no migrations, no application code, and no change to the Phase 7B hold.
 
 ---
 
@@ -33,7 +89,7 @@
 **Recommended Phase 7B boundary** (§29). The smallest coherent 7B is **internal-only, read-only, user-initiated interpretation**, delivered in two acceptance steps:
 
 - **7B.1 Foundation (no user-visible AI):** the per-engagement external-AI-processing authorization (P7-Q19a) with its contract basis; a data-class eligibility policy; the Intelligence Gateway with one provider adapter; the read-only DSA Tool Contract over existing read models; a governed prompt registry in the repository; an inference record and its provenance; a self-hosted evaluation harness over the seed.
-- **7B.2 Architecture Intelligence:** "Explain" on Edge items and records (ephemeral by default); a small closed set of **persisted inference kinds** requested by a user on a record, a Review or an Edge event; the `suggested` epistemic status in contextual panels and the Edge, never affecting deterministic order; judgment of inferences (including a new `contest` meaning) and promotion only through existing governed operations; optionally the engagement-scoped "Ask about this" (P7-Q13) once 7B.2's inference kinds are accepted.
+- **7B.2 Architecture Intelligence:** "Explain" on Edge items and records (ephemeral by default); a small closed set of **persisted inference kinds** requested by a user on a record, a Review or an Edge event; the `suggested` epistemic status in contextual panels and the Edge, never affecting deterministic order; judgment of inferences (reusing `disagree`, per B-13 and the 7B.1 proposal) and promotion only through existing governed operations; optionally the engagement-scoped "Ask about this" (P7-Q13) once 7B.2's inference kinds are accepted.
 
 **Development Environment Intelligence belongs later, not in 7B** (§16). It is the most distinctive idea in the brief when framed as "the architecture is the intelligence specification", but it introduces an inbound data flow, source provenance and reliability, entity resolution, scheduling and cost exposure that 7B should not carry while it is still proving the inference envelope. 7B should make it _possible_ (inference kinds and producer vocabulary that can later admit an external observation) without building monitoring, web search or entity resolution.
 
@@ -396,7 +452,7 @@ These names are illustrative; approving names is a proposal-stage act.
 ### 12.3 Authorization and minimisation
 
 1. **Engagement gate.** Every call requires `can_read_architecture(engagement)`; the gateway also checks the engagement's external-processing authorisation before _any_ tool result is sent to a provider.
-2. **Capability gate.** Using AI on an engagement should require a capability, not role membership. `can_read_architecture` is too broad (it includes Finance and Project Administrators and all System Administrators). Options: reuse `edit_architecture` (the capability that already gates judgment); or add a dedicated capability (an enum addition) (B-10).
+2. **Capability gate.** Using AI on an engagement should require a capability, not role membership. `can_read_architecture` is too broad (it includes Finance and Project Administrators and all System Administrators). Options: reuse `edit_architecture` (the capability that already gates judgment); or add a dedicated capability (an enum addition) (B-10). _Decided (B-10): a distinct capability, `use_architecture_intelligence`; `edit_architecture` is not reused._
 3. **Data-class gate.** Each tool result is tagged with data classes (§23.2). The gateway strips or refuses classes the engagement has not authorised (for example Method/IP, client contributions, internal-only evidence).
 4. **Minimum basis.** The gateway sends only what the requested inference needs (P7-Q20). Tools return references and short fields by default; long content only when the inference kind requires it.
 5. **Quoting, not obeying.** All tool content is wrapped as data. The system prompt states that record text is never instruction (§32).
@@ -951,7 +1007,7 @@ The smallest coherent 7B that proves the thesis (§1) [inference]:
 ### 7B.1 — Governed AI foundation (no user-visible AI output yet, except in evaluation)
 
 1. External AI processing authorisation per engagement (P7-Q19(a)), versioned, default No (B-1), with data classes (B-2).
-2. AI-use capability (B-10).
+2. AI-use capability `use_architecture_intelligence` (B-10, decided).
 3. Intelligence Gateway: one provider adapter, `store:false`, no hosted state, per-engagement budget, audit metadata (B-3, B-11, B-21).
 4. Read-only Tool Contract over existing reads, excluding Method/IP, financial, activity log and file contents (§12, B-20).
 5. Repository prompt registry with versions (B-8).
@@ -964,7 +1020,7 @@ The smallest coherent 7B that proves the thesis (§1) [inference]:
 1. Ephemeral "Explain" on element, Edge item and change.
 2. A closed, small set of persisted inference kinds (B-15), each with a structured output schema.
 3. `suggested` inferences projected into the Edge, excluded from tiers (B-14).
-4. Judgments on inferences using the existing append-only mechanism, with `contest` (B-13).
+4. Judgments on inferences using the existing append-only mechanism, reusing `disagree` unless the 7B.1 proposal shows otherwise (B-13, held).
 5. Promotion via existing governed operations only (B-31).
 6. Optionally "Ask about this", scoped to one engagement and read-only tools; ephemeral unless kept (B-7).
 
@@ -1045,16 +1101,17 @@ Each step should be proposed, reviewed and browser-accepted separately, as in pr
 | Cross-engagement learning                        | Abstracted learning cannot be un-learned                                                   | B-28          |
 | Product naming                                   | Public vocabulary                                                                          | B-29          |
 
-Reversible by migration or code: `suggested`/`model` text values (B-12), judgment kind `contest` (B-13), Edge projection (B-14), inference kinds (B-15), prompt storage (B-8), adapter choice (B-3, B-11).
+Reversible by migration or code: `suggested`/`model` text values (B-12), any judgment kind (B-13; `contest` is held), Edge projection (B-14), inference kinds (B-15), prompt storage (B-8), adapter choice (B-3, B-11).
 
 ---
 
 ## 34. Open questions requiring approval
 
-Each question gives a recommendation, the alternatives, the consequences, reversibility and why it matters.
+Each question gives a recommendation, the alternatives, the consequences, reversibility and why it matters. Kerrick's decision is recorded first under each question (§0).
 
 **B-1. Engagement authorisation for external AI processing.** How is P7-Q19(a) represented, and who may set it?
 
+- _Decision (2026-09-30):_ Approved with clarification (§0).
 - _Recommendation:_ a versioned, append-only per-engagement record (default No) holding who, when, contract reference, authorised data classes and authorised provider/region; set by holders of a capability (B-10), not a role name.
 - _Alternatives:_ a boolean on `engagements`; a TPLCo-wide switch.
 - _Consequences:_ history shows exactly what was authorised when; the gateway can enforce it.
@@ -1063,6 +1120,7 @@ Each question gives a recommendation, the alternatives, the consequences, revers
 
 **B-2. Eligible data classes.** Which classes (§23.2) may be sent once an engagement is authorised?
 
+- _Decision (2026-09-30):_ Approved; eligibility is not inclusion (§0.1).
 - _Recommendation:_ published architecture, working copies, Project Intelligence and evidence metadata; client-authored contributions only with a separate flag; personal names minimised; file contents, Method/IP, licensed sources, financial and activity log excluded.
 - _Alternatives:_ published-only; everything readable by the user.
 - _Consequences:_ working-copy inclusion makes AI useful during drafting but sends unpublished strategy.
@@ -1071,6 +1129,7 @@ Each question gives a recommendation, the alternatives, the consequences, revers
 
 **B-3. Provider abstraction and first provider.** Build one adapter, and which provider first?
 
+- _Decision (2026-09-30):_ Approved with direction: OpenAI may be evaluated first; no dependence on OpenAI-hosted state or agent infrastructure.
 - _Recommendation:_ the minimal adapter of P7-Q14 with DSA owning tools, schemas, prompts, state and evaluation; choose the first provider by contract terms (ZDR, DPA, residency). OpenAI is viable with `store:false` and ZDR; no OpenAI-only features.
 - _Alternatives:_ OpenAI-specific integration (Agents SDK, hosted prompts); a multi-provider router from the start.
 - _Consequences:_ slightly more code than direct use; provider switch stays a configuration and evaluation exercise.
@@ -1079,6 +1138,7 @@ Each question gives a recommendation, the alternatives, the consequences, revers
 
 **B-4. Contractual prerequisites.** Is ZDR (or Modified Abuse Monitoring) and a DPA required before any real engagement is authorised?
 
+- _Decision (2026-09-30):_ Approved.
 - _Recommendation:_ yes; seed engagements may be used before that for evaluation. Residency, if required by a client, recorded on the authorisation.
 - _Alternatives:_ standard API terms (30-day abuse logs).
 - _Consequences:_ possible delay while approval is obtained; EU residency requires ZDR or similar.
@@ -1087,6 +1147,7 @@ Each question gives a recommendation, the alternatives, the consequences, revers
 
 **B-5. AI provenance vocabulary.** Add a `provenance_type` value for inferences?
 
+- _Decision (2026-09-30):_ Approved.
 - _Recommendation:_ no. Inferences carry their own producer and kind in their own record; AI-drafted content entering architecture uses existing `ai_analysis` with review (P7-Q18).
 - _Alternatives:_ add `ai_inference` or similar.
 - _Consequences:_ the eight-value vocabulary stays intact.
@@ -1095,6 +1156,7 @@ Each question gives a recommendation, the alternatives, the consequences, revers
 
 **B-6. `generated_analysis` classification.** Start writing `ip_classification = generated_analysis`?
 
+- _Decision (2026-09-30):_ Approved.
 - _Recommendation:_ not in 7B; revisit if AI-drafted artefacts become files or deliverables.
 - _Alternatives:_ tag every persisted inference.
 - _Consequences:_ none now.
@@ -1103,6 +1165,7 @@ Each question gives a recommendation, the alternatives, the consequences, revers
 
 **B-7. First-class AI record and persistence.** Is there one inference table, and what persists?
 
+- _Decision (2026-09-30):_ Approved.
 - _Recommendation:_ one engagement-scoped, append-only inference table; explanations and "Ask" answers ephemeral unless kept; requested closed-kind analyses persisted.
 - _Alternatives:_ everything ephemeral; storing inferences inside `edge_items`-like computed views; storing every exchange.
 - _Consequences:_ judgments and promotions can point at persisted inferences; ephemeral use leaves only audit metadata.
@@ -1111,6 +1174,7 @@ Each question gives a recommendation, the alternatives, the consequences, revers
 
 **B-8. Prompt storage and versioning.** Where do prompts live?
 
+- _Decision (2026-09-30):_ Approved.
 - _Recommendation:_ in the repository, versioned by id, reviewed through PRs; the inference records prompt id and version. No provider-hosted prompts; no prompt storage in the Method Library (resolves Spec §14 vs ADR-0050 D26).
 - _Alternatives:_ database-stored prompts editable in the product; provider prompt objects (shutting down).
 - _Consequences:_ prompt changes need a code release.
@@ -1119,6 +1183,7 @@ Each question gives a recommendation, the alternatives, the consequences, revers
 
 **B-9. Practice authority for prompt governance.** Does prompt approval need a new `practice_capability`?
 
+- _Decision (2026-09-30):_ Approved.
 - _Recommendation:_ no in 7B; PR review governs prompts. Revisit only if prompts become editable in the product.
 - _Alternatives:_ add `govern_ai_prompts`.
 - _Reversibility:_ enum addition is permanent.
@@ -1126,6 +1191,7 @@ Each question gives a recommendation, the alternatives, the consequences, revers
 
 **B-10. Capability to use AI on an engagement.** Which capability gates AI use?
 
+- _Decision (2026-09-30):_ **Changed:** a distinct `use_architecture_intelligence` capability, defaulting to Principal Architect and Architect, with the existing override pattern. The recommendation below is superseded.
 - _Recommendation:_ reuse `edit_architecture` (already gating judgments) for 7B, plus the engagement authorisation; revisit a dedicated capability if a need appears.
 - _Alternatives:_ a new `use_architecture_intelligence` capability; `can_read_architecture` (too broad: includes Finance and Project Administrators).
 - _Consequences:_ read-only internal roles cannot use AI.
@@ -1134,6 +1200,7 @@ Each question gives a recommendation, the alternatives, the consequences, revers
 
 **B-11. Provider and model identity storage; switching.** How is model identity recorded?
 
+- _Decision (2026-09-30):_ Approved.
 - _Recommendation:_ text fields for provider and the _resolved_ model id returned by the response, plus configured model; no enums; a switch requires rerunning the evaluation set and is recorded.
 - _Alternatives:_ enum of models; storing only the configured alias.
 - _Consequences:_ inferences remain attributable after models retire.
@@ -1142,6 +1209,7 @@ Each question gives a recommendation, the alternatives, the consequences, revers
 
 **B-12. `suggested` and `model` values.** Add `suggested` to Edge epistemic statuses and `model` as producer?
 
+- _Decision (2026-09-30):_ Approved.
 - _Recommendation:_ yes, as anticipated by ADR-0051, text with check constraints.
 - _Alternatives:_ a separate AI panel with no Edge presence.
 - _Reversibility:_ reversible by migration.
@@ -1149,6 +1217,7 @@ Each question gives a recommendation, the alternatives, the consequences, revers
 
 **B-13. Judging inferences.** How do people disagree with an inference?
 
+- _Decision (2026-09-30):_ **Held.** `contest` is not added; the 7B.1 proposal §17 examines it and recommends reusing `disagree`. The recommendation below is superseded.
 - _Recommendation:_ reuse append-only `edge_judgments` semantics with an added kind `contest` (the inference is wrong on its basis), distinct from `not_material`.
 - _Alternatives:_ reuse `disagree` with a clarified meaning; separate inference judgment table.
 - _Reversibility:_ text kind; reversible.
@@ -1156,6 +1225,7 @@ Each question gives a recommendation, the alternatives, the consequences, revers
 
 **B-14. Edge integration.** Amend ADR-0051 so stored inferences are projected into the Edge envelope, excluded from tiers?
 
+- _Decision (2026-09-30):_ Approved.
 - _Recommendation:_ yes.
 - _Alternatives:_ separate surface only; include in tiers.
 - _Consequences:_ ADR amendment; deterministic semantics untouched.
@@ -1164,6 +1234,7 @@ Each question gives a recommendation, the alternatives, the consequences, revers
 
 **B-15. Inference kinds and structured-output schemas.** Which closed set?
 
+- _Decision (2026-09-30):_ Approved as the initial closed set, without `link_suggestion`; each kind to be defined precisely first.
 - _Recommendation:_ start with explanation, tension, evidence_bearing, review_brief, realization_reading; `link_suggestion` only if the evaluation shows it reliable. Common envelope, no significance field, no numeric confidence.
 - _Alternatives:_ free-form text; larger set.
 - _Reversibility:_ kinds are text; schemas versioned.
@@ -1171,12 +1242,14 @@ Each question gives a recommendation, the alternatives, the consequences, revers
 
 **B-16. File contents.** May 7B read evidence file contents or images?
 
+- _Decision (2026-09-30):_ Approved.
 - _Recommendation:_ no.
 - _Alternatives:_ per-request inline PDF/image analysis through `can_read_engagement_file`.
 - _Why it matters:_ new read path; licensed and client-owned material; not ZDR-eligible when using provider files.
 
 **B-17. External research in 7B.** Does "research support" (Spec §31) include web search in 7B?
 
+- _Decision (2026-09-30):_ Approved.
 - _Recommendation:_ no; it arrives with DEI.
 - _Alternatives:_ cache-only web search for internal users.
 - _Consequences:_ 7B stays inward-looking; Spec S2 conflict recorded as deferred.
@@ -1184,12 +1257,14 @@ Each question gives a recommendation, the alternatives, the consequences, revers
 
 **B-18. Development Environment Intelligence, monitoring and competitive intelligence.** 7B or later?
 
+- _Decision (2026-09-30):_ Approved: a later dedicated phase and reconciliation.
 - _Recommendation:_ later, as its own phase, requiring decisions on the external-observation record, source provenance and reliability, monitoring-interest model (derived from architecture, human-confirmed), entity model, lawful-source policy and background processing.
 - _Alternatives:_ a thin DEI slice in 7B.2.
 - _Why it matters:_ highest value and highest risk; needs 7B's machinery proven first.
 
 **B-19. Method/IP eligibility.** Separate TPLCo authorisation for Method content?
 
+- _Decision (2026-09-30):_ Approved.
 - _Recommendation:_ yes; excluded by default; engagement authorisation never implies it.
 - _Alternatives:_ treat as engagement data.
 - _Reversibility:_ disclosure is not reversible.
@@ -1197,55 +1272,65 @@ Each question gives a recommendation, the alternatives, the consequences, revers
 
 **B-20. Tool Contract design and MCP.** Read-only, internal, not exposed through MCP?
 
+- _Decision (2026-09-30):_ Approved.
 - _Recommendation:_ yes: read-only tools executed as the user; no write tools; MCP-compatible shape; no MCP server or client in 7B.
 - _Alternatives:_ write tools with approval; MCP server for external AI clients.
 - _Why it matters:_ write tools or external exposure remove the governance DSA is built on.
 
 **B-21. Audit record.** What is recorded, for how long?
 
+- _Decision (2026-09-30):_ Approved.
 - _Recommendation:_ metadata only (§12.5), engagement-scoped, internal, retained for the engagement's life; never used for per-person analytics.
 - _Alternatives:_ storing full prompts and outputs; no audit.
 - _Why it matters:_ accountability without surveillance or a second copy of client content.
 
 **B-22. Client visibility.** Any client-facing AI in 7B?
 
+- _Decision (2026-09-30):_ Approved.
 - _Recommendation:_ none.
 - _Why it matters:_ PUBLICATION is the client boundary; client AI needs its own Tool Contract over `client_*` models.
 
 **B-23. AI provenance in the client portal.** Should accepted AI-drafted statements disclose AI origin to clients?
 
+- _Decision (2026-09-30):_ Deferred.
 - _Recommendation:_ decide before any client-visible AI drafting; for 7B, internal provenance is sufficient because no AI drafting of client-visible statements is proposed.
 - _Alternatives:_ always disclose; never disclose.
 - _Why it matters:_ client trust and possible contractual or regulatory disclosure duties.
 
 **B-24. Method recommendation.** Confirm no method recommendation or selection.
 
+- _Decision (2026-09-30):_ Approved.
 - _Recommendation:_ confirmed out (ADR-0050).
 - _Why it matters:_ automated methodology selection would replace architectural judgment.
 
 **B-25. Background or continuous processing.** Any in 7B?
 
+- _Decision (2026-09-30):_ Approved.
 - _Recommendation:_ none; all inference user-initiated and synchronous.
 - _Alternatives:_ nightly refresh of stale inferences.
 - _Why it matters:_ cost, data transfer without a person present, and a path toward notifications.
 
 **B-26. Development Context steering AI.** May Development Contexts select prompts?
 
+- _Decision (2026-09-30):_ Approved.
 - _Recommendation:_ no in 7B (ADR-0045 "drive no behavior").
 - _Why it matters:_ it would be method selection by another name.
 
 **B-27. Notification model.** Confirm no notifications in 7B, and the principles for later.
 
+- _Decision (2026-09-30):_ Approved.
 - _Recommendation:_ confirmed; later only opt-in per person on explicit records, no digests, badges or counts.
 - _Why it matters:_ attention mechanics are hard to withdraw.
 
 **B-28. Cross-engagement learning and Pattern Library.** Confirm none in 7B.
 
+- _Decision (2026-09-30):_ Approved.
 - _Recommendation:_ confirmed; per-engagement judgments accumulate for a future governed design.
 - _Why it matters:_ abstraction cannot be undone.
 
 **B-29. Naming.** "DSA Architect", "Architecture Intelligence", or another name?
 
+- _Decision (2026-09-30):_ Approved: Architecture Intelligence.
 - _Recommendation:_ "Architecture Intelligence" for the capability; avoid naming the AI as an architect.
 - _Alternatives:_ "DSA Architect"; "Interpret".
 - _Reversibility:_ public vocabulary is hard to reverse.
@@ -1253,12 +1338,14 @@ Each question gives a recommendation, the alternatives, the consequences, revers
 
 **B-30. Phase 7B boundary.** Approve 7B as two steps (7B.1 foundation, 7B.2 Architecture Intelligence), internal-only, read-only, user-initiated?
 
+- _Decision (2026-09-30):_ Approved.
 - _Recommendation:_ yes, each with its own proposal and browser acceptance.
 - _Alternatives:_ one combined phase; 7B.1 only.
 - _Why it matters:_ it sets what the next proposal may contain.
 
 **B-31. What an AI finding is and what may be promoted.** Confirm an AI finding is only a persisted inference of an approved kind with a verified basis, and that promotion is only to the existing targets (Risk, Decision, Review, proposed Acceptance Criterion) by a person through existing operations, with provenance following P7-Q18.
 
+- _Decision (2026-09-30):_ Approved.
 - _Recommendation:_ confirmed; no new promotion target; AI never promotes.
 - _Alternatives:_ allow promotion to Opportunity or Assumption; allow AI-prefilled forms to submit directly.
 - _Reversibility:_ promoted records become governed history.
