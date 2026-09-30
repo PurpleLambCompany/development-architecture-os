@@ -74,7 +74,7 @@ export function RelationshipsPanel({
   frozen: boolean;
   /**
    * Relationship types that can no longer be added or retired here, with the
-   * reason shown in place (a held Review's closed examined set, ADR-0053).
+   * reason shown in place (a held Review's closed examined set, ADR-0054).
    */
   locked?: { types: RelationshipTypeKey[]; reason: string };
 }) {

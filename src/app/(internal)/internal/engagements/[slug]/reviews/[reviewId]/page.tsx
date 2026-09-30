@@ -95,7 +95,7 @@ export default async function ReviewDetailPage({
   // gate in record_review_validation exactly, so the control is offered only
   // when it will actually succeed).
   const examinedIds = new Set(examines.map((r) => r.target_element_id));
-  // The closed examined set (ADR-0053): the version of each examined element
+  // The closed examined set (ADR-0054): the version of each examined element
   // captured when this Review was held. Captures are facts, not a baseline.
   const held = row.review_status === "held";
   // The Review's own items, and items on what it examines: revisions,

@@ -1,5 +1,5 @@
 /**
- * Trigger grouping (proposal §7, ADR-0055).
+ * Trigger grouping (proposal §7, ADR-0052).
  *
  * One triggering change is one Edge event. `groupEdgeItems` is the only place
  * items become events; every surface uses it and no event is stored. The

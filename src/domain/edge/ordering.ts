@@ -1,5 +1,5 @@
 /**
- * Deterministic-first ordering (proposal §9, ADR-0055).
+ * Deterministic-first ordering (proposal §9, ADR-0058).
  *
  * No score: order is lexicographic over governed facts the database returns
  * in `order_facts`, and every position can be said in words. The same inputs

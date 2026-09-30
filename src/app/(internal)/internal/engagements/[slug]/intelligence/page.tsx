@@ -53,7 +53,7 @@ export default async function IntelligencePage({
     (RECORD_KINDS as readonly string[]).includes(String(query.new)) && canEdit
       ? (query.new as RecordKind)
       : null;
-  // Promotion from the Development Edge (ADR-0057): the new record is an
+  // Promotion from the Development Edge (ADR-0056): the new record is an
   // ordinary governed record; the Edge item is judged "promoted" to it.
   const param = (key: string) => (typeof query[key] === "string" ? (query[key] as string) : null);
   const promoting =
