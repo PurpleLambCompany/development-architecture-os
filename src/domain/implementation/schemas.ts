@@ -25,6 +25,10 @@ const optionalId = z
   .default("")
   .refine((value) => value === "" || z.uuid().safeParse(value).success, "Choose a record")
   .transform((value) => (value === "" ? null : value));
+const yesNo = z
+  .string()
+  .default("no")
+  .transform((value) => value === "yes" || value === "true" || value === "on");
 const optionalDate = z
   .string()
   .trim()
@@ -66,11 +70,15 @@ export const createInitiativeSchema = z.object({
 export const updateStatusSchema = z.object({
   status: z.enum(NON_TERMINAL_STATUSES, "Choose a status"),
   rationale: text(4000),
+  publish: yesNo,
+  changeSummary: text(2000),
 });
 
 export const resolveInitiativeSchema = z.object({
   status: z.enum(TERMINAL_STATUSES, "Choose how it is resolved"),
   rationale: required(4000, "Give the rationale"),
+  publish: yesNo,
+  changeSummary: text(2000),
 });
 
 export const reopenInitiativeSchema = z.object({

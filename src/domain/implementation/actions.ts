@@ -114,6 +114,8 @@ export async function updateImplementationStatus(elementId: string, input: unkno
       p_element_id: elementId,
       p_status: v.status,
       ...(v.rationale ? { p_rationale: v.rationale } : {}),
+      p_publish: v.publish,
+      ...(v.changeSummary ? { p_change_summary: v.changeSummary } : {}),
     }),
   );
 }
@@ -129,6 +131,8 @@ export async function resolveInitiative(elementId: string, input: unknown) {
       p_element_id: elementId,
       p_status: v.status,
       p_rationale: v.rationale,
+      p_publish: v.publish,
+      ...(v.changeSummary ? { p_change_summary: v.changeSummary } : {}),
     }),
   );
 }
