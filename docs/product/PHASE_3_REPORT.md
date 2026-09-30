@@ -80,7 +80,7 @@
 
 ## 2. Files changed
 
-79 files against `main`; `git diff --stat origin/main` gives the full list.
+83 files against `main`; `git diff --stat origin/main` gives the full list.
 
 | Area           | Files                                                                                                                                                                                    |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
