@@ -9,7 +9,7 @@
 -- =============================================================================
 begin;
 
-select plan(43);
+select plan(53);
 
 create function pg_temp.act_as(user_email text)
 returns void
@@ -250,6 +250,51 @@ select is((select count(*)::int from public.client_implementation('e0000000-0000
   'the client now sees the published initiative');
 select is((select jsonb_array_length(checkpoints) from public.client_implementation('e0000000-0000-4000-8000-000000000001')
            where reference_code = 'IMP-001'), 1, 'with its one client-visible checkpoint');
+select pg_temp.reset_actor();
+
+-- -----------------------------------------------------------------------------
+-- Defect 2 fix: update_implementation_status's optional p_publish. A status
+-- change with p_publish = false must not touch what a client sees (still
+-- the old snapshot); p_publish = true must publish a new version and update
+-- it; and an already-published version row is never mutated in place --
+-- only a new one is ever created.
+-- -----------------------------------------------------------------------------
+select pg_temp.act_as('architect@tplco.test');
+insert into pg_temp.ids (key, id)
+select 'v_before', version_id from public.client_implementation('e0000000-0000-4000-8000-000000000001')
+where reference_code = 'IMP-001';
+select is((select implementation_status::text from public.client_implementation('e0000000-0000-4000-8000-000000000001')
+           where reference_code = 'IMP-001'), 'in_progress', 'the client currently sees in_progress');
+
+select lives_ok($$ select public.update_implementation_status(
+  (select id from pg_temp.ids where key = 'init'), 'stalled', 'Publish=false check.', false) $$,
+  'the status is changed to stalled with p_publish = false');
+select is((select implementation_status::text from public.implementation_initiatives
+           where element_id = (select id from pg_temp.ids where key = 'init')), 'stalled',
+  'the live working row is stalled');
+select is((select implementation_status::text from public.client_implementation('e0000000-0000-4000-8000-000000000001')
+           where reference_code = 'IMP-001'), 'in_progress',
+  'but the client-facing snapshot is unchanged: p_publish = false never touches it');
+select is((select version_id from public.client_implementation('e0000000-0000-4000-8000-000000000001')
+           where reference_code = 'IMP-001'), (select id from pg_temp.ids where key = 'v_before'),
+  'the client still reads the very same published version');
+
+select lives_ok($$ select public.update_implementation_status(
+  (select id from pg_temp.ids where key = 'init'), 'stalled', 'Publish=true check.', true,
+  'Stalled, published for visibility.') $$,
+  'the same status is re-saved with p_publish = true');
+select is((select implementation_status::text from public.client_implementation('e0000000-0000-4000-8000-000000000001')
+           where reference_code = 'IMP-001'), 'stalled',
+  'the client-facing snapshot now reflects stalled: an explicit, opt-in publish updates it');
+select isnt((select version_id from public.client_implementation('e0000000-0000-4000-8000-000000000001')
+             where reference_code = 'IMP-001'), (select id from pg_temp.ids where key = 'v_before'),
+  'a new version was published rather than the old one being reused');
+select is((select v.client_snapshot -> 'details' ->> 'implementation_status' from public.element_versions v
+           where v.id = (select id from pg_temp.ids where key = 'v_before')), 'in_progress',
+  'and the earlier, already-published version row is untouched -- immutability holds, nothing was mutated in place');
+select lives_ok($$ select public.update_implementation_status(
+  (select id from pg_temp.ids where key = 'init'), 'in_progress', null, false) $$,
+  'the initiative is returned to in_progress (working copy only) for cleanliness');
 select pg_temp.reset_actor();
 
 select * from finish();

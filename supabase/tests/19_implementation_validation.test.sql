@@ -10,7 +10,7 @@
 -- =============================================================================
 begin;
 
-select plan(26);
+select plan(34);
 
 create function pg_temp.act_as(user_email text)
 returns void
@@ -159,6 +159,40 @@ select lives_ok($$ select public.resolve_implementation_initiative(
 select is((select implementation_status::text from public.implementation_initiatives
            where element_id = (select id from pg_temp.ids where key = 'init2')), 'abandoned',
   'its status is abandoned');
+
+-- -----------------------------------------------------------------------------
+-- Defect 2 fix: resolve_implementation_initiative's optional p_publish
+-- follows the same opt-in-only rule as update_implementation_status.
+-- -----------------------------------------------------------------------------
+insert into pg_temp.ids (key, id)
+select 'init_pub', public.create_implementation_initiative('e0000000-0000-4000-8000-000000000001',
+  'Vendor onboarding rollout', array['b3000000-0000-4000-8000-000000000201'::uuid]);
+select lives_ok($$ update public.architecture_elements set client_visibility = 'client'
+  where id = (select id from pg_temp.ids where key = 'init_pub') $$, 'init3 is made client-visible');
+select lives_ok($$ select public.publish_element_version(
+  (select id from pg_temp.ids where key = 'init_pub'), 'First publication.') $$, 'and published, at not_started');
+select is((select implementation_status::text from public.client_implementation('e0000000-0000-4000-8000-000000000001')
+           where reference_code = (select reference_code from public.architecture_elements
+                                    where id = (select id from pg_temp.ids where key = 'init_pub'))),
+  'not_started', 'the client sees not_started');
+select lives_ok($$ select public.resolve_implementation_initiative(
+  (select id from pg_temp.ids where key = 'init_pub'), 'abandoned', 'Superseded before it began.', false) $$,
+  'init3 is abandoned with p_publish = false');
+select is((select implementation_status::text from public.client_implementation('e0000000-0000-4000-8000-000000000001')
+           where reference_code = (select reference_code from public.architecture_elements
+                                    where id = (select id from pg_temp.ids where key = 'init_pub'))),
+  'not_started', 'the client-facing snapshot still shows not_started: the resolution was not published');
+select lives_ok($$ select public.reopen_implementation_initiative(
+  (select id from pg_temp.ids where key = 'init_pub'), 'Reconsidering before publishing.') $$,
+  'init3 is reopened (still unpublished as abandoned) so it can be resolved again');
+select lives_ok($$ select public.resolve_implementation_initiative(
+  (select id from pg_temp.ids where key = 'init_pub'), 'abandoned', 'Superseded before it began.', true,
+  'Abandoned and published.') $$,
+  'init3 is abandoned again, this time with p_publish = true');
+select is((select implementation_status::text from public.client_implementation('e0000000-0000-4000-8000-000000000001')
+           where reference_code = (select reference_code from public.architecture_elements
+                                    where id = (select id from pg_temp.ids where key = 'init_pub'))),
+  'abandoned', 'the client-facing snapshot now shows abandoned: the explicit publish updated it');
 
 -- -----------------------------------------------------------------------------
 -- reopen_implementation_initiative
