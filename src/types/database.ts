@@ -5357,11 +5357,13 @@ export type Database = {
       };
       resolve_implementation_initiative: {
         Args: {
+          p_change_summary?: string;
           p_element_id: string;
+          p_publish?: boolean;
           p_rationale: string;
           p_status: Database["public"]["Enums"]["implementation_status"];
         };
-        Returns: undefined;
+        Returns: string;
       };
       resolve_intelligence_record: {
         Args: {
@@ -5487,11 +5489,13 @@ export type Database = {
       };
       update_implementation_status: {
         Args: {
+          p_change_summary?: string;
           p_element_id: string;
+          p_publish?: boolean;
           p_rationale?: string;
           p_status: Database["public"]["Enums"]["implementation_status"];
         };
-        Returns: undefined;
+        Returns: string;
       };
       void_change_order: {
         Args: { p_change_order_id: string; p_note: string };
