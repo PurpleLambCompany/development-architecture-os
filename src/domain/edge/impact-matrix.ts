@@ -1,0 +1,233 @@
+/**
+ * The governed relationship-impact direction matrix (Phase 7A proposal §10,
+ * reconciliation §13.4, ADR-0055).
+ *
+ * Mirrors `public.relationship_impact_rules` in
+ * supabase/migrations/20261006000000_phase7a_edge_catalog.sql;
+ * impact-matrix.test.ts checks that the two agree and that every relationship
+ * type in the vocabulary has exactly one row per direction.
+ *
+ * `source_to_target` answers: if the source changes, may the target warrant
+ * examination? `target_to_source` answers the reverse. No link is symmetric
+ * by default; only `conflicts_with` carries the same answer both ways.
+ */
+
+export const IMPACT_DIRECTIONS = ["source_to_target", "target_to_source"] as const;
+export type ImpactDirection = (typeof IMPACT_DIRECTIONS)[number];
+
+export const IMPACT_ASSESSMENTS = ["yes", "weak", "no"] as const;
+export type ImpactAssessment = (typeof IMPACT_ASSESSMENTS)[number];
+
+export const IMPACT_PROPAGATIONS = ["direct", "recursive", "terminal", "never"] as const;
+export type ImpactPropagation = (typeof IMPACT_PROPAGATIONS)[number];
+
+export type ImpactRule = {
+  linkKey: string;
+  direction: ImpactDirection;
+  assessment: ImpactAssessment;
+  propagation: ImpactPropagation;
+  /** Architecture hops: 1 for direct and terminal, 2 for recursive, 0 for never. */
+  maxDepth: number;
+  /** Whether reaching through this link groups under a hub (§7.3 rule 6). */
+  hubTarget: boolean;
+  condition: string | null;
+  reason: string;
+};
+
+/** Only these walks recurse (§10.2), each to depth 2. */
+export const RECURSIVE_WALKS = [
+  ["part_of", "target_to_source"],
+  ["specializes", "target_to_source"],
+  ["requires", "target_to_source"],
+] as const;
+
+/** The fourth walk: `underpins` recurses only from an invalidated assumption. */
+export const INVALIDATED_UNDERPINS_CONDITION = "recurse_when_invalidated";
+
+export const IMPACT_MAX_DEPTH = 2;
+
+/** Hub object types: reaching one groups under it with a count (§7.3 rule 6). */
+export const HUB_OBJECT_TYPES = [
+  "intended_outcome",
+  "system_boundary",
+  "regulatory_factor",
+  "governance_body",
+  "knowledge_area",
+] as const;
+
+type Row = readonly [
+  linkKey: string,
+  direction: ImpactDirection,
+  assessment: ImpactAssessment,
+  propagation: ImpactPropagation,
+  hubTarget: boolean,
+  condition: string | null,
+  reason: string,
+];
+
+const S: ImpactDirection = "source_to_target";
+const T: ImpactDirection = "target_to_source";
+
+/** 39 relationship types in vocabulary order, then the off-spine links. */
+const ROWS: readonly Row[] = [
+  // Structure
+  ["part_of", S, "weak", "direct", false, null, "A changed part rarely invalidates the whole"],
+  ["part_of", T, "yes", "recursive", true, null, "A changed whole changes the frame its parts were designed for"],
+  ["specializes", S, "no", "never", false, null, "A specialization does not redefine its general concept"],
+  ["specializes", T, "yes", "recursive", false, null, "A specialization inherits the definition of its general concept"],
+  ["precedes", S, "yes", "direct", false, null, "A later stage assumes the earlier one"],
+  ["precedes", T, "no", "never", false, null, "A later stage does not change the earlier one"],
+  ["gap_in", S, "yes", "direct", false, null, "A reassessed gap may change the capability or area"],
+  ["gap_in", T, "yes", "direct", false, null, "A revised capability or area may close or change the gap"],
+  ["investigates", S, "yes", "direct", false, null, "An answered question tests its target"],
+  ["investigates", T, "yes", "direct", false, null, "A changed target may make the question obsolete"],
+  // Design flow
+  ["informs", S, "yes", "direct", true, null, "The target's design or justification drew on the source"],
+  ["informs", T, "no", "never", false, null, "What was informed does not change its source"],
+  ["serves", S, "yes", "direct", false, null, "A changed server may change how the outcome is achieved"],
+  ["serves", T, "yes", "direct", true, null, "A changed outcome may remove the purpose of what serves it"],
+  ["shapes", S, "yes", "direct", false, null, "Strategic logic materially influences the design it shapes"],
+  ["shapes", T, "no", "never", false, null, "Shaped design does not change the logic"],
+  ["implies", S, "yes", "direct", false, null, "The implication is a consequence of the source"],
+  ["implies", T, "no", "never", false, null, "An implication does not change its source"],
+  ["exploits", S, "no", "never", false, null, "What exploits a lever does not change the lever"],
+  ["exploits", T, "yes", "direct", false, null, "A changed lever changes what exploits it"],
+  ["positioned_against", S, "no", "never", false, null, "Positioning does not change the competitive factor"],
+  ["positioned_against", T, "yes", "direct", false, null, "A changed competitive factor changes the positioning"],
+  ["requires", S, "weak", "direct", false, null, "A changed requirer may no longer need what it requires"],
+  ["requires", T, "yes", "recursive", false, null, "A changed prerequisite affects everything that requires it"],
+  ["implemented_through", S, "yes", "direct", false, null, "The capability and the way it operates must stay aligned"],
+  ["implemented_through", T, "yes", "direct", false, null, "The operating form and the capability must stay aligned"],
+  ["delivered_through", S, "weak", "direct", false, null, "A changed format may change its channel"],
+  ["delivered_through", T, "yes", "direct", false, null, "A changed channel changes how value reaches beneficiaries"],
+  ["measured_by", S, "yes", "direct", false, null, "The measure may no longer fit a changed source"],
+  ["measured_by", T, "weak", "direct", false, null, "A changed metric changes how performance is observed"],
+  ["governed_by", S, "weak", "direct", false, null, "A changed element may change what its governance covers"],
+  ["governed_by", T, "yes", "direct", true, null, "Changed authority changes what it governs"],
+  ["holds", S, "yes", "direct", false, null, "A changed holder changes how authority is allocated"],
+  ["holds", T, "yes", "direct", false, null, "A changed decision right changes what its holder holds"],
+  ["accountable_for", S, "yes", "direct", false, null, "Who answers for the element changed"],
+  ["accountable_for", T, "yes", "direct", false, null, "What someone answers for changed"],
+  ["introduces", S, "yes", "direct", false, null, "A changed stage changes when its targets enter"],
+  ["introduces", T, "no", "never", false, null, "What a stage introduces does not change the stage"],
+  ["bounded_by", S, "no", "never", false, null, "An element does not move its boundary"],
+  ["bounded_by", T, "yes", "direct", true, null, "A moved boundary may place elements outside it"],
+  ["subject_to", S, "no", "never", false, null, "A subject does not change the regulation"],
+  ["subject_to", T, "yes", "direct", true, null, "A changed regulation applies to its subjects"],
+  ["documented_by", S, "no", "never", false, null, "Documentation practice, not design"],
+  ["documented_by", T, "weak", "direct", false, null, "A changed protocol may change how the element is documented"],
+  ["has_stake_in", S, "yes", "direct", false, null, "A changed stakeholder alters the interests in the element"],
+  ["has_stake_in", T, "yes", "direct", false, null, "A changed element alters the stake"],
+  // Project Intelligence
+  ["underpins", S, "yes", "direct", false, "recurse_when_invalidated", "The target holds only if the assumption is true"],
+  ["underpins", T, "weak", "direct", false, null, "A changed target may change what the assumption must carry"],
+  ["threatens", S, "yes", "direct", false, null, "Changed severity or a materialized risk bears on the target"],
+  ["threatens", T, "yes", "direct", false, null, "A changed target may change the risk assessment"],
+  ["constrains", S, "yes", "direct", false, null, "A lifted or relaxed constraint frees the target"],
+  ["constrains", T, "yes", "direct", false, null, "A changed target needs a compliance check"],
+  ["mitigates", S, "yes", "direct", false, null, "A changed mitigation changes the exposure"],
+  ["mitigates", T, "yes", "direct", false, null, "A changed risk changes whether the mitigation suffices"],
+  ["affects", S, "yes", "direct", false, null, "A decision's outcome changes its targets"],
+  ["affects", T, "weak", "direct", false, null, "A changed target may reopen the record"],
+  ["addresses", S, "yes", "direct", false, null, "A changed recommendation changes what it addresses"],
+  ["addresses", T, "yes", "direct", false, null, "A changed target may make the recommendation obsolete"],
+  ["advances", S, "yes", "direct", false, null, "A changed window or status bears on what it would advance"],
+  ["advances", T, "weak", "direct", false, null, "A changed target may change the opportunity's value"],
+  ["pursues", S, "yes", "direct", false, null, "The pursuer and the opportunity must stay aligned"],
+  ["pursues", T, "yes", "direct", false, null, "The opportunity and its pursuer must stay aligned"],
+  // Lineage and tension
+  ["supersedes", S, "no", "never", false, null, "Supersession is an event, not an impact path"],
+  ["supersedes", T, "no", "never", false, null, "Supersession is an event, not an impact path"],
+  ["conflicts_with", S, "yes", "direct", false, null, "A recognized tension may be resolved or worsened by either side"],
+  ["conflicts_with", T, "yes", "direct", false, null, "A recognized tension may be resolved or worsened by either side"],
+  // Reviews, Deliverables, Implementation
+  ["examines", S, "no", "never", false, null, "A Review does not change what it examines"],
+  ["examines", T, "yes", "terminal", false, null, "An examined element revised after the Review dates its judgment"],
+  ["raises", S, "no", "never", false, null, "Provenance of where a record came from"],
+  ["raises", T, "no", "never", false, null, "Provenance of where a record came from"],
+  ["documents", S, "no", "never", false, null, "A Deliverable does not change what it documents"],
+  ["documents", T, "yes", "terminal", false, "excludes_superseded_deliverables", "A documented element revised after the Deliverable's reference point"],
+  ["implements", S, "yes", "direct", false, null, "A changed initiative changes the element's realization"],
+  ["implements", T, "yes", "terminal", false, null, "A revised design may leave reality tracking an older one"],
+  ["initiates", S, "yes", "direct", false, null, "A changed decision or recommendation questions the initiative it started"],
+  ["initiates", T, "weak", "direct", false, null, "An abandoned initiative leaves its decision unrealized"],
+  ["validates", S, "no", "never", false, null, "Validation is a dated judgment, reached through implements"],
+  ["validates", T, "no", "never", false, null, "Validation is a dated judgment, reached through implements"],
+  // Off-spine references
+  ["dependency_ends", S, "weak", "direct", false, null, "A changed dependent end rarely changes what it depends on"],
+  ["dependency_ends", T, "yes", "direct", false, null, "A changed depended-on element bears on the dependent"],
+  ["statement_evidence_links", S, "no", "never", false, null, "A claim does not change its evidence"],
+  ["statement_evidence_links", T, "yes", "direct", false, "on_demand_join_only", "New or changed evidence bears on the claim"],
+  ["element_evidence_links", S, "no", "never", false, null, "An element does not change its evidence"],
+  ["element_evidence_links", T, "yes", "direct", false, "on_demand_join_only", "New or changed evidence bears on the element"],
+  ["checkpoint_support", S, "no", "never", false, null, "A checkpoint does not change its support"],
+  ["checkpoint_support", T, "yes", "direct", false, null, "The support for an achieved checkpoint changed"],
+  ["acceptance_criteria_governed", S, "no", "never", false, null, "A criterion does not change what it governs"],
+  ["acceptance_criteria_governed", T, "yes", "terminal", false, "agreed_in_force", "A revised governed element may leave agreed criteria out of step"],
+  ["validation_criteria", S, "no", "never", false, null, "A frozen capture of what was in force"],
+  ["validation_criteria", T, "no", "never", false, null, "A frozen capture of what was in force"],
+  ["baseline_items", S, "no", "never", false, null, "Frozen reference points; a comparison basis, not an impact path"],
+  ["baseline_items", T, "no", "never", false, null, "Frozen reference points; a comparison basis, not an impact path"],
+  ["approval_version", S, "no", "never", false, null, "An approval does not change the version"],
+  ["approval_version", T, "yes", "direct", false, null, "A later substantive version leaves the approval behind"],
+  ["client_action_subjects", S, "no", "never", false, null, "A client action does not change its subject"],
+  ["client_action_subjects", T, "yes", "terminal", false, "open_actions_only", "A client may be answering about content that has since changed"],
+  ["contribution_version", S, "no", "never", false, null, "A contribution does not change the version"],
+  ["contribution_version", T, "yes", "direct", false, "unhandled_only", "Unhandled input on an older version"],
+  ["method_application_elements", S, "no", "never", false, null, "Method work never changes architecture"],
+  ["method_application_elements", T, "yes", "direct", false, "open_examined_only", "An open application examining a changed element may need to re-examine it"],
+  ["method_application_evidence", S, "no", "never", false, null, "A practice record, not engagement impact"],
+  ["method_application_evidence", T, "weak", "direct", false, "internal_practice_only", "A practice record, not engagement impact"],
+  ["element_method_lineage", S, "no", "never", false, null, "Architecture does not change the Method"],
+  ["element_method_lineage", T, "weak", "direct", false, "internal_practice_only", "A Method superseded after use is practice awareness, never architecture impact"],
+  ["dam_release", S, "no", "never", false, null, "An engagement does not change its release"],
+  ["dam_release", T, "yes", "direct", false, "internal_practice_only", "A superseded release is practice awareness"],
+  ["intelligence_record_domains", S, "no", "never", false, null, "Domain scope is too broad to carry impact"],
+  ["intelligence_record_domains", T, "no", "never", false, null, "Domain scope is too broad to carry impact"],
+  ["engagement_member_areas", S, "no", "never", false, null, "Access scope, not impact"],
+  ["engagement_member_areas", T, "no", "never", false, null, "Access scope, not impact"],
+  ["domain_assessments", S, "no", "never", false, null, "A domain judgment does not change architecture"],
+  ["domain_assessments", T, "weak", "direct", false, "ambient_domain_count", "Revisions after the latest judgment may warrant a new one; judgment is never computed"],
+];
+
+export const OFF_SPINE_LINK_KEYS = [
+  "dependency_ends",
+  "statement_evidence_links",
+  "element_evidence_links",
+  "checkpoint_support",
+  "acceptance_criteria_governed",
+  "validation_criteria",
+  "baseline_items",
+  "approval_version",
+  "client_action_subjects",
+  "contribution_version",
+  "method_application_elements",
+  "method_application_evidence",
+  "element_method_lineage",
+  "dam_release",
+  "intelligence_record_domains",
+  "engagement_member_areas",
+  "domain_assessments",
+] as const;
+
+export const IMPACT_MATRIX: readonly ImpactRule[] = ROWS.map(
+  ([linkKey, direction, assessment, propagation, hubTarget, condition, reason]) => ({
+    linkKey,
+    direction,
+    assessment,
+    propagation,
+    maxDepth: propagation === "never" ? 0 : propagation === "recursive" ? IMPACT_MAX_DEPTH : 1,
+    hubTarget,
+    condition,
+    reason,
+  }),
+);
+
+/** Only Yes links that propagate produce Edge consequences; Weak links appear only on demand. */
+export function isEdgeEligible(rule: ImpactRule): boolean {
+  return rule.assessment === "yes" && rule.propagation !== "never";
+}
+
+export function impactRule(linkKey: string, direction: ImpactDirection): ImpactRule | undefined {
+  return IMPACT_MATRIX.find((r) => r.linkKey === linkKey && r.direction === direction);
+}

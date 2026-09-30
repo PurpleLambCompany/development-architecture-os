@@ -1073,26 +1073,6 @@ select public.add_review_participant(e.id, pg_temp.member('30000000-0000-4000-80
 from public.architecture_elements e
 where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'review' and e.title = 'Expansion Readiness Review';
 
-select public.hold_review(e.id, current_timestamp - interval '9 days',
-  'The board affirmed the governance council and the region team''s readiness to proceed.')
-from public.architecture_elements e
-where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'review' and e.title = 'Expansion Readiness Review';
-
-select pg_temp.rel(e.id, 'examines', 'b3000000-0000-4000-8000-000000000a01')
-from public.architecture_elements e
-where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'review' and e.title = 'Expansion Readiness Review';
-
-select pg_temp.stmt(gen_random_uuid(), e.id, 'finding',
-  'The Regional Expansion Council and its supporting demand research are both ready for the first new region.',
-  'architect_judgment', true, 0)
-from public.architecture_elements e
-where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'review' and e.title = 'Expansion Readiness Review';
-
-select pg_temp.act_as('10000000-0000-4000-8000-000000000003');  -- Architect (edit_architecture, publish_architecture)
-select public.publish_element_version(e.id, 'First published version')
-from public.architecture_elements e
-where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'review' and e.title = 'Expansion Readiness Review';
-
 -- Deliverable 1: an approved Executive Strategy Deck documenting the
 -- council and the demand research.
 select pg_temp.act_as('10000000-0000-4000-8000-000000000002');  -- Principal Architect (manage_deliverables)
@@ -1196,11 +1176,36 @@ from public.architecture_elements e
 where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'implementation_initiative'
   and e.title = 'Regional demand study rollout';
 
+-- Review 1's agenda is recorded before it is held: from Phase 7A a held
+-- Review's examined set is closed (OD-7), and hold_review captures the exact
+-- version of each examined element (Q29). The held_at is backdated as the
+-- team recorded it; the capture uses system time.
+select pg_temp.rel(e.id, 'examines', 'b3000000-0000-4000-8000-000000000a01')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'review' and e.title = 'Expansion Readiness Review';
+
 select pg_temp.rel(rev.id, 'examines', init.id)
 from public.architecture_elements rev, public.architecture_elements init
 where rev.engagement_id = 'e0000000-0000-4000-8000-000000000003' and rev.kind = 'review' and rev.title = 'Expansion Readiness Review'
   and init.engagement_id = 'e0000000-0000-4000-8000-000000000003' and init.kind = 'implementation_initiative'
   and init.title = 'Regional demand study rollout';
+
+select pg_temp.act_as('10000000-0000-4000-8000-000000000002');  -- Principal Architect (manage_reviews)
+select public.hold_review(e.id, current_timestamp - interval '9 days',
+  'The board affirmed the governance council and the region team''s readiness to proceed.')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'review' and e.title = 'Expansion Readiness Review';
+
+select pg_temp.stmt(gen_random_uuid(), e.id, 'finding',
+  'The Regional Expansion Council and its supporting demand research are both ready for the first new region.',
+  'architect_judgment', true, 0)
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'review' and e.title = 'Expansion Readiness Review';
+
+select pg_temp.act_as('10000000-0000-4000-8000-000000000003');  -- Architect (edit_architecture, publish_architecture)
+select public.publish_element_version(e.id, 'First published version')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'review' and e.title = 'Expansion Readiness Review';
 
 select public.record_review_validation(rev.id, init.id)
 from public.architecture_elements rev, public.architecture_elements init
@@ -1449,5 +1454,83 @@ insert into demo values
 select pg_temp.act_as('10000000-0000-4000-8000-000000000002');
 select public.agree_acceptance_criterion(pg_temp.d('acr1'), 'Harbor Executive Sponsor', current_date - 7);
 select public.agree_acceptance_criterion(pg_temp.d('acr2'), 'Harbor Executive Sponsor', current_date - 7);
+
+-- -----------------------------------------------------------------------------
+-- Phase 7A: the Development Edge demo (proposal §25.1)
+--
+-- Through real operations only, after everything above, so the Edge shows
+-- one triggering change as one event:
+--   1. Harbor: a substantive revision of the Regional Expansion Council
+--      (summary and a statement) after the Expansion Readiness Review was
+--      held; two initiatives implement it and the strategy deck documents it.
+--   2. Harbor: a substantive revision of Regional service demand after the
+--      demand study was validated.
+--   3. Harbor: a decision on the council's membership, decided after the
+--      council's latest version.
+--   4. Harbor: a second Review, scheduled within the 14-day horizon, that
+--      examines the council and its stand-up initiative.
+--   5. Meridian: a substantive revision of the Acquisition Director, which
+--      Commercial Acquisition requires.
+-- The Meridian assumption on university land already carries attention high
+-- (Phase 4 triage), which shows the D-35 merge.
+-- -----------------------------------------------------------------------------
+select pg_temp.act_as('10000000-0000-4000-8000-000000000003');  -- Architect
+
+-- 1. The council's membership widens.
+update public.architecture_elements
+set summary = 'The council that approves entry into each new service region, with district partners as voting members.'
+where id = 'b3000000-0000-4000-8000-000000000a01';
+select pg_temp.stmt('b3000000-0000-4000-8000-000000000a20', 'b3000000-0000-4000-8000-000000000a01', 'definition',
+  'District partner organizations hold two voting seats alongside the Foundation''s trustees.', 'architect_judgment',
+  true, 1);
+select public.publish_element_version('b3000000-0000-4000-8000-000000000a01',
+  'Membership extended to district partners.');
+
+-- 2. The demand picture sharpens after the study was validated.
+update public.architecture_elements
+set summary = 'Demand for the Foundation''s programs in the three candidate regions, led by early-years services.'
+where id = 'b3000000-0000-4000-8000-000000000a02';
+select public.publish_element_version('b3000000-0000-4000-8000-000000000a02',
+  'Early-years services identified as the leading demand.');
+
+-- 3. A decision on seat allocation, decided after the council's revision.
+select pg_temp.el('b3000000-0000-4000-8000-000000000a10', 'decision', 'Partner seat allocation',
+  'How district partner seats on the council are allocated.', 'architect_judgment', 'client',
+  'e0000000-0000-4000-8000-000000000003');
+insert into public.decisions (element_id, context, needed_by, downstream_impact, decision_owner_user_id) values
+  ('b3000000-0000-4000-8000-000000000a10',
+   'The council''s widened membership needs a rule for which partners hold its two seats.',
+   current_date + 10, 'Sets who votes on regional entry.', '30000000-0000-4000-8000-000000000001');
+insert into public.decision_options (id, decision_element_id, title, description, tradeoffs, sort_order) values
+  ('b3000000-0000-4000-8000-000000000a11', 'b3000000-0000-4000-8000-000000000a10', 'Rotating seats',
+   'Partners rotate annually.', 'Broad voice; less continuity.', 1),
+  ('b3000000-0000-4000-8000-000000000a12', 'b3000000-0000-4000-8000-000000000a10', 'Elected seats',
+   'Partners elect two representatives.', 'Continuity; more process.', 2);
+select pg_temp.rel('b3000000-0000-4000-8000-000000000a10', 'affects', 'b3000000-0000-4000-8000-000000000a01');
+select public.publish_element_version('b3000000-0000-4000-8000-000000000a10', 'First published version');
+select pg_temp.act_as('30000000-0000-4000-8000-000000000001');  -- Harbor sponsor decides in the portal
+select public.decide_decision('b3000000-0000-4000-8000-000000000a10', 'b3000000-0000-4000-8000-000000000a11',
+  'Rotating seats keep every district partner involved.');
+select pg_temp.act_as('10000000-0000-4000-8000-000000000002');  -- Principal Architect
+
+-- 4. A second Review within the horizon, examining the council and its stand-up.
+select public.create_review('e0000000-0000-4000-8000-000000000003', 'architecture_review',
+  'Council Membership Review', current_timestamp + interval '7 days', null,
+  'Architecture review of the council''s widened membership before the next regional entry.');
+select pg_temp.rel(rev.id, 'examines', t.id, 'internal')
+from public.architecture_elements rev, public.architecture_elements t
+where rev.engagement_id = 'e0000000-0000-4000-8000-000000000003' and rev.kind = 'review'
+  and rev.title = 'Council Membership Review'
+  and t.engagement_id = 'e0000000-0000-4000-8000-000000000003'
+  and (t.id = 'b3000000-0000-4000-8000-000000000a01'
+       or (t.kind = 'implementation_initiative' and t.title = 'Expansion Council stand-up'));
+
+-- 5. Meridian: the Acquisition Director's role is redefined.
+select pg_temp.act_as('10000000-0000-4000-8000-000000000003');  -- Architect
+update public.architecture_elements
+set summary = 'Leads the acquisition team and holds delegated authority to commit to site options.'
+where id = 'b3000000-0000-4000-8000-000000000204';
+select public.publish_element_version('b3000000-0000-4000-8000-000000000204',
+  'Delegated authority to commit to site options added.');
 
 select set_config('request.jwt.claims', '', false);
