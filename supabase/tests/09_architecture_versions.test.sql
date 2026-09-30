@@ -308,7 +308,7 @@ select pg_temp.act_as('architect@tplco.test');
 select public.retire_element('b3000000-0000-4000-8000-000000000304', 'Folded into the operating model');
 select pg_temp.reset_actor();
 select pg_temp.act_as('viewer@meridian.test');
-select is((select count(*)::int from public.client_architecture('e0000000-0000-4000-8000-000000000001')), 32,
+select is((select count(*)::int from public.client_architecture('e0000000-0000-4000-8000-000000000001')), 33,
   'a retired element leaves the client view');
 select pg_temp.reset_actor();
 

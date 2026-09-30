@@ -239,7 +239,10 @@ select is(
      'architecture_elements', 'architecture_objects', 'assumptions', 'risks', 'constraints', 'dependencies',
      'decisions', 'decision_options', 'recommendations', 'architecture_statements', 'statement_evidence_links',
      'element_evidence_links', 'element_method_lineage', 'evidence_sources', 'architecture_relationships',
-     'element_versions', 'architecture_approvals', 'domain_assessments', 'architecture_baselines')),
+     'element_versions', 'architecture_approvals', 'domain_assessments', 'architecture_baselines',
+     'opportunities', 'intelligence_stewardship', 'intelligence_escalations', 'client_actions',
+     'client_action_responses', 'client_contributions', 'engagement_member_areas',
+     'intelligence_signal_dismissals')),
   0, 'no financial, membership, capability or administrative event is ever returned');
 select is(
   (select count(*)::int from public.architecture_activity('e0000000-0000-4000-8000-000000000001', null, 500) a

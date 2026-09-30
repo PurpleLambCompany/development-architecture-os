@@ -70,7 +70,7 @@ insert into created
 select 'risk', public.create_architecture_element(
   'e0000000-0000-4000-8000-000000000001', 'risk',
   '{"title": "Anchor withdraws", "provenance": "architect_judgment"}',
-  '{"probability": 2, "impact": 5, "category": "partner", "risk_status": "open", "severity": 99}',
+  '{"probability": 2, "impact": 5, "category": "stakeholder", "risk_status": "open", "severity": 99}',
   array['capability', 'strategic_model', 'capability']::public.architecture_domain[]
 );
 

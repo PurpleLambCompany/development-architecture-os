@@ -623,7 +623,7 @@ select pg_temp.obj('b3000000-0000-4000-8000-000000000405', 'operating_model', 'D
 select pg_temp.el('b3000000-0000-4000-8000-000000000501', 'risk', 'Capital availability',
   'Acquisition capital may not be available on acceptable terms in the first 18 months.', 'client_source');
 insert into public.risks (element_id, category, probability, impact, mitigation, risk_status) values
-  ('b3000000-0000-4000-8000-000000000501', 'Financial', 4, 5,
+  ('b3000000-0000-4000-8000-000000000501', 'financial', 4, 5,
    'Ground leases on university land; tenant partnerships that bring capital.', 'mitigating');
 insert into public.intelligence_record_domains (element_id, domain) values
   ('b3000000-0000-4000-8000-000000000501', 'capability'),
@@ -633,7 +633,7 @@ select pg_temp.el('b3000000-0000-4000-8000-000000000502', 'risk', 'Leadership su
   'The district depends on a small founding team; losing one leader would stall acquisitions and partnerships.',
   'architect_judgment');
 insert into public.risks (element_id, category, probability, impact, mitigation) values
-  ('b3000000-0000-4000-8000-000000000502', 'People', 2, 4, 'Deputy roles in stage 2; documented pipeline.');
+  ('b3000000-0000-4000-8000-000000000502', 'capability', 2, 4, 'Deputy roles in stage 2; documented pipeline.');
 insert into public.intelligence_record_domains (element_id, domain) values
   ('b3000000-0000-4000-8000-000000000502', 'capability'),
   ('b3000000-0000-4000-8000-000000000502', 'application');
@@ -641,7 +641,7 @@ insert into public.intelligence_record_domains (element_id, domain) values
 select pg_temp.el('b3000000-0000-4000-8000-000000000503', 'assumption', 'Universities will commit land on long ground leases',
   'Both universities will lease parcels to the district for at least 50 years.', 'client_source');
 insert into public.assumptions (element_id, category, confidence, validation_status, impact_if_false) values
-  ('b3000000-0000-4000-8000-000000000503', 'Anchor commitment', 'medium', 'validating',
+  ('b3000000-0000-4000-8000-000000000503', 'stakeholder', 'medium', 'validating',
    'The first phase would need purchase capital the Authority does not have.');
 insert into public.intelligence_record_domains (element_id, domain) values
   ('b3000000-0000-4000-8000-000000000503', 'strategic_model');
@@ -843,5 +843,173 @@ select pg_temp.obj('b3000000-0000-4000-8000-000000000a02', 'knowledge_area', 'Re
   '{"criticality": "foundational"}', 'undefined', '', 'client', 'e0000000-0000-4000-8000-000000000003');
 select public.publish_element_version('b3000000-0000-4000-8000-000000000a01', 'First published version');
 select public.publish_element_version('b3000000-0000-4000-8000-000000000a02', 'First published version');
+
+-- -----------------------------------------------------------------------------
+-- Phase 4: Project Intelligence (Meridian, Regional Innovation District)
+--
+-- Through the same operations as the app, as the people who would perform
+-- them:
+--   * two opportunities (one client-visible and published, with its window
+--     closing within 30 days; one internal whose window has closed);
+--   * triage on most records (one critical, one past its review date);
+--   * status history: a risk re-scored, an assumption's confidence raised,
+--     and a new risk resolved as closed with a rationale;
+--   * a Principal-level escalation and a client-executive escalation (which
+--     sends an executive-attention request to the Executive Sponsor);
+--   * client requests in each state: open, open and overdue, responded,
+--     closed (recorded as evidence) and withdrawn;
+--   * client input: one received, one acknowledged;
+--   * areas: the Client Contributor has the Capability domain; the
+--     multi-organization advisor (a Contributor at Meridian) has the
+--     district operating model and everything under it;
+--   * a dismissed signal.
+-- -----------------------------------------------------------------------------
+create function pg_temp.member(p_user uuid, p_engagement uuid default 'e0000000-0000-4000-8000-000000000001')
+returns uuid
+language sql
+as $$
+  select id from public.engagement_members where engagement_id = p_engagement and user_id = p_user;
+$$;
+
+-- Areas (Principal Architect) -------------------------------------------------------------
+select pg_temp.act_as('10000000-0000-4000-8000-000000000002');
+select public.assign_member_area(pg_temp.member('20000000-0000-4000-8000-000000000004'), 'capability', null);
+select public.assign_member_area(pg_temp.member('40000000-0000-4000-8000-000000000001'), null,
+  'b3000000-0000-4000-8000-000000000405');
+
+-- Opportunities, triage and history (Architect) ------------------------------------------------
+select pg_temp.act_as('10000000-0000-4000-8000-000000000003');
+
+select pg_temp.el('b6000000-0000-4000-8000-000000000001', 'opportunity', 'University research park partnership',
+  'The state university is choosing a development partner for its research park; the district could be that partner.',
+  'client_source');
+insert into public.opportunities (element_id, category, value, feasibility, window_opens_on, window_closes_on,
+                                  pursuit_approach, opportunity_status) values
+  ('b6000000-0000-4000-8000-000000000001', 'partnership', 5, 3, current_date - 20, current_date + 21,
+   'Submit a joint proposal with the university''s real estate office before its partner selection closes.',
+   'evaluating');
+insert into public.intelligence_record_domains (element_id, domain) values
+  ('b6000000-0000-4000-8000-000000000001', 'strategic_model');
+select pg_temp.rel('b6000000-0000-4000-8000-000000000001', 'advances', 'b3000000-0000-4000-8000-000000000301');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000201', 'pursues', 'b6000000-0000-4000-8000-000000000001');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000503', 'underpins', 'b6000000-0000-4000-8000-000000000001');
+
+select pg_temp.el('b6000000-0000-4000-8000-000000000002', 'opportunity', 'State innovation grant round',
+  'A state grant for innovation districts that could have funded the first acquisition.', 'public_source', 'internal');
+insert into public.opportunities (element_id, category, value, feasibility, window_opens_on, window_closes_on,
+                                  pursuit_approach, opportunity_status) values
+  ('b6000000-0000-4000-8000-000000000002', 'funding', 4, 4, current_date - 60, current_date - 5,
+   'Apply with the Authority as lead applicant.', 'identified');
+insert into public.intelligence_record_domains (element_id, domain) values
+  ('b6000000-0000-4000-8000-000000000002', 'capability');
+
+select public.publish_element_version('b6000000-0000-4000-8000-000000000001', 'First published version');
+
+-- History: a risk re-scored and an assumption's confidence raised.
+update public.risks set probability = 3 where element_id = 'b3000000-0000-4000-8000-000000000501';
+update public.assumptions set confidence = 'high' where element_id = 'b3000000-0000-4000-8000-000000000503';
+
+-- A risk identified and later closed.
+select pg_temp.el('b6000000-0000-4000-8000-000000000003', 'risk', 'Tenant demand softens',
+  'Lab demand could fall if federal research funding is cut.', 'architect_judgment');
+insert into public.risks (element_id, category, probability, impact, mitigation) values
+  ('b6000000-0000-4000-8000-000000000003', 'external', 2, 3, 'Diversify toward clinical and health-system tenants.');
+insert into public.intelligence_record_domains (element_id, domain) values
+  ('b6000000-0000-4000-8000-000000000003', 'strategic_model');
+select public.resolve_intelligence_record('b6000000-0000-4000-8000-000000000003', 'closed',
+  'Both universities renewed their five-year federal research awards.');
+
+select public.triage_intelligence_record('b3000000-0000-4000-8000-000000000501', 'critical', current_date + 14,
+  'Capital terms decide whether the first acquisition closes this year.');
+select public.triage_intelligence_record('b3000000-0000-4000-8000-000000000502', 'high', current_date + 10);
+select public.triage_intelligence_record('b3000000-0000-4000-8000-000000000503', 'high', current_date + 7);
+select public.triage_intelligence_record('b3000000-0000-4000-8000-000000000506', 'routine', current_date + 20);
+select public.triage_intelligence_record('b6000000-0000-4000-8000-000000000001', 'high', current_date + 7);
+select public.triage_intelligence_record('b6000000-0000-4000-8000-000000000003', 'watch', null);
+-- The dependency's review date has passed (the seed writes the date directly).
+select public.triage_intelligence_record('b3000000-0000-4000-8000-000000000505', 'high', current_date);
+update public.intelligence_stewardship set next_review_on = current_date - 3
+where element_id = 'b3000000-0000-4000-8000-000000000505';
+
+-- Escalations --------------------------------------------------------------------------------------
+select public.escalate_intelligence_record('b3000000-0000-4000-8000-000000000501', 'principal_architect',
+  'Capital terms may not close before the first site option expires; needs a Principal decision on bridge financing.');
+
+select pg_temp.act_as('10000000-0000-4000-8000-000000000002');  -- Principal Architect
+select public.escalate_intelligence_record('b3000000-0000-4000-8000-000000000502', 'client_executive',
+  'The district depends on two founding leaders. We ask the Executive Director to confirm a deputy for each before stage 2.',
+  pg_temp.member('20000000-0000-4000-8000-000000000001'), current_date + 14);
+
+-- Client requests (Architect) ------------------------------------------------------------------------
+select pg_temp.act_as('10000000-0000-4000-8000-000000000003');
+-- Open, to the Client Project Lead.
+select public.send_client_action('e0000000-0000-4000-8000-000000000001', 'question',
+  'Who signs acquisition agreements today?',
+  'Please tell us who has authority to sign a purchase agreement for the Authority today, and under what limit.',
+  pg_temp.member('20000000-0000-4000-8000-000000000002'), current_date + 10,
+  array['b3000000-0000-4000-8000-000000000404']::uuid[]);
+-- Open and overdue, to the Client Contributor (the due date is moved into the past directly).
+select public.send_client_action('e0000000-0000-4000-8000-000000000001', 'information_request',
+  'Acquisition history since 2016',
+  'Please share the closing documents, or a summary, for the Authority''s two acquisitions since 2016.',
+  pg_temp.member('20000000-0000-4000-8000-000000000004'), current_date + 1,
+  array['b3000000-0000-4000-8000-000000000201']::uuid[]);
+update public.client_actions set due_on = current_date - 2
+where engagement_id = 'e0000000-0000-4000-8000-000000000001' and title = 'Acquisition history since 2016';
+-- Responded, from the Client Contributor.
+select public.send_client_action('e0000000-0000-4000-8000-000000000001', 'confirmation',
+  'Confirm the underwriting skill level',
+  'We describe Property Underwriting as an expert-level skill for the Acquisition Director. Is that right for your market?',
+  pg_temp.member('20000000-0000-4000-8000-000000000004'), current_date + 14,
+  array['b3000000-0000-4000-8000-000000000203']::uuid[]);
+-- Closed and recorded as evidence, from the Executive Sponsor.
+select public.send_client_action('e0000000-0000-4000-8000-000000000001', 'question',
+  'Board appetite for a district LLC',
+  'Would the board support holding acquisitions in a district-owned LLC?',
+  pg_temp.member('20000000-0000-4000-8000-000000000001'), current_date + 5,
+  array['b3000000-0000-4000-8000-000000000506']::uuid[]);
+-- Withdrawn.
+select public.send_client_action('e0000000-0000-4000-8000-000000000001', 'review_request',
+  'Review the capability map',
+  'Please review the published capability map before the September session.',
+  pg_temp.member('20000000-0000-4000-8000-000000000002'), current_date + 7,
+  array['b3000000-0000-4000-8000-000000000201', 'b3000000-0000-4000-8000-000000000202']::uuid[]);
+select public.withdraw_client_action(id, 'Covered in the board session instead.')
+from public.client_actions where engagement_id = 'e0000000-0000-4000-8000-000000000001' and title = 'Review the capability map';
+
+select pg_temp.act_as('20000000-0000-4000-8000-000000000004');  -- Client Contributor
+select public.respond_to_client_action(id,
+  'Yes. Both of our past acquisitions needed outside underwriters; the Director must be able to do this in-house.')
+from public.client_actions where engagement_id = 'e0000000-0000-4000-8000-000000000001'
+  and title = 'Confirm the underwriting skill level';
+select public.submit_client_contribution('b3000000-0000-4000-8000-000000000202',
+  'The health system has told us it would co-invest in a clinical research building if it can choose the site.');
+select public.submit_client_contribution('b3000000-0000-4000-8000-000000000201',
+  'We have a third acquisition in negotiation that may close before the Director is hired.');
+
+select pg_temp.act_as('20000000-0000-4000-8000-000000000001');  -- Executive Sponsor
+select public.respond_to_client_action(id,
+  'Yes, provided the Authority keeps a majority of the LLC''s board seats.',
+  'https://meridian.example/board/minutes/2026-08')
+from public.client_actions where engagement_id = 'e0000000-0000-4000-8000-000000000001'
+  and title = 'Board appetite for a district LLC';
+
+select pg_temp.act_as('10000000-0000-4000-8000-000000000003');  -- Architect
+select public.record_response_as_evidence(r.id, null, null)
+from public.client_action_responses r
+join public.client_actions a on a.id = r.action_id
+where a.title = 'Board appetite for a district LLC';
+select public.close_client_action(id, 'Recorded as evidence for the acquisition vehicle decision.')
+from public.client_actions where engagement_id = 'e0000000-0000-4000-8000-000000000001'
+  and title = 'Board appetite for a district LLC';
+select public.handle_client_contribution(id, 'acknowledged',
+  'Thank you. We will reflect this in the next revision of the acquisition capability.')
+from public.client_contributions where element_id = 'b3000000-0000-4000-8000-000000000201';
+
+-- A signal the Architect has dismissed: the blocking dependency on the
+-- board charter is tracked through the governance design.
+select public.dismiss_intelligence_signal('e0000000-0000-4000-8000-000000000001', 'dependency_blocking_unsatisfied',
+  'b3000000-0000-4000-8000-000000000505', null, 'open',
+  'The charter vote is scheduled; the governance design tracks it.', current_date + 30);
 
 select set_config('request.jwt.claims', '', false);

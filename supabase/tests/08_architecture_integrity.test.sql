@@ -104,20 +104,21 @@ select is(
   'knowledge:8,capability:5,strategic_model:5,application:9',
   'Knowledge 8, Capability 5, Strategic Model 5, Application 9'
 );
-select is((select count(*)::int from public.relationship_types), 31, '31 relationship types');
+select is((select count(*)::int from public.relationship_types), 33, '33 relationship types');
 select is(
   (select string_agg(key, ',' order by key) from public.relationship_types where is_acyclic),
   'part_of,precedes,specializes,supersedes', 'part_of, specializes, precedes and supersedes are acyclic');
 select is((select string_agg(key, ',') from public.relationship_types where is_symmetric), 'conflicts_with',
   'conflicts_with is the only symmetric type');
-select is((select count(*)::int from public.relationship_rules), 1960, '1,960 expanded pairing rules');
+select is((select count(*)::int from public.relationship_rules), 2130, '2,130 expanded pairing rules');
 select is(
   (select string_agg(relationship_type || ':' || n, ',' order by relationship_type)
    from (select relationship_type, count(*) n from public.relationship_rules group by 1) x),
-  'accountable_for:12,addresses:32,affects:198,bounded_by:26,conflicts_with:1089,constrains:29,delivered_through:2,'
-  || 'documented_by:26,exploits:11,gap_in:3,governed_by:16,has_stake_in:32,holds:2,implemented_through:4,implies:3,'
-  || 'informs:200,introduces:6,investigates:4,measured_by:10,mitigates:16,part_of:9,positioned_against:4,precedes:2,'
-  || 'requires:23,serves:18,shapes:56,specializes:1,subject_to:32,supersedes:33,threatens:32,underpins:29',
+  'accountable_for:12,addresses:33,advances:32,affects:238,bounded_by:26,conflicts_with:1156,constrains:30,'
+  || 'delivered_through:2,documented_by:26,exploits:11,gap_in:3,governed_by:16,has_stake_in:33,holds:2,'
+  || 'implemented_through:4,implies:3,informs:208,introduces:6,investigates:4,measured_by:10,mitigates:16,part_of:9,'
+  || 'positioned_against:4,precedes:2,pursues:16,requires:23,serves:18,shapes:56,specializes:1,subject_to:33,'
+  || 'supersedes:34,threatens:33,underpins:30',
   'pairing rules per type match the approved vocabulary (mirrored in src/domain/architecture)'
 );
 
