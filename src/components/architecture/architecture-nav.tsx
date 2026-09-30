@@ -10,6 +10,8 @@ export type ArchitectureSection =
   | "intelligence"
   | "evidence"
   | "reviews"
+  | "deliverables"
+  | "implementation"
   | "baselines";
 
 /** Tabs across an engagement's architecture workspace. */
@@ -26,6 +28,8 @@ export function ArchitectureNav({ slug, current }: { slug: string; current: Arch
     { key: "intelligence", href: `${base}/intelligence`, label: "Intelligence" },
     { key: "evidence", href: `${base}/evidence`, label: "Evidence" },
     { key: "reviews", href: `${base}/reviews`, label: "Reviews" },
+    { key: "deliverables", href: `${base}/deliverables`, label: "Deliverables" },
+    { key: "implementation", href: `${base}/implementation`, label: "Implementation" },
     { key: "baselines", href: `${base}/baselines`, label: "Baselines" },
   ];
   return (

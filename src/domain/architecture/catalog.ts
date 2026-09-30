@@ -130,6 +130,17 @@ export const PHASE_5_PREFIXES: Record<Phase5Kind, string> = {
   implementation_initiative: "IMP",
 };
 
+/** Singular labels for the three Phase 5 kinds (proposal §4.1). */
+export const PHASE_5_KIND_LABELS: Record<Phase5Kind, string> = {
+  review: "Review",
+  deliverable: "Deliverable",
+  implementation_initiative: "Implementation initiative",
+};
+
+export function isPhase5Kind(kind: ElementKind | string): kind is Phase5Kind {
+  return kind === "review" || kind === "deliverable" || kind === "implementation_initiative";
+}
+
 export function referencePrefix(kind: ElementKind, domain: ArchitectureDomain | null): string {
   if (kind === "object") {
     if (!domain) throw new Error("A core object needs a domain");
