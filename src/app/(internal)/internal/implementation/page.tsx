@@ -2,7 +2,10 @@ import Link from "next/link";
 import { requireInternal } from "@/lib/auth/viewer";
 import { listEngagements } from "@/domain/engagements/queries";
 import { IMPLEMENTATION_STATUS, categoryLabel } from "@/domain/implementation/catalog";
-import { getImplementationRegister, getImplementationSignals } from "@/domain/implementation/queries";
+import {
+  getImplementationRegister,
+  getImplementationSignals,
+} from "@/domain/implementation/queries";
 import {
   filterRegister,
   orderRegister,
@@ -35,9 +38,7 @@ export default async function ImplementationDirectoryPage({
   const live = new Set(engagements.map((e) => e.id));
   const inScope = rows.filter((r) => live.has(r.engagement_id));
   const byId = new Map(engagements.map((e, i) => [e.id, { ...e, index: i }]));
-  const signalled = new Set(
-    signals.flat().flatMap((s) => (!s.dismissed ? [s.element_id] : [])),
-  );
+  const signalled = new Set(signals.flat().flatMap((s) => (!s.dismissed ? [s.element_id] : [])));
   const shown = orderRegister(filterRegister(inScope, filters, { today, signalled }), {
     today,
     signalled,
@@ -105,7 +106,10 @@ export default async function ImplementationDirectoryPage({
         )}
       </Panel>
 
-      <Panel title="Register" description={`${shown.length} shown. Order: ${REGISTER_ORDER_EXPLANATION}`}>
+      <Panel
+        title="Register"
+        description={`${shown.length} shown. Order: ${REGISTER_ORDER_EXPLANATION}`}
+      >
         {shown.length === 0 ? (
           <EmptyState title="No initiatives match">Change the filters to see more.</EmptyState>
         ) : (
@@ -141,7 +145,9 @@ export default async function ImplementationDirectoryPage({
                     <Td className="text-ink-muted">{categoryLabel(row.category)}</Td>
                     <Td>
                       <span className="flex flex-col gap-1 text-xs text-ink-muted">
-                        <StatusTag tone={ATTENTION[row.attention].tone}>{ATTENTION[row.attention].label}</StatusTag>
+                        <StatusTag tone={ATTENTION[row.attention].tone}>
+                          {ATTENTION[row.attention].label}
+                        </StatusTag>
                         {row.open_escalations.map((level) => (
                           <span key={level} className="text-negative">
                             Escalated to {ESCALATION_LEVEL_LABELS[level].toLowerCase()}

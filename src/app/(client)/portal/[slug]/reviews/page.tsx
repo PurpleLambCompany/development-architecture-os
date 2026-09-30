@@ -53,7 +53,9 @@ export default async function ClientReviewsPage({ params }: PageProps<"/portal/[
                 <div key={r.element_id} className="space-y-2 border-l-2 border-accent/40 pl-4">
                   <p className="flex flex-wrap items-center gap-2">
                     <span className="font-serif text-base text-ink">{r.title}</span>
-                    <span className="text-xs text-ink-subtle">{REVIEW_TYPE_LABELS[r.review_type]}</span>
+                    <span className="text-xs text-ink-subtle">
+                      {REVIEW_TYPE_LABELS[r.review_type]}
+                    </span>
                     {status ? <StatusTag tone={status.tone}>{status.label}</StatusTag> : null}
                   </p>
                   <p className="text-xs text-ink-muted">

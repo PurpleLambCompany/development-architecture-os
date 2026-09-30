@@ -6,11 +6,7 @@ import {
   submitForReview,
 } from "@/domain/architecture/actions";
 import { getInternalArchitectureContext, memberNames } from "@/domain/architecture/context";
-import {
-  getElementDetail,
-  listEvidence,
-  loadArchitecture,
-} from "@/domain/architecture/queries";
+import { getElementDetail, listEvidence, loadArchitecture } from "@/domain/architecture/queries";
 import {
   addReviewParticipant,
   cancelReview,

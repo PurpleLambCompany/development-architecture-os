@@ -2,7 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useId, useState, useTransition } from "react";
-import { ALLOWED_FILE_TYPES, ENGAGEMENT_FILES_BUCKET, MAX_FILE_BYTES } from "@/domain/intelligence/catalog";
+import {
+  ALLOWED_FILE_TYPES,
+  ENGAGEMENT_FILES_BUCKET,
+  MAX_FILE_BYTES,
+} from "@/domain/intelligence/catalog";
 import { attachDeliverableFile, prepareDeliverableFileUpload } from "@/domain/deliverables/actions";
 import { uploadToSignedUrl } from "@/lib/supabase/browser-storage";
 import { Button } from "@/components/ui/button";
@@ -78,8 +82,19 @@ export function DeliverableFileUpload({
         });
       }}
     >
-      <Field label="Files" htmlFor={`${id}-files`} hint="PDF, image, text, CSV or Office files up to 25 MB each.">
-        <Input id={`${id}-files`} name="files" type="file" multiple accept={ACCEPT} className="max-w-xs" />
+      <Field
+        label="Files"
+        htmlFor={`${id}-files`}
+        hint="PDF, image, text, CSV or Office files up to 25 MB each."
+      >
+        <Input
+          id={`${id}-files`}
+          name="files"
+          type="file"
+          multiple
+          accept={ACCEPT}
+          className="max-w-xs"
+        />
       </Field>
       <Button type="submit" size="sm" variant="secondary" disabled={pending}>
         {pending ? "Uploading…" : "Attach to this version"}

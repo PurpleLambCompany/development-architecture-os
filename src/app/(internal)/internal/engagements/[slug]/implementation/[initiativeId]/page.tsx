@@ -47,7 +47,12 @@ import {
 import { clientMembersWith } from "@/domain/intelligence/views";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { ArchitectureNav } from "@/components/architecture/architecture-nav";
-import { ElementLink, InternalMark, LifecycleTag, ReferenceCode } from "@/components/architecture/badges";
+import {
+  ElementLink,
+  InternalMark,
+  LifecycleTag,
+  ReferenceCode,
+} from "@/components/architecture/badges";
 import { RelationshipsPanel } from "@/components/architecture/relationships-panel";
 import { StatementsPanel } from "@/components/architecture/statements-panel";
 import { VersionsPanel } from "@/components/architecture/versions-panel";
@@ -95,15 +100,19 @@ export default async function InitiativeDetailPage({
   const frozen = element.lifecycle === "retired" || element.lifecycle === "superseded";
   const evidenceOptions = evidence.map((s) => ({ value: s.id, label: s.title }));
   const status = IMPLEMENTATION_STATUS[row.implementation_status];
-  const terminal = row.implementation_status === "validated" || row.implementation_status === "abandoned";
+  const terminal =
+    row.implementation_status === "validated" || row.implementation_status === "abandoned";
   const implementsTargets = architecture.relationships.filter(
-    (r) => r.source_element_id === element.id && r.relationship_type === "implements" && !r.retired_at,
+    (r) =>
+      r.source_element_id === element.id && r.relationship_type === "implements" && !r.retired_at,
   );
   const initiatedBy = architecture.relationships.filter(
-    (r) => r.target_element_id === element.id && r.relationship_type === "initiates" && !r.retired_at,
+    (r) =>
+      r.target_element_id === element.id && r.relationship_type === "initiates" && !r.retired_at,
   );
   const validatedBy = architecture.relationships.filter(
-    (r) => r.target_element_id === element.id && r.relationship_type === "validates" && !r.retired_at,
+    (r) =>
+      r.target_element_id === element.id && r.relationship_type === "validates" && !r.retired_at,
   );
   const eligibleForValidated = validatedBy.length > 0;
   const openEscalations = escalations.filter((e) => e.element_id === element.id);
@@ -132,7 +141,10 @@ export default async function InitiativeDetailPage({
         actions={
           <div className="flex flex-wrap items-start justify-end gap-2">
             {canEdit && (element.lifecycle === "draft" || element.lifecycle === "published") ? (
-              <ActionButton action={submitForReview.bind(null, element.id)} label="Submit for review" />
+              <ActionButton
+                action={submitForReview.bind(null, element.id)}
+                label="Submit for review"
+              />
             ) : null}
             {canPublish ? (
               <ActionForm
@@ -165,15 +177,22 @@ export default async function InitiativeDetailPage({
       >
         <div className="space-y-4">
           {element.summary ? (
-            <p className="max-w-3xl font-serif text-base leading-relaxed text-ink">{element.summary}</p>
+            <p className="max-w-3xl font-serif text-base leading-relaxed text-ink">
+              {element.summary}
+            </p>
           ) : null}
           <DetailList
             items={[
               { label: "Category", value: categoryLabel(row.category) },
-              { label: "Owner", value: row.owner_member_id ? nameOf(row.owner_member_id) : "Unassigned" },
+              {
+                label: "Owner",
+                value: row.owner_member_id ? nameOf(row.owner_member_id) : "Unassigned",
+              },
               {
                 label: "Target operational date",
-                value: row.target_operational_on ? formatDate(row.target_operational_on) : "Not set",
+                value: row.target_operational_on
+                  ? formatDate(row.target_operational_on)
+                  : "Not set",
               },
               {
                 label: "Actual operational date",
@@ -185,7 +204,9 @@ export default async function InitiativeDetailPage({
                   <span className="flex flex-col gap-1">
                     {implementsTargets.map((r) => {
                       const target = architecture.byId.get(r.target_element_id);
-                      return target ? <ElementLink key={r.id} slug={slug} element={target} /> : null;
+                      return target ? (
+                        <ElementLink key={r.id} slug={slug} element={target} />
+                      ) : null;
                     })}
                   </span>
                 ),
@@ -197,7 +218,9 @@ export default async function InitiativeDetailPage({
                       <span className="flex flex-col gap-1">
                         {initiatedBy.map((r) => {
                           const source = architecture.byId.get(r.source_element_id);
-                          return source ? <ElementLink key={r.id} slug={slug} element={source} /> : null;
+                          return source ? (
+                            <ElementLink key={r.id} slug={slug} element={source} />
+                          ) : null;
                         })}
                       </span>
                     ),
@@ -337,7 +360,9 @@ export default async function InitiativeDetailPage({
                         {h.from_value || "—"} → {h.to_value || "—"}
                       </span>
                     ) : null}
-                    {h.rationale ? <span className="block text-xs text-ink-muted">{h.rationale}</span> : null}
+                    {h.rationale ? (
+                      <span className="block text-xs text-ink-muted">{h.rationale}</span>
+                    ) : null}
                   </span>
                 </li>
               ))}
@@ -355,7 +380,10 @@ export default async function InitiativeDetailPage({
               <ActionForm
                 trigger="Triage"
                 fields={triageFields}
-                defaultValues={{ attention: stewardship.attention, nextReviewOn: stewardship.next_review_on ?? "" }}
+                defaultValues={{
+                  attention: stewardship.attention,
+                  nextReviewOn: stewardship.next_review_on ?? "",
+                }}
                 action={triageInitiative.bind(null, element.id)}
                 submitLabel="Save triage"
               />
@@ -380,7 +408,11 @@ export default async function InitiativeDetailPage({
               items={[
                 {
                   label: "Attention",
-                  value: <StatusTag tone={ATTENTION[stewardship.attention].tone}>{ATTENTION[stewardship.attention].label}</StatusTag>,
+                  value: (
+                    <StatusTag tone={ATTENTION[stewardship.attention].tone}>
+                      {ATTENTION[stewardship.attention].label}
+                    </StatusTag>
+                  ),
                 },
                 {
                   label: "Triage",
@@ -391,7 +423,9 @@ export default async function InitiativeDetailPage({
                 },
                 {
                   label: "Next review",
-                  value: stewardship.next_review_on ? formatDate(stewardship.next_review_on) : "Not set",
+                  value: stewardship.next_review_on
+                    ? formatDate(stewardship.next_review_on)
+                    : "Not set",
                 },
               ]}
             />
@@ -400,20 +434,27 @@ export default async function InitiativeDetailPage({
                 {openEscalations.map((x) => (
                   <div key={x.id} className="rounded-sm border border-rule px-4 py-3 text-sm">
                     <p className="flex flex-wrap items-center gap-2">
-                      <StatusTag tone={x.resolved_at ? "neutral" : x.acknowledged_at ? "accent" : "negative"}>
+                      <StatusTag
+                        tone={x.resolved_at ? "neutral" : x.acknowledged_at ? "accent" : "negative"}
+                      >
                         {x.resolved_at ? "Resolved" : x.acknowledged_at ? "Acknowledged" : "Open"}
                       </StatusTag>
-                      <span className="text-ink">To {ESCALATION_LEVEL_LABELS[x.level].toLowerCase()}</span>
+                      <span className="text-ink">
+                        To {ESCALATION_LEVEL_LABELS[x.level].toLowerCase()}
+                      </span>
                       {x.client_actions ? (
                         <span className="text-xs text-ink-muted">
-                          with request <span className="font-mono">{x.client_actions.reference_code}</span>
+                          with request{" "}
+                          <span className="font-mono">{x.client_actions.reference_code}</span>
                         </span>
                       ) : null}
                     </p>
                     <p className="mt-1 text-ink-muted">{x.reason}</p>
                     <p className="mt-1 text-xs text-ink-subtle">
                       Raised by {nameOf(x.raised_by)} {formatDateTime(x.raised_at)}
-                      {x.acknowledged_at ? ` · acknowledged ${formatDateTime(x.acknowledged_at)}` : ""}
+                      {x.acknowledged_at
+                        ? ` · acknowledged ${formatDateTime(x.acknowledged_at)}`
+                        : ""}
                       {x.resolved_at
                         ? ` · resolved ${formatDateTime(x.resolved_at)}: ${x.resolution_note}`
                         : ""}
@@ -421,7 +462,10 @@ export default async function InitiativeDetailPage({
                     {canPublish && !x.resolved_at ? (
                       <div className="mt-2 flex flex-wrap gap-2">
                         {x.acknowledged_at ? null : (
-                          <ActionButton action={acknowledgeEscalation.bind(null, x.id)} label="Acknowledge" />
+                          <ActionButton
+                            action={acknowledgeEscalation.bind(null, x.id)}
+                            label="Acknowledge"
+                          />
                         )}
                         <ActionForm
                           trigger="Resolve escalation"
@@ -484,7 +528,9 @@ export default async function InitiativeDetailPage({
                 <span className="space-y-0.5">
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="text-ink">{c.title}</span>
-                    <span className="text-xs text-ink-subtle">{IMPLEMENTATION_CHECKPOINT_TYPE_LABELS[c.checkpoint_type]}</span>
+                    <span className="text-xs text-ink-subtle">
+                      {IMPLEMENTATION_CHECKPOINT_TYPE_LABELS[c.checkpoint_type]}
+                    </span>
                     {c.client_visible ? null : <InternalMark />}
                   </span>
                   <span className="block text-xs text-ink-muted">
@@ -542,7 +588,11 @@ export default async function InitiativeDetailPage({
                     ) : null}
                   </span>
                   {canEdit ? (
-                    <ActionButton action={removeElementCitation.bind(null, l.id)} label="Remove" variant="ghost" />
+                    <ActionButton
+                      action={removeElementCitation.bind(null, l.id)}
+                      label="Remove"
+                      variant="ghost"
+                    />
                   ) : null}
                 </li>
               ))}
@@ -551,7 +601,13 @@ export default async function InitiativeDetailPage({
           {canEdit && evidenceOptions.length > 0 ? (
             <ActionForm
               fields={[
-                { name: "evidenceSourceId", label: "Evidence source", type: "select", options: evidenceOptions, wide: true },
+                {
+                  name: "evidenceSourceId",
+                  label: "Evidence source",
+                  type: "select",
+                  options: evidenceOptions,
+                  wide: true,
+                },
                 {
                   name: "stance",
                   label: "Stance",

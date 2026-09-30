@@ -78,7 +78,13 @@ function expectRow<T>(result: { data: T[] | null; error: PostgrestError | null }
   if (result.error) return { error: result.error };
   if (!result.data?.length) {
     return {
-      error: { code: "42501", message: "No permission", details: "", hint: "", name: "PostgrestError" } as PostgrestError,
+      error: {
+        code: "42501",
+        message: "No permission",
+        details: "",
+        hint: "",
+        name: "PostgrestError",
+      } as PostgrestError,
     };
   }
   return { data: result.data[0], error: null };

@@ -11,13 +11,7 @@ import { cn } from "@/lib/utils";
 const LATER_SECTIONS = ["Documents", "Messages"];
 
 export type PortalSection =
-  | "overview"
-  | "actions"
-  | "architecture"
-  | "decisions"
-  | "reviews"
-  | "implementation"
-  | "billing";
+  "overview" | "actions" | "architecture" | "decisions" | "reviews" | "implementation" | "billing";
 
 export async function EngagementNav({
   slug,

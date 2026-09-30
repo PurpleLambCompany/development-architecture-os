@@ -6,7 +6,12 @@ import {
   submitForReview,
 } from "@/domain/architecture/actions";
 import { getInternalArchitectureContext, memberNames } from "@/domain/architecture/context";
-import { getElementDetail, listBaselines, listEvidence, loadArchitecture } from "@/domain/architecture/queries";
+import {
+  getElementDetail,
+  listBaselines,
+  listEvidence,
+  loadArchitecture,
+} from "@/domain/architecture/queries";
 import { updateDeliverable } from "@/domain/deliverables/actions";
 import { DELIVERABLE_TYPES, DELIVERABLE_TYPE_LABELS } from "@/domain/deliverables/catalog";
 import { getDeliverableFiles, getDeliverableRegister } from "@/domain/deliverables/queries";
@@ -47,9 +52,11 @@ export default async function DeliverableDetailPage({
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow={[engagement.title, "Deliverables", DELIVERABLE_TYPE_LABELS[row.deliverable_type]].join(
-          " · ",
-        )}
+        eyebrow={[
+          engagement.title,
+          "Deliverables",
+          DELIVERABLE_TYPE_LABELS[row.deliverable_type],
+        ].join(" · ")}
         title={element.title}
         description={
           <span className="flex flex-wrap items-center gap-3">
@@ -65,7 +72,10 @@ export default async function DeliverableDetailPage({
         actions={
           <div className="flex flex-wrap items-start justify-end gap-2">
             {canEdit && (element.lifecycle === "draft" || element.lifecycle === "published") ? (
-              <ActionButton action={submitForReview.bind(null, element.id)} label="Submit for review" />
+              <ActionButton
+                action={submitForReview.bind(null, element.id)}
+                label="Submit for review"
+              />
             ) : null}
             {canPublish ? (
               <ActionForm
@@ -108,7 +118,9 @@ export default async function DeliverableDetailPage({
               { label: "Confidential", value: row.confidential ? "Yes" : "No" },
               {
                 label: "Baseline",
-                value: row.baseline_id ? baselines.find((b) => b.id === row.baseline_id)?.label : null,
+                value: row.baseline_id
+                  ? baselines.find((b) => b.id === row.baseline_id)?.label
+                  : null,
               },
               { label: "Last changed", value: formatDateTime(element.updated_at) },
             ]}
@@ -120,7 +132,10 @@ export default async function DeliverableDetailPage({
                   name: "deliverableType",
                   label: "Kind",
                   type: "select",
-                  options: DELIVERABLE_TYPES.map((t) => ({ value: t, label: DELIVERABLE_TYPE_LABELS[t] })),
+                  options: DELIVERABLE_TYPES.map((t) => ({
+                    value: t,
+                    label: DELIVERABLE_TYPE_LABELS[t],
+                  })),
                 },
                 {
                   name: "baselineId",

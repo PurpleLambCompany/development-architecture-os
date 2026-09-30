@@ -30,8 +30,7 @@ export default async function DeliverablesPage({
     listBaselines(engagement.id),
   ]);
   const typeFilter =
-    typeof query.type === "string" &&
-    (DELIVERABLE_TYPES as readonly string[]).includes(query.type)
+    typeof query.type === "string" && (DELIVERABLE_TYPES as readonly string[]).includes(query.type)
       ? query.type
       : null;
   const shown = typeFilter ? rows.filter((r) => r.deliverable_type === typeFilter) : rows;
@@ -84,7 +83,10 @@ export default async function DeliverablesPage({
                   name: "deliverableType",
                   label: "Kind",
                   type: "select",
-                  options: DELIVERABLE_TYPES.map((t) => ({ value: t, label: DELIVERABLE_TYPE_LABELS[t] })),
+                  options: DELIVERABLE_TYPES.map((t) => ({
+                    value: t,
+                    label: DELIVERABLE_TYPE_LABELS[t],
+                  })),
                 },
                 { name: "title", label: "Title", wide: true },
                 {
@@ -154,7 +156,9 @@ export default async function DeliverablesPage({
                       {row.client_visibility === "internal" ? <InternalMark /> : null}
                     </span>
                   </Td>
-                  <Td className="text-ink-muted">{DELIVERABLE_TYPE_LABELS[row.deliverable_type]}</Td>
+                  <Td className="text-ink-muted">
+                    {DELIVERABLE_TYPE_LABELS[row.deliverable_type]}
+                  </Td>
                   <Td>
                     <StatusTag tone={LIFECYCLE[row.lifecycle].tone}>
                       {LIFECYCLE[row.lifecycle].label}

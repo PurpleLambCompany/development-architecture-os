@@ -8,7 +8,10 @@ import {
   IMPLEMENTATION_STATUSES,
   categoryLabel,
 } from "@/domain/implementation/catalog";
-import { getImplementationRegister, getImplementationSignals } from "@/domain/implementation/queries";
+import {
+  getImplementationRegister,
+  getImplementationSignals,
+} from "@/domain/implementation/queries";
 import {
   filterRegister,
   orderRegister,
@@ -17,7 +20,12 @@ import {
   registerQuery,
   REGISTER_ORDER_EXPLANATION,
 } from "@/domain/implementation/register";
-import { ATTENTION, ATTENTION_LEVELS, ESCALATION_LEVEL_LABELS, TRIAGE_STATE } from "@/domain/intelligence/catalog";
+import {
+  ATTENTION,
+  ATTENTION_LEVELS,
+  ESCALATION_LEVEL_LABELS,
+  TRIAGE_STATE,
+} from "@/domain/intelligence/catalog";
 import { businessToday } from "@/domain/intelligence/views";
 import { ArchitectureNav } from "@/components/architecture/architecture-nav";
 import { ReferenceCode } from "@/components/architecture/badges";
@@ -43,7 +51,8 @@ export default async function ImplementationPage({
   const { slug } = await params;
   const query = await searchParams;
   const filters = parseRegisterFilters(query);
-  const { engagement, canEdit, canManageImplementation } = await getInternalArchitectureContext(slug);
+  const { engagement, canEdit, canManageImplementation } =
+    await getInternalArchitectureContext(slug);
   const [architecture, rows, signals] = await Promise.all([
     loadArchitecture(engagement.id),
     getImplementationRegister(engagement.id),
@@ -51,7 +60,10 @@ export default async function ImplementationPage({
   ]);
   const today = businessToday();
   const signalled = new Set(signals.filter((s) => !s.dismissed).map((s) => s.element_id));
-  const shown = orderRegister(filterRegister(rows, filters, { today, signalled }), { today, signalled });
+  const shown = orderRegister(filterRegister(rows, filters, { today, signalled }), {
+    today,
+    signalled,
+  });
   const counts = registerCounts(rows);
   const nameOf = memberNames(engagement);
   const base = `/internal/engagements/${slug}/implementation`;
@@ -87,7 +99,11 @@ export default async function ImplementationPage({
         ]}
       />
 
-      <form method="get" action={base} className="rounded-sm border border-rule bg-surface px-5 py-4">
+      <form
+        method="get"
+        action={base}
+        className="rounded-sm border border-rule bg-surface px-5 py-4"
+      >
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
           <label className="space-y-1 text-xs text-ink-subtle">
             <span className="block tracking-wide uppercase">Status</span>
@@ -145,7 +161,13 @@ export default async function ImplementationPage({
             ] as const
           ).map(([name, label, checked]) => (
             <label key={name} className="flex items-center gap-2">
-              <input type="checkbox" name={name} value="yes" defaultChecked={checked} className="size-4 accent-accent" />
+              <input
+                type="checkbox"
+                name={name}
+                value="yes"
+                defaultChecked={checked}
+                className="size-4 accent-accent"
+              />
               {label}
             </label>
           ))}
@@ -210,7 +232,10 @@ export default async function ImplementationPage({
         )
       ) : null}
 
-      <Panel title="Register" description={`${shown.length} shown. Order: ${REGISTER_ORDER_EXPLANATION}`}>
+      <Panel
+        title="Register"
+        description={`${shown.length} shown. Order: ${REGISTER_ORDER_EXPLANATION}`}
+      >
         {shown.length === 0 ? (
           <EmptyState title="No initiatives match">Change the filters to see more.</EmptyState>
         ) : (
@@ -237,28 +262,38 @@ export default async function ImplementationPage({
                 return (
                   <tr key={row.element_id}>
                     <Td>
-                      <Link href={`${base}/${row.element_id}`} className="group inline-flex items-baseline gap-2">
+                      <Link
+                        href={`${base}/${row.element_id}`}
+                        className="group inline-flex items-baseline gap-2"
+                      >
                         <ReferenceCode code={row.reference_code} />
                         <span className="text-ink group-hover:underline">{row.title}</span>
                       </Link>
                       {row.checkpoint_count > 0 ? (
                         <span className="mt-1 block text-xs text-ink-subtle">
-                          {row.achieved_checkpoint_count} of {row.checkpoint_count} checkpoints achieved
+                          {row.achieved_checkpoint_count} of {row.checkpoint_count} checkpoints
+                          achieved
                         </span>
                       ) : null}
                     </Td>
                     <Td>
                       <span className="flex flex-col gap-1">
                         <StatusTag tone={status.tone}>{status.label}</StatusTag>
-                        {pastTarget ? <span className="text-xs text-negative">Past target date</span> : null}
+                        {pastTarget ? (
+                          <span className="text-xs text-negative">Past target date</span>
+                        ) : null}
                       </span>
                     </Td>
                     <Td className="text-ink-muted">{categoryLabel(row.category)}</Td>
-                    <Td className="text-ink-muted">{row.owner_member_id ? nameOf(row.owner_member_id) : "—"}</Td>
+                    <Td className="text-ink-muted">
+                      {row.owner_member_id ? nameOf(row.owner_member_id) : "—"}
+                    </Td>
                     <Td>
                       <span className="flex flex-col gap-1 text-xs text-ink-muted">
                         <span className="flex flex-wrap items-center gap-2">
-                          <StatusTag tone={ATTENTION[row.attention].tone}>{ATTENTION[row.attention].label}</StatusTag>
+                          <StatusTag tone={ATTENTION[row.attention].tone}>
+                            {ATTENTION[row.attention].label}
+                          </StatusTag>
                           {row.triage_state === "untriaged" ? (
                             <span className="text-attention">Untriaged</span>
                           ) : null}
@@ -275,7 +310,10 @@ export default async function ImplementationPage({
                         <ActionForm
                           trigger="Triage"
                           fields={triageFields}
-                          defaultValues={{ attention: row.attention, nextReviewOn: row.next_review_on ?? "" }}
+                          defaultValues={{
+                            attention: row.attention,
+                            nextReviewOn: row.next_review_on ?? "",
+                          }}
                           action={triageInitiative.bind(null, row.element_id)}
                           submitLabel="Save triage"
                           className="min-w-72"

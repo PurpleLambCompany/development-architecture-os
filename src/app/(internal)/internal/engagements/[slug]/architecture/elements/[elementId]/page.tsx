@@ -477,7 +477,12 @@ export default async function ElementPage({
         architecture={architecture}
         rows={implementationRows}
       />
-      <ReviewedInPanel slug={slug} elementId={element.id} architecture={architecture} rows={reviewRows} />
+      <ReviewedInPanel
+        slug={slug}
+        elementId={element.id}
+        architecture={architecture}
+        rows={reviewRows}
+      />
       <DocumentedInPanel
         slug={slug}
         elementId={element.id}

@@ -107,7 +107,9 @@ export function ReviewedInPanel({
             return (
               <li key={row.element_id} className="flex flex-wrap items-center gap-3 py-2">
                 {element ? <ElementLink slug={slug} element={element} /> : row.title}
-                <span className="text-xs text-ink-subtle">{REVIEW_TYPE_LABELS[row.review_type]}</span>
+                <span className="text-xs text-ink-subtle">
+                  {REVIEW_TYPE_LABELS[row.review_type]}
+                </span>
                 {status ? <StatusTag tone={status.tone}>{status.label}</StatusTag> : null}
                 {row.held_at ? (
                   <span className="text-xs text-ink-muted">Held {formatDateTime(row.held_at)}</span>

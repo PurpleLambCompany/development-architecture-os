@@ -174,7 +174,11 @@ export default async function ClientEngagementPage({ params }: PageProps<"/porta
           title="Delivered and implemented"
           actions={
             deliverables.length > 0 ? (
-              <ButtonLink href={`/portal/${engagement.slug}/implementation`} variant="secondary" size="sm">
+              <ButtonLink
+                href={`/portal/${engagement.slug}/implementation`}
+                variant="secondary"
+                size="sm"
+              >
                 Implementation
               </ButtonLink>
             ) : null
@@ -187,7 +191,9 @@ export default async function ClientEngagementPage({ params }: PageProps<"/porta
           ) : (
             <ul className="space-y-3">
               {deliverables.map((d) => {
-                const approval = deliverableApprovals.find((p) => p.element_version_id === d.version_id);
+                const approval = deliverableApprovals.find(
+                  (p) => p.element_version_id === d.version_id,
+                );
                 return (
                   <li key={d.element_id} className="space-y-1">
                     <p className="flex flex-wrap items-center gap-2">

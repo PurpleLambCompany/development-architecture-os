@@ -81,7 +81,12 @@ export default async function ReviewsPage({
                   options: REVIEW_TYPES.map((t) => ({ value: t, label: REVIEW_TYPE_LABELS[t] })),
                 },
                 { name: "title", label: "Title", wide: true },
-                { name: "scheduledFor", label: "Scheduled for", type: "text", hint: "YYYY-MM-DDTHH:mm" },
+                {
+                  name: "scheduledFor",
+                  label: "Scheduled for",
+                  type: "text",
+                  hint: "YYYY-MM-DDTHH:mm",
+                },
                 { name: "summary", label: "Summary", type: "textarea" },
               ]}
               defaultValues={{ reviewType: "executive_review" }}
@@ -121,7 +126,9 @@ export default async function ReviewsPage({
                       </Link>
                     </Td>
                     <Td className="text-ink-muted">{REVIEW_TYPE_LABELS[r.review_type]}</Td>
-                    <Td>{status ? <StatusTag tone={status.tone}>{status.label}</StatusTag> : null}</Td>
+                    <Td>
+                      {status ? <StatusTag tone={status.tone}>{status.label}</StatusTag> : null}
+                    </Td>
                     <Td className="text-xs whitespace-nowrap text-ink-muted">
                       {r.held_at
                         ? `Held ${formatDateTime(r.held_at)}`

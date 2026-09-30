@@ -1,7 +1,11 @@
 import { notFound } from "next/navigation";
 import { getClientArchitectureContext } from "@/domain/architecture/context";
 import { getClientArchitecture, getClientRelationships } from "@/domain/architecture/queries";
-import { IMPLEMENTATION_CHECKPOINT_TYPE_LABELS, IMPLEMENTATION_STATUS, categoryLabel } from "@/domain/implementation/catalog";
+import {
+  IMPLEMENTATION_CHECKPOINT_TYPE_LABELS,
+  IMPLEMENTATION_STATUS,
+  categoryLabel,
+} from "@/domain/implementation/catalog";
 import { getClientImplementation } from "@/domain/implementation/queries";
 import { formatDate } from "@/lib/format";
 import { ReferenceCode } from "@/components/architecture/badges";
@@ -77,14 +81,21 @@ export default async function ClientImplementationPage({
                     achieved_on: string | null;
                   }[];
                   return (
-                    <div key={row.element_id} className="space-y-2 border-l-2 border-accent/40 pl-4">
+                    <div
+                      key={row.element_id}
+                      className="space-y-2 border-l-2 border-accent/40 pl-4"
+                    >
                       <p className="flex flex-wrap items-center gap-2">
                         <ReferenceCode code={row.reference_code} />
                         <span className="font-serif text-base text-ink">{row.title}</span>
-                        <span className="text-xs text-ink-subtle">{categoryLabel(row.category)}</span>
+                        <span className="text-xs text-ink-subtle">
+                          {categoryLabel(row.category)}
+                        </span>
                         <StatusTag tone={status.tone}>{status.label}</StatusTag>
                       </p>
-                      {row.summary ? <p className="max-w-2xl text-sm text-ink">{row.summary}</p> : null}
+                      {row.summary ? (
+                        <p className="max-w-2xl text-sm text-ink">{row.summary}</p>
+                      ) : null}
                       {row.target_operational_on ? (
                         <p className="text-xs text-ink-muted">
                           Target {formatDate(row.target_operational_on)}
