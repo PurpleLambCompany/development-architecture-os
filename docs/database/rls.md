@@ -1,6 +1,6 @@
 # Row Level Security, roles and capabilities (Phase 1)
 
-> Phase 2 financial access rules are documented in [finance.md](finance.md), and Phase 3 architecture access rules in [architecture.md](architecture.md).
+> Phase 2 financial access rules are documented in [finance.md](finance.md), Phase 3 architecture access rules in [architecture.md](architecture.md), and Phase 4 Project Intelligence, client actions and contributor areas in [intelligence.md](intelligence.md).
 
 Every table has RLS enabled. Policies call `SECURITY DEFINER` helpers in the unexposed `private` schema (ADR-0003). `anon` has no privileges on any table. Tests (`pnpm db:test`, also run in CI): `01_phase1_rls.test.sql`, `02_multi_organization.test.sql`, `03_engagement_capabilities.test.sql` in `supabase/tests/`.
 

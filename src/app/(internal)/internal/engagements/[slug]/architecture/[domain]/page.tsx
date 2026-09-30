@@ -116,7 +116,7 @@ export default async function DomainWorkspacePage({
 
       <DomainViews
         domain={domain}
-        slug={slug}
+        linkBase={`/internal/engagements/${slug}/architecture/elements`}
         objects={objects}
         architecture={architecture}
         graph={graph}

@@ -19,6 +19,7 @@ import { ROLE_LABELS } from "@/domain/roles/roles";
 import { EngagementStatusTag } from "@/components/engagements/engagement-status";
 import { formatMoney } from "@/domain/finance/money";
 import { getBusinessToday, getEngagementFinances } from "@/domain/finance/queries";
+import { getClientActions } from "@/domain/intelligence/queries";
 import { EngagementNav } from "@/components/portal/engagement-nav";
 import { ButtonLink } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
@@ -26,7 +27,7 @@ import { DetailList, EmptyState, Panel } from "@/components/ui/panel";
 
 export default async function ClientEngagementPage({ params }: PageProps<"/portal/[slug]">) {
   const { slug } = await params;
-  await requireClient();
+  const viewer = await requireClient();
   // RLS returns nothing for engagements outside the viewer's assignments.
   const engagement = await getEngagementBySlug(slug);
   if (!engagement) notFound();
@@ -59,7 +60,16 @@ export default async function ClientEngagementPage({ params }: PageProps<"/porta
   const openDecisions = decisions.filter(
     (d) => d.decision_status === "open" || d.decision_status === "recommended",
   ).length;
-  const awaitingCount = pendingApprovals.length + openDecisions;
+  const actions = await getClientActions(engagement.id);
+  const myRequests = actions.filter(
+    (a) => a.status === "open" && a.addressed_to_user_id === viewer.id,
+  ).length;
+  const awaitingCount = pendingApprovals.length + openDecisions + myRequests;
+  const parts = [
+    [myRequests, "request"],
+    [pendingApprovals.length, "approval request"],
+    [openDecisions, "decision"],
+  ] as const;
 
   return (
     <div className="space-y-8">
@@ -129,24 +139,23 @@ export default async function ClientEngagementPage({ params }: PageProps<"/porta
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <Panel
-          title="Decisions and actions required"
+          title="What is required from us"
           actions={
-            canRespond && awaitingCount > 0 ? (
-              <ButtonLink
-                href={`/portal/${engagement.slug}/decisions`}
-                variant="secondary"
-                size="sm"
-              >
+            awaitingCount > 0 ? (
+              <ButtonLink href={`/portal/${engagement.slug}/actions`} variant="secondary" size="sm">
                 Respond
               </ButtonLink>
             ) : null
           }
         >
-          {canRespond && awaitingCount > 0 ? (
+          {awaitingCount > 0 ? (
             <p className="text-sm text-ink">
               {awaitingCount} item{awaitingCount === 1 ? "" : "s"} awaiting your response:{" "}
-              {pendingApprovals.length} approval request{pendingApprovals.length === 1 ? "" : "s"}{" "}
-              and {openDecisions} decision{openDecisions === 1 ? "" : "s"}.
+              {parts
+                .filter(([n]) => n > 0)
+                .map(([n, label]) => `${n} ${label}${n === 1 ? "" : "s"}`)
+                .join(", ")}
+              .
             </p>
           ) : (
             <EmptyState title="Nothing requires your attention">

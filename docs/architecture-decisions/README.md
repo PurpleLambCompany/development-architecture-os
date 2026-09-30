@@ -29,5 +29,13 @@ One decision per file, numbered in order. A record is never rewritten after it i
 | [0023](0023-finance-to-architecture-one-way.md)            | Finance may refer to architecture, never the reverse            | Accepted                                  |
 | [0024](0024-architecture-capabilities.md)                  | New architecture capabilities                                   | Accepted                                  |
 | [0025](0025-reference-codes.md)                            | Permanent reference codes and prefixes                          | Accepted                                  |
+| [0026](0026-opportunity-record-kind.md)                    | Opportunity is a Project Intelligence record kind               | Accepted                                  |
+| [0027](0027-stewardship-and-categories.md)                 | Internal stewardship and controlled categories                  | Accepted                                  |
+| [0028](0028-history-resolution-escalation.md)              | Status history, resolution and escalation                       | Accepted                                  |
+| [0029](0029-client-actions-and-contributions.md)           | Client actions and client contributions                         | Accepted                                  |
+| [0030](0030-contributor-areas.md)                          | Client Contributors see assigned areas                          | Accepted                                  |
+| [0031](0031-phase-4-capabilities.md)                       | Phase 4 capabilities                                            | Accepted                                  |
+| [0032](0032-intelligence-signals.md)                       | Intelligence signals are computed; dismissals are stored        | Accepted                                  |
+| [0033](0033-engagement-files.md)                           | Engagement files in private storage                             | Accepted                                  |
 
 Template: Context, Decision, Consequences.

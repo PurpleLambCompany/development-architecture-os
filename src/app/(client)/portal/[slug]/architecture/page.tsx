@@ -1,8 +1,11 @@
 import Link from "next/link";
+import { Fragment } from "react";
 import { notFound } from "next/navigation";
 import {
   DOMAINS,
   DOMAIN_LABELS,
+  DOMAIN_SLUGS,
+  domainFromSlug,
   DOMAIN_QUESTIONS,
   PROVENANCE_CLIENT_LABELS,
   RECORD_KIND_LABELS,
@@ -13,12 +16,16 @@ import { getClientArchitectureContext } from "@/domain/architecture/context";
 import { attributeValue } from "@/domain/architecture/object-types";
 import {
   getClientArchitecture,
+  getClientRelationships,
   getDomainStates,
   type ClientArchitectureRow,
 } from "@/domain/architecture/queries";
 import { objectType, type ObjectTypeKey } from "@/domain/architecture/rules";
 import { formatDate } from "@/lib/format";
 import { ApprovalTag, MaturityMark, ReferenceCode } from "@/components/architecture/badges";
+import { DomainViews } from "@/components/architecture/domain-views";
+import { clientArchitectureModel } from "@/components/portal/client-model";
+import { ClientIntelligence } from "@/components/portal/client-intelligence";
 import { EngagementNav } from "@/components/portal/engagement-nav";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState, Panel } from "@/components/ui/panel";
@@ -32,15 +39,20 @@ import { Table, Td, Th } from "@/components/ui/table";
  */
 export default async function ClientArchitecturePage({
   params,
+  searchParams,
 }: PageProps<"/portal/[slug]/architecture">) {
   const { slug } = await params;
-  const { engagement, canView } = await getClientArchitectureContext(slug);
+  const focus = domainFromSlug(String((await searchParams).domain ?? ""));
+  const { engagement, canView, capabilities } = await getClientArchitectureContext(slug);
   if (!canView) notFound();
-  const [rows, states] = await Promise.all([
+  const [rows, states, relationships] = await Promise.all([
     getClientArchitecture(engagement.id),
     getDomainStates(engagement.id),
+    getClientRelationships(engagement.id),
   ]);
   const records = rows.filter((r) => r.kind !== "object");
+  const model = clientArchitectureModel(rows, relationships);
+  const base = `/portal/${slug}/architecture`;
 
   return (
     <div className="space-y-8">
@@ -51,46 +63,82 @@ export default async function ClientArchitecturePage({
         description="The published architecture of your engagement, domain by domain. Each item shows its latest published version; approval status is shown for information and never limits what you can see."
       />
 
-      {DOMAINS.map((domain) => {
+      <nav className="flex flex-wrap gap-2" aria-label="Domains">
+        {[null, ...DOMAINS].map((d) => (
+          <Link
+            key={d ?? "all"}
+            href={d ? `${base}?domain=${DOMAIN_SLUGS[d]}` : base}
+            aria-current={d === focus ? "page" : undefined}
+            className={
+              d === focus
+                ? "rounded-sm border border-accent bg-accent-soft px-3 py-1.5 text-sm text-accent"
+                : "rounded-sm border border-rule px-3 py-1.5 text-sm text-ink-muted hover:text-ink"
+            }
+          >
+            {d ? DOMAIN_LABELS[d] : "All domains"}
+          </Link>
+        ))}
+      </nav>
+
+      {(focus ? [focus] : DOMAINS).map((domain) => {
         const objects = rows.filter((r) => r.kind === "object" && r.domain === domain);
         const state = states.find((s) => s.domain === domain);
         return (
-          <Panel
-            key={domain}
-            title={DOMAIN_LABELS[domain]}
-            description={DOMAIN_QUESTIONS[domain]}
-            actions={state ? <MaturityMark maturity={state.maturity} /> : null}
-          >
-            <div className="space-y-4">
-              {state ? (
-                <p className="text-sm text-ink-muted">
-                  {state.rationale}{" "}
-                  <span className="text-xs text-ink-subtle">
-                    {PROVENANCE_CLIENT_LABELS.architect_judgment},{" "}
-                    {formatDate(state.assessed_at.slice(0, 10))}
-                  </span>
-                </p>
-              ) : null}
-              {objects.length === 0 ? (
-                <EmptyState title="Nothing published in this domain yet" />
-              ) : (
-                <ElementTable slug={slug} rows={objects} />
-              )}
-            </div>
-          </Panel>
+          <Fragment key={domain}>
+            <Panel
+              title={DOMAIN_LABELS[domain]}
+              description={DOMAIN_QUESTIONS[domain]}
+              actions={
+                <span className="flex items-center gap-3">
+                  {state ? <MaturityMark maturity={state.maturity} /> : null}
+                  {focus ? null : (
+                    <Link
+                      href={`${base}?domain=${DOMAIN_SLUGS[domain]}`}
+                      className="text-sm text-ink-muted hover:underline"
+                    >
+                      Domain views
+                    </Link>
+                  )}
+                </span>
+              }
+            >
+              <div className="space-y-4">
+                {state ? (
+                  <p className="text-sm text-ink-muted">
+                    {state.rationale}{" "}
+                    <span className="text-xs text-ink-subtle">
+                      {PROVENANCE_CLIENT_LABELS.architect_judgment},{" "}
+                      {formatDate(state.assessed_at.slice(0, 10))}
+                    </span>
+                  </p>
+                ) : null}
+                {objects.length === 0 ? (
+                  <EmptyState title="Nothing published in this domain yet" />
+                ) : (
+                  <ElementTable slug={slug} rows={objects} />
+                )}
+              </div>
+            </Panel>
+            {focus ? (
+              <DomainViews
+                domain={domain}
+                linkBase={base}
+                objects={model.architecture.elements.filter((e) => e.object?.domain === domain)}
+                architecture={model.architecture}
+                graph={model.graph}
+              />
+            ) : null}
+          </Fragment>
         );
       })}
 
-      <Panel
-        title="Project Intelligence"
-        description="Assumptions, risks, constraints, dependencies, decisions and recommendations shared with you."
-      >
-        {records.length === 0 ? (
-          <EmptyState title="Nothing published yet" />
-        ) : (
-          <ElementTable slug={slug} rows={records} />
-        )}
-      </Panel>
+      {focus ? null : (
+        <ClientIntelligence
+          slug={slug}
+          records={records}
+          seesRiskGrid={capabilities.has("view_full_architecture")}
+        />
+      )}
     </div>
   );
 }

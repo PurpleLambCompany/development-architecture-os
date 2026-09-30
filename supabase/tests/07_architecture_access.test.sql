@@ -14,7 +14,7 @@
 -- =============================================================================
 begin;
 
-select plan(65);
+select plan(66);
 
 create function pg_temp.act_as(user_email text)
 returns void
@@ -118,14 +118,14 @@ $$;
 -- Internal roles
 -- -----------------------------------------------------------------------------
 select pg_temp.act_as('architect@tplco.test');
-select is(pg_temp.visible('architecture_elements', 'e0000000-0000-4000-8000-000000000001'), 35,
+select is(pg_temp.visible('architecture_elements', 'e0000000-0000-4000-8000-000000000001'), 38,
   'an assigned Architect reads the whole working architecture, drafts and internal content included');
 select lives_ok($$ select pg_temp.new_object('capability', 'Architect draft') $$, 'an Architect drafts');
 select lives_ok($$ select public.publish_element_version('b3000000-0000-4000-8000-000000000207') $$, 'and publishes');
 select pg_temp.reset_actor();
 
 select pg_temp.act_as('researcher@tplco.test');
-select is(pg_temp.visible('architecture_elements', 'e0000000-0000-4000-8000-000000000001'), 36,
+select is(pg_temp.visible('architecture_elements', 'e0000000-0000-4000-8000-000000000001'), 39,
   'an assigned Researcher reads the working architecture');
 select is(pg_temp.visible('element_method_lineage', 'e0000000-0000-4000-8000-000000000001'), 2,
   'and its internal Method lineage');
@@ -151,7 +151,7 @@ select is(pg_temp.visible('architecture_elements', 'e0000000-0000-4000-8000-0000
 select pg_temp.reset_actor();
 
 select pg_temp.act_as('projectadmin@tplco.test');
-select is(pg_temp.visible('architecture_elements', 'e0000000-0000-4000-8000-000000000001'), 37,
+select is(pg_temp.visible('architecture_elements', 'e0000000-0000-4000-8000-000000000001'), 40,
   'an assigned Project Administrator reads the working architecture');
 select throws_ok($$ select pg_temp.new_object('capability', 'Admin draft') $$,
   '42501', null, 'but neither edits');
@@ -171,7 +171,7 @@ select throws_ok($$ select public.publish_element_version('b3000000-0000-4000-80
 select pg_temp.reset_actor();
 
 select pg_temp.act_as('sysadmin@tplco.test');
-select is(pg_temp.visible('architecture_elements', 'e0000000-0000-4000-8000-000000000001'), 37,
+select is(pg_temp.visible('architecture_elements', 'e0000000-0000-4000-8000-000000000001'), 40,
   'a System Administrator reads every engagement''s architecture');
 select throws_ok($$ select pg_temp.new_object('capability', 'Sysadmin draft') $$,
   '42501', null, 'but has no drafting authority by default');
@@ -205,16 +205,16 @@ select pg_temp.reset_actor();
 -- Client roles: publication, not approval, is the boundary
 -- -----------------------------------------------------------------------------
 select pg_temp.act_as('sponsor@meridian.test');
-select is(pg_temp.client_count('e0000000-0000-4000-8000-000000000001'), 33, 'the Executive Sponsor sees 33 published elements');
+select is(pg_temp.client_count('e0000000-0000-4000-8000-000000000001'), 34, 'the Executive Sponsor sees all 34 published elements');
 select pg_temp.reset_actor();
 select pg_temp.act_as('lead@meridian.test');
-select is(pg_temp.client_count('e0000000-0000-4000-8000-000000000001'), 33, 'the Client Project Lead sees them');
+select is(pg_temp.client_count('e0000000-0000-4000-8000-000000000001'), 34, 'the Client Project Lead sees them');
 select pg_temp.reset_actor();
 select pg_temp.act_as('contributor@meridian.test');
-select is(pg_temp.client_count('e0000000-0000-4000-8000-000000000001'), 33, 'the Client Contributor sees them');
+select is(pg_temp.client_count('e0000000-0000-4000-8000-000000000001'), 10, 'the Client Contributor sees only their area (the Capability domain and its records)');
 select pg_temp.reset_actor();
 select pg_temp.act_as('viewer@meridian.test');
-select is(pg_temp.client_count('e0000000-0000-4000-8000-000000000001'), 33, 'the Client Viewer sees them');
+select is(pg_temp.client_count('e0000000-0000-4000-8000-000000000001'), 34, 'the Client Viewer sees them all');
 select is(
   (select string_agg(approval_state, ',' order by approval_state)
    from (select distinct approval_state from public.client_architecture('e0000000-0000-4000-8000-000000000001')) x),
@@ -248,7 +248,7 @@ select is(
           jsonb_array_elements(c.client_snapshot -> 'evidence_source_ids') s
    where s #>> '{}' in ('b3000000-0000-4000-8000-000000000703', 'b3000000-0000-4000-8000-000000000704')),
   0, 'internal evidence sources are not cited to clients');
-select is((select count(*)::int from public.client_architecture_relationships('e0000000-0000-4000-8000-000000000001')), 33,
+select is((select count(*)::int from public.client_architecture_relationships('e0000000-0000-4000-8000-000000000001')), 36,
   'clients see published, client-visible relationships between visible elements');
 select ok(not exists (select 1 from public.client_architecture_relationships('e0000000-0000-4000-8000-000000000001')
                       where relationship_type in ('conflicts_with', 'positioned_against')),
@@ -269,7 +269,7 @@ select pg_temp.reset_actor();
 select pg_temp.act_as('contributor@meridian.test');
 select throws_ok($$ select public.respond_to_architecture_approval(
                       (select id from public.architecture_approvals where response is null), 'approved') $$,
-  '42501', null, 'nor can a Client Contributor');
+  'P0002', null, 'nor can a Client Contributor, to whom a request outside their areas does not exist');
 select pg_temp.reset_actor();
 select pg_temp.act_as('lead@meridian.test');
 select lives_ok($$ select public.respond_to_architecture_approval(
@@ -295,12 +295,23 @@ from public.engagement_members
 where engagement_id = 'e0000000-0000-4000-8000-000000000001' and user_id = '20000000-0000-4000-8000-000000000003';
 select pg_temp.reset_actor();
 select pg_temp.act_as('finance@meridian.test');
-select is(pg_temp.client_count('e0000000-0000-4000-8000-000000000001'), 33, 'with a view_architecture override, Client Finance sees it');
+select is(pg_temp.client_count('e0000000-0000-4000-8000-000000000001'), 0,
+  'with a view_architecture override alone, Client Finance sees only what is in their areas (none)');
+select pg_temp.reset_actor();
+select pg_temp.act_as('principal@tplco.test');
+insert into public.engagement_member_capability_overrides (engagement_member_id, capability, granted, reason)
+select id, 'view_full_architecture', true, 'Finance lead reviews the whole architecture'
+from public.engagement_members
+where engagement_id = 'e0000000-0000-4000-8000-000000000001' and user_id = '20000000-0000-4000-8000-000000000003';
+select pg_temp.reset_actor();
+select pg_temp.act_as('finance@meridian.test');
+select is(pg_temp.client_count('e0000000-0000-4000-8000-000000000001'), 34,
+  'with view_full_architecture as well, Client Finance sees all of it');
 select pg_temp.reset_actor();
 
 select pg_temp.act_as('advisor@consulting.test');
 select is(pg_temp.client_count('e0000000-0000-4000-8000-000000000003'), 2, 'the multi-organization advisor sees Harbor''s architecture');
-select is(pg_temp.client_count('e0000000-0000-4000-8000-000000000001'), 33, 'and, separately, Meridian''s');
+select is(pg_temp.client_count('e0000000-0000-4000-8000-000000000001'), 5, 'and, separately, the Meridian district operating model that is their area');
 select pg_temp.reset_actor();
 
 select pg_temp.act_as('sponsor@harbor.test');

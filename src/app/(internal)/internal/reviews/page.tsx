@@ -3,14 +3,24 @@ import { requireInternal } from "@/lib/auth/viewer";
 import { getReviewQueue } from "@/domain/architecture/queries";
 import { formatDateTime } from "@/lib/format";
 import { ReferenceCode } from "@/components/architecture/badges";
+import { getMyEngagementCapabilities } from "@/domain/capabilities/queries";
+import { getEscalations } from "@/domain/intelligence/queries";
+import { EscalationsPanel } from "@/components/intelligence/escalations-panel";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState, Panel } from "@/components/ui/panel";
 import { Table, Td, Th } from "@/components/ui/table";
 
 /** Review work across every engagement the viewer can read. */
 export default async function ReviewQueuePage() {
-  await requireInternal();
-  const queue = await getReviewQueue();
+  const viewer = await requireInternal();
+  const [queue, escalations] = await Promise.all([getReviewQueue(), getEscalations(null, true)]);
+  const engagementIds = [...new Set(escalations.map((x) => x.engagement_id))];
+  const capabilities = new Map(
+    await Promise.all(
+      engagementIds.map(async (id) => [id, await getMyEngagementCapabilities(id)] as const),
+    ),
+  );
+  const nameOf = (id: string | null) => (id === viewer.id ? "you" : "TPLCo");
   const elementHref = (slug: string | undefined, id: string) =>
     `/internal/engagements/${slug}/architecture/elements/${id}`;
 
@@ -19,7 +29,13 @@ export default async function ReviewQueuePage() {
       <PageHeader
         eyebrow="Reviews"
         title="Review queue"
-        description="Working copies in review, AI analysis awaiting review, and approvals awaiting clients, across your engagements."
+        description="Escalated records, working copies in review, AI analysis awaiting review, and approvals awaiting clients, across your engagements."
+      />
+      <EscalationsPanel
+        escalations={escalations}
+        canPublish={(id) => capabilities.get(id)?.has("publish_architecture") ?? false}
+        nameOf={nameOf}
+        showEngagement
       />
       <Panel title="In review">
         {queue.inReview.length === 0 ? (

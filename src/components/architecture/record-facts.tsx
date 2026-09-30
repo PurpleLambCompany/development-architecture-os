@@ -4,11 +4,13 @@ import {
   CONSTRAINT_STATUS,
   DEPENDENCY_STATUS,
   DEPENDENCY_TYPE_LABELS,
+  OPPORTUNITY_STATUS,
   RECOMMENDATION_PRIORITY,
   RISK_STATUS,
   VALIDATION_STATUS,
 } from "@/domain/architecture/catalog";
 import type { LoadedArchitecture, LoadedElement } from "@/domain/architecture/queries";
+import { categoryLabel } from "@/domain/intelligence/catalog";
 import { formatDate } from "@/lib/format";
 import { DetailList } from "@/components/ui/panel";
 import { StatusTag } from "@/components/ui/status-tag";
@@ -32,7 +34,7 @@ export function RecordFacts({
       return (
         <DetailList
           items={[
-            { label: "Category", value: r.category },
+            { label: "Category", value: categoryLabel("assumption", r.category) },
             { label: "Confidence", value: CONFIDENCE_LABELS[r.confidence] },
             {
               label: "Validation",
@@ -53,7 +55,7 @@ export function RecordFacts({
       return (
         <DetailList
           items={[
-            { label: "Category", value: r.category },
+            { label: "Category", value: categoryLabel("risk", r.category) },
             {
               label: "Status",
               value: (
@@ -114,6 +116,7 @@ export function RecordFacts({
       return (
         <DetailList
           items={[
+            { label: "Category", value: categoryLabel("decision", r.category) },
             { label: "Context", value: r.context },
             { label: "Needed by", value: r.needed_by ? formatDate(r.needed_by) : null },
             { label: "Downstream impact", value: r.downstream_impact },
@@ -126,6 +129,7 @@ export function RecordFacts({
       return (
         <DetailList
           items={[
+            { label: "Category", value: categoryLabel("recommendation", r.category) },
             {
               label: "Priority",
               value: (
@@ -135,6 +139,41 @@ export function RecordFacts({
               ),
             },
             { label: "Rationale", value: r.rationale },
+          ]}
+        />
+      );
+    }
+    case "opportunity": {
+      const r = record.row;
+      return (
+        <DetailList
+          items={[
+            { label: "Category", value: categoryLabel("opportunity", r.category) },
+            {
+              label: "Status",
+              value: (
+                <StatusTag tone={OPPORTUNITY_STATUS[r.opportunity_status].tone}>
+                  {OPPORTUNITY_STATUS[r.opportunity_status].label}
+                </StatusTag>
+              ),
+            },
+            {
+              label: "Value × feasibility",
+              value: `${r.value} × ${r.feasibility} = ${r.attractiveness}`,
+            },
+            {
+              label: "Window",
+              value:
+                r.window_opens_on || r.window_closes_on
+                  ? [
+                      r.window_opens_on ? `opens ${formatDate(r.window_opens_on)}` : null,
+                      r.window_closes_on ? `closes ${formatDate(r.window_closes_on)}` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(", ")
+                  : null,
+            },
+            { label: "How it would be pursued", value: r.pursuit_approach },
           ]}
         />
       );

@@ -16,8 +16,8 @@ import {
   getMyEngagementCapabilities,
   listCapabilityOverrides,
 } from "@/domain/capabilities/queries";
-import { DOMAIN_SLUGS } from "@/domain/architecture/catalog";
-import { getDomainStates } from "@/domain/architecture/queries";
+import { DOMAIN_SHORT_LABELS, DOMAIN_SLUGS } from "@/domain/architecture/catalog";
+import { getDomainStates, loadArchitecture } from "@/domain/architecture/queries";
 import { formatMoney } from "@/domain/finance/money";
 import { getBusinessToday, getEngagementFinances } from "@/domain/finance/queries";
 import { listAssignableUsers } from "@/domain/memberships/queries";
@@ -33,6 +33,10 @@ import { EngagementStatusTag } from "@/components/engagements/engagement-status"
 import { AddTeamMemberForm, RemoveTeamMemberButton } from "@/components/engagements/team-controls";
 import { ButtonLink } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
+import { assignMemberArea, removeMemberArea } from "@/domain/intelligence/actions";
+import { getMemberAreas } from "@/domain/intelligence/queries";
+import { areaFields } from "@/components/intelligence/fields";
+import { ActionButton, ActionForm } from "@/components/ui/action-form";
 import { DetailList, EmptyState, Panel } from "@/components/ui/panel";
 import { StatusTag } from "@/components/ui/status-tag";
 import { Table, Td, Th } from "@/components/ui/table";
@@ -66,6 +70,19 @@ export default async function EngagementPage({
     : null;
   const summary = finances?.contract ? finances.summary : null;
   const domainStates = await getDomainStates(engagement.id);
+  const [areas, architecture] = await Promise.all([
+    getMemberAreas(engagement.id),
+    loadArchitecture(engagement.id),
+  ]);
+  const areaMembers = engagement.engagement_members.filter(
+    (m) =>
+      m.side === "client" &&
+      m.status === "active" &&
+      !effectiveCapabilities(
+        m.role,
+        overrides.filter((o) => o.engagement_member_id === m.id),
+      ).includes("view_full_architecture"),
+  );
   const capabilityRows: CapabilityRow[] = engagement.engagement_members
     .filter((m) => m.status === "active")
     .sort((a, b) => a.side.localeCompare(b.side))
@@ -229,6 +246,67 @@ export default async function EngagementPage({
           description="What each active member may do on this engagement. Roles supply defaults; an override applies to this engagement only and never changes the role."
         >
           <CapabilityMatrix rows={capabilityRows} />
+        </Panel>
+      ) : null}
+
+      {areaMembers.length > 0 ? (
+        <Panel
+          title="Contributor areas"
+          description="Client members without the full architecture see only published elements in their areas: a domain, or an element and everything part of it. With no area they see none."
+        >
+          <ul className="divide-y divide-rule border-y border-rule text-sm">
+            {areaMembers.map((m) => {
+              const mine = areas.filter((a) => a.engagement_member_id === m.id);
+              return (
+                <li key={m.id} className="space-y-2 py-3">
+                  <p className="flex flex-wrap items-baseline gap-2">
+                    <span className="font-medium text-ink">{personName(m.profiles)}</span>
+                    <span className="text-xs text-ink-subtle">{ROLE_LABELS[m.role]}</span>
+                  </p>
+                  {mine.length === 0 ? (
+                    <p className="text-ink-subtle">No area yet: sees no architecture.</p>
+                  ) : (
+                    <ul className="flex flex-wrap gap-2">
+                      {mine.map((a) => {
+                        const element = a.element_id ? architecture.byId.get(a.element_id) : null;
+                        return (
+                          <li
+                            key={a.id}
+                            className="flex items-center gap-2 rounded-sm border border-rule px-2 py-1"
+                          >
+                            {a.domain
+                              ? `${DOMAIN_SHORT_LABELS[a.domain]} domain`
+                              : element
+                                ? `${element.reference_code} ${element.title}`
+                                : "An element"}
+                            {canManage ? (
+                              <ActionButton
+                                action={removeMemberArea.bind(null, a.id)}
+                                label="Remove"
+                                variant="ghost"
+                              />
+                            ) : null}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  {canManage ? (
+                    <ActionForm
+                      trigger="Add area"
+                      fields={areaFields(
+                        architecture.elements
+                          .filter((e) => e.object && e.lifecycle !== "retired")
+                          .map((e) => ({ value: e.id, label: `${e.reference_code} ${e.title}` })),
+                      )}
+                      action={assignMemberArea.bind(null, m.id)}
+                      submitLabel="Add area"
+                    />
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
         </Panel>
       ) : null}
 

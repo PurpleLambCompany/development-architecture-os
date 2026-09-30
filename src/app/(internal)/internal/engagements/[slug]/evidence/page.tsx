@@ -13,6 +13,9 @@ import { listEvidence, loadArchitecture, type LoadedEvidence } from "@/domain/ar
 import { formatDate } from "@/lib/format";
 import { ArchitectureNav } from "@/components/architecture/architecture-nav";
 import { ElementLink, InternalMark } from "@/components/architecture/badges";
+import { getEvidenceFiles } from "@/domain/intelligence/queries";
+import { FileList } from "@/components/intelligence/file-list";
+import { EvidenceFileUpload } from "@/components/intelligence/upload-form";
 import { ActionForm, type FieldSpec } from "@/components/ui/action-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState, Panel } from "@/components/ui/panel";
@@ -93,9 +96,10 @@ export default async function EvidencePage({
 }: PageProps<"/internal/engagements/[slug]/evidence">) {
   const { slug } = await params;
   const { engagement, canEdit, canPublish } = await getInternalArchitectureContext(slug);
-  const [sources, architecture] = await Promise.all([
+  const [sources, architecture, files] = await Promise.all([
     listEvidence(engagement.id),
     loadArchitecture(engagement.id),
+    getEvidenceFiles(engagement.id),
   ]);
 
   return (
@@ -191,6 +195,15 @@ export default async function EvidencePage({
                         );
                       })}
                     </ul>
+                  </div>
+                  <div>
+                    <p className="text-xs tracking-wide text-ink-subtle uppercase">Files</p>
+                    <FileList files={files.filter((f) => f.evidence_source_id === s.id)} />
+                    {canEdit ? (
+                      <div className="mt-2">
+                        <EvidenceFileUpload engagementId={engagement.id} evidenceSourceId={s.id} />
+                      </div>
+                    ) : null}
                   </div>
                   {canEdit ? (
                     <ActionForm

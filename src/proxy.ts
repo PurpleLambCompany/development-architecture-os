@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { refreshSession } from "@/lib/supabase/proxy-session";
 
-const PROTECTED_PREFIXES = ["/internal", "/portal", "/account"];
+const PROTECTED_PREFIXES = ["/internal", "/portal", "/account", "/files"];
 
 /**
  * Refreshes the auth session and redirects signed-out visitors away from

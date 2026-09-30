@@ -70,10 +70,45 @@ describe("architecture capabilities", () => {
   });
 });
 
+describe("Project Intelligence capabilities", () => {
+  it("keep managing client requests internal and the client's participation on the client side", () => {
+    expect(capabilitySide("manage_client_requests")).toBe("internal");
+    for (const capability of [
+      "view_full_architecture",
+      "respond_to_client_actions",
+      "assign_client_actions",
+      "submit_client_input",
+    ] as const) {
+      expect(capabilitySide(capability)).toBe("client");
+    }
+  });
+
+  it("limit Client Contributors to their areas and give Client Finance no participation", () => {
+    expect(ROLE_CAPABILITY_DEFAULTS.client_contributor).not.toContain("view_full_architecture");
+    expect(ROLE_CAPABILITY_DEFAULTS.client_contributor).toContain("respond_to_client_actions");
+    for (const capability of [
+      "view_full_architecture",
+      "respond_to_client_actions",
+      "assign_client_actions",
+      "submit_client_input",
+    ] as const) {
+      expect(ROLE_CAPABILITY_DEFAULTS.client_finance).not.toContain(capability);
+    }
+  });
+
+  it("do not let System Administrators or Finance Administrators manage client requests by default", () => {
+    expect(ROLE_CAPABILITY_DEFAULTS.system_administrator).not.toContain("manage_client_requests");
+    expect(ROLE_CAPABILITY_DEFAULTS.finance_administrator).not.toContain("manage_client_requests");
+  });
+});
+
 describe("effectiveCapabilities", () => {
   it("uses the role default when there is no override", () => {
     expect(effectiveCapabilities("client_finance")).toEqual(["view_financials", "pay_invoices"]);
-    expect(effectiveCapabilities("client_viewer")).toEqual(["view_architecture"]);
+    expect(effectiveCapabilities("client_viewer")).toEqual([
+      "view_architecture",
+      "view_full_architecture",
+    ]);
   });
 
   it("lets an override grant or revoke a single capability", () => {
@@ -91,7 +126,10 @@ describe("effectiveCapabilities", () => {
 
   it("does not mutate the role definition", () => {
     effectiveCapabilities("client_viewer", [{ capability: "view_financials", granted: true }]);
-    expect(ROLE_CAPABILITY_DEFAULTS.client_viewer).toEqual(["view_architecture"]);
+    expect(ROLE_CAPABILITY_DEFAULTS.client_viewer).toEqual([
+      "view_architecture",
+      "view_full_architecture",
+    ]);
   });
 });
 

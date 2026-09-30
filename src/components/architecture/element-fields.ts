@@ -4,10 +4,6 @@ import {
   CONFIDENCE_LEVELS,
   CONSTRAINT_CATEGORIES,
   CONSTRAINT_CATEGORY_LABELS,
-  CONSTRAINT_STATUS,
-  CONSTRAINT_STATUSES,
-  DEPENDENCY_STATUS,
-  DEPENDENCY_STATUSES,
   DEPENDENCY_TYPES,
   DEPENDENCY_TYPE_LABELS,
   DOMAINS,
@@ -17,14 +13,11 @@ import {
   IP_CLASSIFICATION_LABELS,
   MATURITY_LABELS,
   MATURITY_STATES,
+  OPPORTUNITY_SCALE,
   PROVENANCE_LABELS,
   RECOMMENDATION_PRIORITIES,
   RECOMMENDATION_PRIORITY,
   RISK_SCALE,
-  RISK_STATUS,
-  RISK_STATUSES,
-  VALIDATION_STATUS,
-  VALIDATION_STATUSES,
   type RecordKind,
 } from "@/domain/architecture/catalog";
 import {
@@ -33,6 +26,13 @@ import {
   attributesToForm,
 } from "@/domain/architecture/object-types";
 import type { LoadedElement } from "@/domain/architecture/queries";
+import {
+  ACTIVE_STATUSES,
+  INTELLIGENCE_CATEGORIES,
+  isTerminalStatus,
+  recordStatus,
+  type CategorizedKind,
+} from "@/domain/intelligence/catalog";
 import type { ObjectTypeKey } from "@/domain/architecture/rules";
 
 /**
@@ -151,48 +151,65 @@ const scopeFields: FieldSpec[] = [
   },
 ];
 
+const categoryField = (kind: CategorizedKind): FieldSpec => ({
+  name: "category",
+  label: "Category",
+  type: "select",
+  options: INTELLIGENCE_CATEGORIES[kind].map((c) => ({ value: c.key, label: c.label })),
+});
+
+const scaleOptions = (scale: readonly number[]) =>
+  scale.map((n) => ({ value: String(n), label: String(n) }));
+
+/**
+ * The fields of a Project Intelligence record. The status select offers only
+ * active statuses: resolved statuses are reached by Resolve, with a
+ * rationale. When the record is already resolved (`resolved`), the status is
+ * left out and changes only by Reopen.
+ */
 export function recordFields(
   kind: RecordKind,
   elementOptions: { value: string; label: string }[] = [],
+  { resolved = false }: { resolved?: boolean } = {},
 ): FieldSpec[] {
+  const status = (name: string): FieldSpec[] =>
+    resolved || kind === "decision" || kind === "recommendation"
+      ? []
+      : [
+          {
+            name,
+            label: "Status",
+            type: "select",
+            options: ACTIVE_STATUSES[kind].map((value) => ({
+              value,
+              label: recordStatus(kind, value)?.label ?? value,
+            })),
+            hint: "Resolve the record, with a rationale, to close it.",
+          },
+        ];
   const kindFields: Record<RecordKind, FieldSpec[]> = {
     assumption: [
-      { name: "category", label: "Category" },
+      categoryField("assumption"),
       {
         name: "confidence",
         label: "Confidence",
         type: "select",
         options: options(CONFIDENCE_LEVELS, (c) => CONFIDENCE_LABELS[c]),
       },
-      {
-        name: "validationStatus",
-        label: "Validation",
-        type: "select",
-        options: options(VALIDATION_STATUSES, (s) => VALIDATION_STATUS[s].label),
-      },
+      ...status("validationStatus"),
       { name: "impactIfFalse", label: "Impact if false", type: "textarea" },
       { name: "validationNote", label: "Validation note", type: "textarea" },
     ],
     risk: [
-      { name: "category", label: "Category" },
-      {
-        name: "riskStatus",
-        label: "Status",
-        type: "select",
-        options: options(RISK_STATUSES, (s) => RISK_STATUS[s].label),
-      },
+      categoryField("risk"),
+      ...status("riskStatus"),
       {
         name: "probability",
         label: "Probability (1–5)",
         type: "select",
-        options: RISK_SCALE.map((n) => ({ value: String(n), label: String(n) })),
+        options: scaleOptions(RISK_SCALE),
       },
-      {
-        name: "impact",
-        label: "Impact (1–5)",
-        type: "select",
-        options: RISK_SCALE.map((n) => ({ value: String(n), label: String(n) })),
-      },
+      { name: "impact", label: "Impact (1–5)", type: "select", options: scaleOptions(RISK_SCALE) },
       { name: "mitigation", label: "Mitigation", type: "textarea" },
     ],
     constraint: [
@@ -202,12 +219,7 @@ export function recordFields(
         type: "select",
         options: options(CONSTRAINT_CATEGORIES, (c) => CONSTRAINT_CATEGORY_LABELS[c]),
       },
-      {
-        name: "constraintStatus",
-        label: "Status",
-        type: "select",
-        options: options(CONSTRAINT_STATUSES, (s) => CONSTRAINT_STATUS[s].label),
-      },
+      ...status("constraintStatus"),
       { name: "source", label: "Source of the constraint" },
       { name: "negotiable", label: "Negotiable", type: "select", options: yesNoOptions },
     ],
@@ -220,20 +232,17 @@ export function recordFields(
         type: "select",
         options: options(DEPENDENCY_TYPES, (t) => DEPENDENCY_TYPE_LABELS[t]),
       },
-      {
-        name: "dependencyStatus",
-        label: "Status",
-        type: "select",
-        options: options(DEPENDENCY_STATUSES, (s) => DEPENDENCY_STATUS[s].label),
-      },
+      ...status("dependencyStatus"),
       { name: "blocking", label: "Blocking", type: "select", options: yesNoOptions },
     ],
     decision: [
+      categoryField("decision"),
       { name: "context", label: "Context", type: "textarea" },
       { name: "neededBy", label: "Needed by", type: "date" },
       { name: "downstreamImpact", label: "Downstream impact", type: "textarea" },
     ],
     recommendation: [
+      categoryField("recommendation"),
       {
         name: "priority",
         label: "Priority",
@@ -242,8 +251,59 @@ export function recordFields(
       },
       { name: "rationale", label: "Rationale", type: "textarea" },
     ],
+    opportunity: [
+      categoryField("opportunity"),
+      ...status("opportunityStatus"),
+      {
+        name: "value",
+        label: "Value if realized (1–5)",
+        type: "select",
+        options: scaleOptions(OPPORTUNITY_SCALE),
+      },
+      {
+        name: "feasibility",
+        label: "Feasibility (1–5)",
+        type: "select",
+        options: scaleOptions(OPPORTUNITY_SCALE),
+      },
+      { name: "windowOpensOn", label: "Window opens", type: "date" },
+      {
+        name: "windowClosesOn",
+        label: "Window closes",
+        type: "date",
+        hint: "A signal appears 30 days before it closes.",
+      },
+      { name: "pursuitApproach", label: "How it would be pursued", type: "textarea" },
+    ],
   };
   return [...kindFields[kind], ...scopeFields];
+}
+
+/** Is this record already resolved (its status reached only by Resolve)? */
+export function isResolvedRecord(element: LoadedElement): boolean {
+  const record = element.record;
+  if (!record) return false;
+  return isTerminalStatus(record.kind, recordStatusValue(record));
+}
+
+/** The status column of a loaded record, whatever its kind. */
+export function recordStatusValue(record: NonNullable<LoadedElement["record"]>): string | null {
+  switch (record.kind) {
+    case "assumption":
+      return record.row.validation_status;
+    case "risk":
+      return record.row.risk_status;
+    case "constraint":
+      return record.row.constraint_status;
+    case "dependency":
+      return record.row.dependency_status;
+    case "decision":
+      return record.row.decision_status;
+    case "opportunity":
+      return record.row.opportunity_status;
+    case "recommendation":
+      return null;
+  }
 }
 
 export const newElementDefaults = {
@@ -254,12 +314,18 @@ export const newElementDefaults = {
 };
 
 export const newRecordDefaults: Record<RecordKind, Record<string, string>> = {
-  assumption: { confidence: "medium", validationStatus: "unvalidated" },
-  risk: { riskStatus: "open", probability: "3", impact: "3" },
+  assumption: { category: "other", confidence: "medium", validationStatus: "unvalidated" },
+  risk: { category: "other", riskStatus: "open", probability: "3", impact: "3" },
   constraint: { category: "other", constraintStatus: "in_force", negotiable: "no" },
   dependency: { dependencyType: "prerequisite", dependencyStatus: "open", blocking: "no" },
-  decision: {},
-  recommendation: { priority: "important" },
+  decision: { category: "other" },
+  recommendation: { category: "other", priority: "important" },
+  opportunity: {
+    category: "other",
+    opportunityStatus: "identified",
+    value: "3",
+    feasibility: "3",
+  },
 };
 
 /** Current values of an element as form defaults. */
@@ -322,13 +388,29 @@ export function elementDefaults(element: LoadedElement): Record<string, string |
         break;
       case "decision":
         Object.assign(values, {
+          category: record.row.category,
           context: record.row.context,
           neededBy: record.row.needed_by ?? "",
           downstreamImpact: record.row.downstream_impact,
         });
         break;
       case "recommendation":
-        Object.assign(values, { priority: record.row.priority, rationale: record.row.rationale });
+        Object.assign(values, {
+          category: record.row.category,
+          priority: record.row.priority,
+          rationale: record.row.rationale,
+        });
+        break;
+      case "opportunity":
+        Object.assign(values, {
+          category: record.row.category,
+          opportunityStatus: record.row.opportunity_status,
+          value: String(record.row.value),
+          feasibility: String(record.row.feasibility),
+          windowOpensOn: record.row.window_opens_on ?? "",
+          windowClosesOn: record.row.window_closes_on ?? "",
+          pursuitApproach: record.row.pursuit_approach,
+        });
         break;
     }
   }

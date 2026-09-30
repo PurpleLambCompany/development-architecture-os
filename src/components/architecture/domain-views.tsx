@@ -14,7 +14,8 @@ import type {
 import type { ObjectTypeKey } from "@/domain/architecture/rules";
 import { EmptyState, Panel } from "@/components/ui/panel";
 import { Table, Td, Th } from "@/components/ui/table";
-import { ElementLink, InternalMark, LifecycleTag, MaturityMark } from "./badges";
+import Link from "next/link";
+import { InternalMark, LifecycleTag, MaturityMark, ReferenceCode } from "./badges";
 
 /**
  * Views built for each domain (proposal §10): the Knowledge domain map, the
@@ -24,7 +25,8 @@ import { ElementLink, InternalMark, LifecycleTag, MaturityMark } from "./badges"
  */
 
 type ViewProps = {
-  slug: string;
+  /** Where element pages live: an element links to `${linkBase}/${id}`. */
+  linkBase: string;
   objects: LoadedElement[];
   architecture: LoadedArchitecture;
   graph: Graph<RelationshipRow>;
@@ -52,16 +54,32 @@ export function DomainViews({ domain, ...props }: ViewProps & { domain: Architec
   }
 }
 
+/** A link to an element page, internal or client depending on `linkBase`. */
+function Ref({
+  linkBase,
+  element,
+}: {
+  linkBase: string;
+  element: { id: string; reference_code: string | null; title: string };
+}) {
+  return (
+    <Link href={`${linkBase}/${element.id}`} className="group inline-flex items-baseline gap-2">
+      <ReferenceCode code={element.reference_code} />
+      <span className="text-ink group-hover:underline">{element.title}</span>
+    </Link>
+  );
+}
+
 export function viewGraph(architecture: LoadedArchitecture) {
   return buildGraph(architecture.relationships);
 }
 
 function Links({
-  slug,
+  linkBase,
   architecture,
   ids,
 }: {
-  slug: string;
+  linkBase: string;
   architecture: LoadedArchitecture;
   ids: string[];
 }) {
@@ -70,16 +88,16 @@ function Links({
   return (
     <span className="flex flex-col gap-1">
       {elements.map((e) => (
-        <ElementLink key={e.id} slug={slug} element={e} />
+        <Ref key={e.id} linkBase={linkBase} element={e} />
       ))}
     </span>
   );
 }
 
-function Title({ slug, element }: { slug: string; element: LoadedElement }) {
+function Title({ linkBase, element }: { linkBase: string; element: LoadedElement }) {
   return (
     <span className="flex flex-wrap items-center gap-2">
-      <ElementLink slug={slug} element={element} />
+      <Ref linkBase={linkBase} element={element} />
       {element.client_visibility === "internal" ? <InternalMark /> : null}
       {element.lifecycle !== "published" ? <LifecycleTag lifecycle={element.lifecycle} /> : null}
     </span>
@@ -106,7 +124,7 @@ function Section({
 
 // Knowledge ------------------------------------------------------------------------
 
-function KnowledgeViews({ slug, objects, architecture, graph }: ViewProps) {
+function KnowledgeViews({ linkBase, objects, architecture, graph }: ViewProps) {
   const mapItems = objects.filter((o) =>
     ["knowledge_area", "concept"].includes(o.object!.object_type),
   );
@@ -130,7 +148,7 @@ function KnowledgeViews({ slug, objects, architecture, graph }: ViewProps) {
           {map.map(({ item, depth }) => (
             <li key={item.id} style={{ paddingLeft: `${depth * 1.5}rem` }} className="text-sm">
               <span className="flex flex-wrap items-baseline gap-3">
-                <Title slug={slug} element={item} />
+                <Title linkBase={linkBase} element={item} />
                 <span className="text-xs text-ink-subtle">
                   {item.object!.object_type === "knowledge_area" ? "Area" : "Concept"}
                   {attr(item, "criticality") ? ` · ${attr(item, "criticality")}` : ""}
@@ -160,7 +178,7 @@ function KnowledgeViews({ slug, objects, architecture, graph }: ViewProps) {
               .map((q) => (
                 <tr key={q.id}>
                   <Td>
-                    <Title slug={slug} element={q} />
+                    <Title linkBase={linkBase} element={q} />
                     {attr(q, "question") ? (
                       <p className="mt-1 text-xs text-ink-muted">{attr(q, "question")}</p>
                     ) : null}
@@ -168,7 +186,7 @@ function KnowledgeViews({ slug, objects, architecture, graph }: ViewProps) {
                   <Td className="whitespace-nowrap">{attr(q, "status") ?? "Open"}</Td>
                   <Td>
                     <Links
-                      slug={slug}
+                      linkBase={linkBase}
                       architecture={architecture}
                       ids={graph.targets(q.id, "investigates").map((e) => e.target_element_id)}
                     />
@@ -192,12 +210,12 @@ function KnowledgeViews({ slug, objects, architecture, graph }: ViewProps) {
             {gaps.map((g) => (
               <tr key={g.id}>
                 <Td>
-                  <Title slug={slug} element={g} />
+                  <Title linkBase={linkBase} element={g} />
                 </Td>
                 <Td className="text-ink-muted">{attr(g, "consequence_if_unresolved") ?? "—"}</Td>
                 <Td>
                   <Links
-                    slug={slug}
+                    linkBase={linkBase}
                     architecture={architecture}
                     ids={graph.targets(g.id, "gap_in").map((e) => e.target_element_id)}
                   />
@@ -211,7 +229,7 @@ function KnowledgeViews({ slug, objects, architecture, graph }: ViewProps) {
       <Section title="System boundary" empty={boundaries.length === 0}>
         {boundaries.map((b) => (
           <div key={b.id} className="space-y-3">
-            <Title slug={slug} element={b} />
+            <Title linkBase={linkBase} element={b} />
             <dl className="grid grid-cols-1 gap-4 text-sm md:grid-cols-3">
               {(["inside", "outside", "interfaces"] as const).map((key) => (
                 <div key={key}>
@@ -241,7 +259,7 @@ function KnowledgeViews({ slug, objects, architecture, graph }: ViewProps) {
             {context.map((c) => (
               <tr key={c.id}>
                 <Td>
-                  <Title slug={slug} element={c} />
+                  <Title linkBase={linkBase} element={c} />
                 </Td>
                 <Td className="whitespace-nowrap text-ink-muted">
                   {c.object!.object_type === "regulatory_factor"
@@ -272,7 +290,7 @@ function KnowledgeViews({ slug, objects, architecture, graph }: ViewProps) {
 
 // Capability -------------------------------------------------------------------------
 
-function CapabilityViews({ slug, objects, architecture, graph }: ViewProps) {
+function CapabilityViews({ linkBase, objects, architecture, graph }: ViewProps) {
   const capabilities = flattenTree(buildTree(ofType(objects, "capability"), graph, ["part_of"]));
   const roles = ofType(objects, "role");
   const skills = ofType(objects, "skill");
@@ -300,7 +318,7 @@ function CapabilityViews({ slug, objects, architecture, graph }: ViewProps) {
             {capabilities.map(({ item, depth }) => (
               <tr key={item.id}>
                 <Td style={{ paddingLeft: `${depth * 1.5}rem` }}>
-                  <Title slug={slug} element={item} />
+                  <Title linkBase={linkBase} element={item} />
                   {rawAttr(item, "leadership_capability") ? (
                     <span className="text-xs text-ink-subtle">Leadership capability</span>
                   ) : null}
@@ -328,7 +346,7 @@ function CapabilityViews({ slug, objects, architecture, graph }: ViewProps) {
               <Th>Role</Th>
               {skills.map((s) => (
                 <Th key={s.id} className="text-center normal-case">
-                  <ElementLink slug={slug} element={s} />
+                  <Ref linkBase={linkBase} element={s} />
                 </Th>
               ))}
             </tr>
@@ -337,7 +355,7 @@ function CapabilityViews({ slug, objects, architecture, graph }: ViewProps) {
             {roles.map((role) => (
               <tr key={role.id}>
                 <Td>
-                  <Title slug={slug} element={role} />
+                  <Title linkBase={linkBase} element={role} />
                 </Td>
                 {skills.map((skill) => {
                   const link = graph
@@ -373,11 +391,11 @@ function CapabilityViews({ slug, objects, architecture, graph }: ViewProps) {
             {gaps.map((g) => (
               <tr key={g.id}>
                 <Td>
-                  <Title slug={slug} element={g} />
+                  <Title linkBase={linkBase} element={g} />
                 </Td>
                 <Td>
                   <Links
-                    slug={slug}
+                    linkBase={linkBase}
                     architecture={architecture}
                     ids={graph.targets(g.id, "gap_in").map((e) => e.target_element_id)}
                   />
@@ -406,14 +424,14 @@ function CapabilityViews({ slug, objects, architecture, graph }: ViewProps) {
                 {String(rawAttr(stage, "sequence") ?? "·")}
               </span>
               <div className="space-y-1 text-sm">
-                <Title slug={slug} element={stage} />
+                <Title linkBase={linkBase} element={stage} />
                 {attr(stage, "trigger_condition") ? (
                   <p className="text-ink-muted">Trigger: {attr(stage, "trigger_condition")}</p>
                 ) : null}
                 <p className="text-ink-muted">
                   Introduces:{" "}
                   <Links
-                    slug={slug}
+                    linkBase={linkBase}
                     architecture={architecture}
                     ids={graph.targets(stage.id, "introduces").map((e) => e.target_element_id)}
                   />
@@ -429,7 +447,7 @@ function CapabilityViews({ slug, objects, architecture, graph }: ViewProps) {
 
 // Strategic Model --------------------------------------------------------------------
 
-function StrategicModelViews({ slug, objects, architecture, graph }: ViewProps) {
+function StrategicModelViews({ linkBase, objects, architecture, graph }: ViewProps) {
   const outcomes = ofType(objects, "intended_outcome");
   const models = ofType(objects, "strategic_model");
   const logic = objects.filter((o) =>
@@ -450,28 +468,28 @@ function StrategicModelViews({ slug, objects, architecture, graph }: ViewProps) 
         <div className="space-y-6">
           {outcomes.map((o) => (
             <div key={o.id} className="space-y-2 border-l-2 border-accent/40 pl-4">
-              <Title slug={slug} element={o} />
+              <Title linkBase={linkBase} element={o} />
               {attr(o, "desired_condition") ? (
                 <p className="text-sm text-ink">{attr(o, "desired_condition")}</p>
               ) : null}
               <dl className="grid grid-cols-1 gap-4 text-sm md:grid-cols-3">
                 <Linked label="Served by">
                   <Links
-                    slug={slug}
+                    linkBase={linkBase}
                     architecture={architecture}
                     ids={ids(graph.sources(o.id, "serves"), "source")}
                   />
                 </Linked>
                 <Linked label="Measured by">
                   <Links
-                    slug={slug}
+                    linkBase={linkBase}
                     architecture={architecture}
                     ids={ids(graph.targets(o.id, "measured_by"), "target")}
                   />
                 </Linked>
                 <Linked label="Rests on">
                   <Links
-                    slug={slug}
+                    linkBase={linkBase}
                     architecture={architecture}
                     ids={ids(graph.sources(o.id, "underpins"), "source")}
                   />
@@ -490,7 +508,7 @@ function StrategicModelViews({ slug, objects, architecture, graph }: ViewProps) 
         <div className="space-y-6">
           {models.map((m) => (
             <div key={m.id} className="space-y-2">
-              <Title slug={slug} element={m} />
+              <Title linkBase={linkBase} element={m} />
               <p className="text-sm text-ink-muted">
                 {[
                   attr(m, "application"),
@@ -502,28 +520,28 @@ function StrategicModelViews({ slug, objects, architecture, graph }: ViewProps) 
               <dl className="grid grid-cols-1 gap-4 text-sm md:grid-cols-4">
                 <Linked label="Implies">
                   <Links
-                    slug={slug}
+                    linkBase={linkBase}
                     architecture={architecture}
                     ids={ids(graph.targets(m.id, "implies"), "target")}
                   />
                 </Linked>
                 <Linked label="Exploits">
                   <Links
-                    slug={slug}
+                    linkBase={linkBase}
                     architecture={architecture}
                     ids={ids(graph.targets(m.id, "exploits"), "target")}
                   />
                 </Linked>
                 <Linked label="Shapes">
                   <Links
-                    slug={slug}
+                    linkBase={linkBase}
                     architecture={architecture}
                     ids={ids(graph.targets(m.id, "shapes"), "target")}
                   />
                 </Linked>
                 <Linked label="Rests on">
                   <Links
-                    slug={slug}
+                    linkBase={linkBase}
                     architecture={architecture}
                     ids={ids(graph.sources(m.id, "underpins"), "source")}
                   />
@@ -547,7 +565,7 @@ function StrategicModelViews({ slug, objects, architecture, graph }: ViewProps) 
             {logic.map((l) => (
               <tr key={l.id}>
                 <Td>
-                  <Title slug={slug} element={l} />
+                  <Title linkBase={linkBase} element={l} />
                 </Td>
                 <Td className="text-ink-muted">
                   {attr(l, "mechanism") ??
@@ -557,7 +575,7 @@ function StrategicModelViews({ slug, objects, architecture, graph }: ViewProps) 
                 </Td>
                 <Td>
                   <Links
-                    slug={slug}
+                    linkBase={linkBase}
                     architecture={architecture}
                     ids={ids(graph.targets(l.id, "shapes"), "target")}
                   />
@@ -573,7 +591,7 @@ function StrategicModelViews({ slug, objects, architecture, graph }: ViewProps) 
 
 // Application ------------------------------------------------------------------------
 
-function ApplicationViews({ slug, objects, architecture, graph }: ViewProps) {
+function ApplicationViews({ linkBase, objects, architecture, graph }: ViewProps) {
   const structure = flattenTree(
     buildTree(
       objects.filter((o) =>
@@ -604,7 +622,7 @@ function ApplicationViews({ slug, objects, architecture, graph }: ViewProps) {
           {structure.map(({ item, depth }) => (
             <li key={item.id} style={{ paddingLeft: `${depth * 1.5}rem` }} className="text-sm">
               <span className="flex flex-wrap items-baseline gap-3">
-                <Title slug={slug} element={item} />
+                <Title linkBase={linkBase} element={item} />
                 <span className="text-xs text-ink-subtle">
                   {item.object!.object_type === "operating_model"
                     ? "Operating model"
@@ -630,7 +648,7 @@ function ApplicationViews({ slug, objects, architecture, graph }: ViewProps) {
               <Th>Decides · consulted · veto · informed</Th>
               {rightHolders.map((h) => (
                 <Th key={h.id} className="text-center normal-case">
-                  <ElementLink slug={slug} element={h} />
+                  <Ref linkBase={linkBase} element={h} />
                 </Th>
               ))}
             </tr>
@@ -639,7 +657,7 @@ function ApplicationViews({ slug, objects, architecture, graph }: ViewProps) {
             {rights.map((r) => (
               <tr key={r.id}>
                 <Td>
-                  <Title slug={slug} element={r} />
+                  <Title linkBase={linkBase} element={r} />
                   {attr(r, "decision_class") ? (
                     <p className="text-xs text-ink-subtle">{attr(r, "decision_class")}</p>
                   ) : null}
@@ -680,14 +698,14 @@ function ApplicationViews({ slug, objects, architecture, graph }: ViewProps) {
             {metrics.map((m) => (
               <tr key={m.id}>
                 <Td>
-                  <Title slug={slug} element={m} />
+                  <Title linkBase={linkBase} element={m} />
                   {attr(m, "definition") ? (
                     <p className="mt-1 text-xs text-ink-muted">{attr(m, "definition")}</p>
                   ) : null}
                 </Td>
                 <Td>
                   <Links
-                    slug={slug}
+                    linkBase={linkBase}
                     architecture={architecture}
                     ids={graph.sources(m.id, "measured_by").map((e) => e.source_element_id)}
                   />
@@ -711,7 +729,7 @@ function ApplicationViews({ slug, objects, architecture, graph }: ViewProps) {
                 {String(rawAttr(stage, "sequence") ?? "·")}
               </span>
               <div className="space-y-1 text-sm">
-                <Title slug={slug} element={stage} />
+                <Title linkBase={linkBase} element={stage} />
                 <p className="text-ink-muted">
                   {[
                     attr(stage, "entry_condition") && `Enter: ${attr(stage, "entry_condition")}`,

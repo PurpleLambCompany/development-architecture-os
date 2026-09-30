@@ -25,6 +25,7 @@ export type DependencyType = Enums["dependency_type"];
 export type DependencyStatus = Enums["dependency_status"];
 export type DecisionStatus = Enums["decision_status"];
 export type RecommendationPriority = Enums["recommendation_priority"];
+export type OpportunityStatus = Enums["opportunity_status"];
 export type SkillProficiency = Enums["skill_proficiency"];
 export type BaselineStatus = Enums["baseline_status"];
 export type RelationshipCategory = "structure" | "design_flow" | "intelligence" | "lineage";
@@ -84,6 +85,7 @@ export const RECORD_KIND_LABELS: Record<RecordKind, string> = {
   dependency: "Dependency",
   decision: "Decision",
   recommendation: "Recommendation",
+  opportunity: "Opportunity",
 };
 
 export const RECORD_KIND_PLURALS: Record<RecordKind, string> = {
@@ -93,6 +95,7 @@ export const RECORD_KIND_PLURALS: Record<RecordKind, string> = {
   dependency: "Dependencies",
   decision: "Decisions",
   recommendation: "Recommendations",
+  opportunity: "Opportunities",
 };
 
 /** Reference code prefixes. Mirrors public.element_reference_prefix. */
@@ -110,6 +113,7 @@ export const RECORD_PREFIXES: Record<RecordKind, string> = {
   decision: "DEC",
   recommendation: "REC",
   constraint: "CNS",
+  opportunity: "OPP",
 };
 
 export function referencePrefix(kind: ElementKind, domain: ArchitectureDomain | null): string {
@@ -355,12 +359,14 @@ export const RISK_STATUSES = [
   "mitigating",
   "accepted",
   "closed",
+  "materialized",
 ] as const satisfies readonly RiskStatus[];
 export const RISK_STATUS: Record<RiskStatus, Label> = {
   open: { label: "Open", tone: "attention" },
   mitigating: { label: "Mitigating", tone: "accent" },
   accepted: { label: "Accepted", tone: "neutral" },
   closed: { label: "Closed", tone: "neutral" },
+  materialized: { label: "Materialized", tone: "negative" },
 };
 
 /** Probability and impact are rated 1 to 5 (checked in the database). */
@@ -443,6 +449,26 @@ export const RECOMMENDATION_PRIORITY: Record<RecommendationPriority, Label> = {
   advisable: { label: "Advisable", tone: "neutral" },
 };
 
+export const OPPORTUNITY_STATUSES = [
+  "identified",
+  "evaluating",
+  "pursuing",
+  "realized",
+  "declined",
+  "lapsed",
+] as const satisfies readonly OpportunityStatus[];
+export const OPPORTUNITY_STATUS: Record<OpportunityStatus, Label> = {
+  identified: { label: "Identified", tone: "neutral" },
+  evaluating: { label: "Being evaluated", tone: "attention" },
+  pursuing: { label: "Being pursued", tone: "accent" },
+  realized: { label: "Realized", tone: "positive" },
+  declined: { label: "Declined", tone: "neutral" },
+  lapsed: { label: "Lapsed", tone: "neutral" },
+};
+
+/** Opportunity value and feasibility are rated 1 to 5 (checked in the database). */
+export const OPPORTUNITY_SCALE = [1, 2, 3, 4, 5] as const;
+
 export const SKILL_PROFICIENCIES = [
   "foundational",
   "proficient",
@@ -507,4 +533,22 @@ export const ARCHITECTURE_EVENT_LABELS: Record<string, string> = {
   baseline_created: "Baseline created",
   baseline_frozen: "Baseline frozen",
   baseline_deleted: "Baseline deleted",
+  record_resolved: "Resolved",
+  record_reopened: "Reopened",
+  record_triaged: "Triaged",
+  escalation_raised: "Escalated",
+  escalation_acknowledged: "Escalation acknowledged",
+  escalation_resolved: "Escalation resolved",
+  client_action_sent: "Request sent to the client",
+  client_action_responded: "Client responded to a request",
+  client_action_closed: "Request closed",
+  client_action_returned: "Request returned for more",
+  client_action_withdrawn: "Request withdrawn",
+  client_action_reassigned: "Request reassigned",
+  response_recorded_as_evidence: "Client response recorded as evidence",
+  contribution_received: "Client input received",
+  contribution_handled: "Client input handled",
+  area_assigned: "Area assigned",
+  area_removed: "Area removed",
+  signal_dismissed: "Signal dismissed",
 };

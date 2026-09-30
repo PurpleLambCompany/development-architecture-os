@@ -1,6 +1,7 @@
 import { DOMAINS, type ArchitectureDomain, type RecordKind } from "./catalog";
 import {
   OBJECT_TYPES,
+  PHASE_4_RULE_SPEC,
   RECORD_KINDS,
   RELATIONSHIP_RULE_SPEC,
   RELATIONSHIP_TYPES,
@@ -73,7 +74,7 @@ export function expandTokens(tokens: readonly string[]): ElementClass[] {
 function buildRules(): RelationshipRule[] {
   const rules: RelationshipRule[] = [];
   const seen = new Set<string>();
-  for (const [type, sources, targets] of RELATIONSHIP_RULE_SPEC) {
+  for (const [type, sources, targets] of [...RELATIONSHIP_RULE_SPEC, ...PHASE_4_RULE_SPEC]) {
     for (const source of expandTokens(sources)) {
       for (const target of expandTokens(targets)) {
         const key = `${type}|${classKey(source)}|${classKey(target)}`;
