@@ -38,6 +38,7 @@ import {
 } from "@/domain/architecture/queries";
 import type { ObjectTypeKey } from "@/domain/architecture/rules";
 import { getBusinessToday } from "@/domain/finance/queries";
+import { ActivityList } from "@/components/architecture/activity-list";
 import { ArchitectureNav } from "@/components/architecture/architecture-nav";
 import {
   AiReviewTag,
@@ -80,7 +81,7 @@ export default async function ElementPage({
   if (!element) notFound();
 
   const [detail, evidence, methodAssets] = await Promise.all([
-    getElementDetail(element.id),
+    getElementDetail(engagement.id, element.id),
     listEvidence(engagement.id),
     listMethodAssets(),
   ]);
@@ -424,24 +425,14 @@ export default async function ElementPage({
         </div>
       </Panel>
 
-      <Panel title="Activity">
-        {detail.activity.length === 0 ? (
-          <EmptyState title="No recorded activity" />
-        ) : (
-          <ul className="space-y-1 text-sm">
-            {detail.activity.map((a) => (
-              <li key={a.id} className="flex flex-wrap gap-3">
-                <span className="w-44 shrink-0 text-xs text-ink-subtle tabular-nums">
-                  {formatDateTime(a.created_at)}
-                </span>
-                <span className="text-ink-muted">
-                  {activityLabel(a.action_type, a.entity_type)} · {nameOf(a.actor_user_id)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Panel>
+      {canEdit || detail.activity.length > 0 ? (
+        <Panel
+          title="Activity"
+          description="Architecture events on this element and its relationships."
+        >
+          <ActivityList events={detail.activity} />
+        </Panel>
+      ) : null}
     </div>
   );
 }
@@ -450,18 +441,6 @@ function recordScope(element: LoadedElement): string {
   const parts = element.domains.map((d) => DOMAIN_SHORT_LABELS[d]);
   if (element.engagement_wide) parts.unshift("Engagement-wide");
   return parts.join(", ") || "Not yet scoped";
-}
-
-function activityLabel(action: string, entity: string): string {
-  const what = entity.replaceAll("_", " ").replace(/s$/, "");
-  const verbs: Record<string, string> = {
-    insert: "Created",
-    update: "Changed",
-    delete: "Removed",
-    provenance_changed: "Provenance changed",
-    returned_from_review: "Returned from review",
-  };
-  return `${verbs[action] ?? action.replaceAll("_", " ")} (${what})`;
 }
 
 /** Lifecycle operations, offered by capability; the database checks each again. */

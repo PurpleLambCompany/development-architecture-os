@@ -13,10 +13,12 @@ import {
 import { getInternalArchitectureContext, memberNames } from "@/domain/architecture/context";
 import {
   getDomainStates,
+  getArchitectureActivity,
   getMaturityDistribution,
   listDomainAssessments,
   loadArchitecture,
 } from "@/domain/architecture/queries";
+import { ActivityList } from "@/components/architecture/activity-list";
 import { ArchitectureNav } from "@/components/architecture/architecture-nav";
 import { InternalMark, MaturityMark } from "@/components/architecture/badges";
 import { ActionForm } from "@/components/ui/action-form";
@@ -28,12 +30,13 @@ export default async function ArchitectureHomePage({
   params,
 }: PageProps<"/internal/engagements/[slug]/architecture">) {
   const { slug } = await params;
-  const { engagement, canPublish } = await getInternalArchitectureContext(slug);
-  const [architecture, states, distribution, history] = await Promise.all([
+  const { engagement, canEdit, canPublish } = await getInternalArchitectureContext(slug);
+  const [architecture, states, distribution, history, activity] = await Promise.all([
     loadArchitecture(engagement.id),
     getDomainStates(engagement.id),
     getMaturityDistribution(engagement.id),
     listDomainAssessments(engagement.id),
+    getArchitectureActivity(engagement.id, 25),
   ]);
   const nameOf = memberNames(engagement);
 
@@ -204,6 +207,19 @@ export default async function ArchitectureHomePage({
           </Table>
         )}
       </Panel>
+
+      {canEdit || activity.length > 0 ? (
+        <Panel
+          title="Recent activity"
+          description="Architecture events on this engagement: drafting, review, publication, relationships, evidence, approvals, decisions, assessments and baselines."
+        >
+          <ActivityList
+            events={activity}
+            slug={slug}
+            elementOf={(id) => architecture.byId.get(id) ?? null}
+          />
+        </Panel>
+      ) : null}
     </div>
   );
 }

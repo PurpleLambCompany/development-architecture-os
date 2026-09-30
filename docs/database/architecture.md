@@ -5,6 +5,7 @@ Migrations:
 - `20261001000000_architecture_capabilities.sql` adds the capability enum values.
 - `20261001000100_architecture_core.sql` holds everything else.
 - `20261001000200_architecture_element_creation.sql` adds one creation function.
+- `20261001000300_architecture_governance.sql` restricts who grants architecture authority and adds the architecture activity read model.
 
 The specification is [`docs/product/PHASE_3_PROPOSAL.md`](../product/PHASE_3_PROPOSAL.md), and the decisions are in ADR-0013 to ADR-0025.
 
@@ -29,7 +30,7 @@ The database is the authority for every rule below. The application offers only 
 | `view_architecture`    | client   | Executive Sponsor, Client Project Lead, Client Contributor, Client Viewer        |
 | `approve_architecture` | client   | Executive Sponsor, Client Project Lead (existing; needs `view_architecture` too) |
 
-The following hold no architecture capability by default: System Administrators, Project Administrators, Finance Administrators and Client Finance. TPLCo can grant a capability by per-member override (ADR-0008).
+The following hold no architecture capability by default: System Administrators, Project Administrators, Finance Administrators and Client Finance. TPLCo can grant a capability by per-member override (ADR-0008). Overrides of `edit_architecture` and `publish_architecture` are granted or revoked only by Principal Architects, never for themselves; System Administrators and Project Administrators cannot (`20261001000300_architecture_governance.sql`, decided 2026-09-30).
 
 Helpers in `private`:
 
@@ -144,6 +145,7 @@ These run as the caller, so RLS decides their inputs.
 - **Internal:**
   - `element_version_snapshot` returns the full snapshot.
   - `preview_client_snapshot` returns what publishing the working copy now would give a client.
+  - `architecture_activity(engagement, element?, limit)` returns curated architecture events (created, edited, submitted, returned, published, relationships, statements, provenance, evidence, approvals, decisions, assessments, baselines) to holders of `edit_architecture` on the engagement and to System Administrators and Principal Architects. It reads `activity_log` as definer but returns no other event and no raw row; the `activity_log` policy is unchanged.
 
 ## Who can see what
 
@@ -162,10 +164,11 @@ Anonymous callers have no privileges. Suspending a membership removes access at 
 
 ## Tests
 
-| File                          | Assertions | Covers                                                                                                                        |
-| ----------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `07_architecture_access`      | 65         | The capability matrix role by role, overrides, suspension, anonymous, and what clients never read                             |
-| `08_architecture_integrity`   | 73         | Domains, record scope, relationship rules, cycles, canonical pairs, composite keys, codes, provenance, guards, no finance FKs |
-| `09_architecture_versions`    | 44         | Immutable versions and snapshots, approvals pinned to versions, baselines, `compare_baselines`                                |
-| `10_architecture_creation`    | 16         | `create_architecture_element`: codes, record domains, severity, refusals and permissions                                      |
-| `99_architecture_concurrency` | 10         | Two sessions publishing one element, and two sessions creating elements (distinct codes)                                      |
+| File                          | Assertions | Covers                                                                                                                                                                                      |
+| ----------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `07_architecture_access`      | 65         | The capability matrix role by role, overrides, suspension, anonymous, and what clients never read                                                                                           |
+| `08_architecture_integrity`   | 73         | Domains, record scope, relationship rules, cycles, canonical pairs, composite keys, codes, provenance, guards, no finance FKs                                                               |
+| `09_architecture_versions`    | 44         | Immutable versions and snapshots, approvals pinned to versions, baselines, `compare_baselines`                                                                                              |
+| `10_architecture_creation`    | 16         | `create_architecture_element`: codes, record domains, severity, refusals and permissions                                                                                                    |
+| `11_architecture_governance`  | 48         | Only Principal Architects grant or revoke architecture authority; granted and revoked overrides work; architecture activity for Architects and Researchers only, with no other audit events |
+| `99_architecture_concurrency` | 10         | Two sessions publishing one element, and two sessions creating elements (distinct codes)                                                                                                    |

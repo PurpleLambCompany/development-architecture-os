@@ -57,9 +57,10 @@ Changing capabilities (insert/update/delete of overrides):
 | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
 | `view_financials`, `approve_change_orders`, `pay_invoices`                     | System Admin, Principal Architect, Finance Administrator **assigned** to the engagement |
 | `approve_architecture`, `manage_client_team`, `view_confidential_deliverables` | whoever can manage the engagement (see below)                                           |
-| `edit_architecture`, `publish_architecture`, `view_architecture` (Phase 3)     | whoever can manage the engagement (see below)                                           |
+| `view_architecture` (Phase 3)                                                  | whoever can manage the engagement (see below)                                           |
+| `edit_architecture`, `publish_architecture` (Phase 3)                          | Principal Architects only, never for themselves (not System or Project Administrators)  |
 
-Nobody except a System Administrator can change their own capabilities. Role defaults cannot be changed through the API.
+Nobody except a System Administrator can change their own capabilities, and nobody at all can change their own architecture authority. Role defaults cannot be changed through the API.
 
 ## Who can change what
 

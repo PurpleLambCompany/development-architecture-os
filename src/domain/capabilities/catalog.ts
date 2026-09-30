@@ -46,6 +46,18 @@ export function isFinancialCapability(capability: EngagementCapability): boolean
   return (FINANCIAL_CAPABILITIES as readonly EngagementCapability[]).includes(capability);
 }
 
+/** Drafting and publishing authority: only Principal Architects grant or revoke these. */
+export const ARCHITECTURE_AUTHORITY_CAPABILITIES = [
+  "edit_architecture",
+  "publish_architecture",
+] as const satisfies readonly EngagementCapability[];
+
+export function isArchitectureAuthorityCapability(capability: EngagementCapability): boolean {
+  return (ARCHITECTURE_AUTHORITY_CAPABILITIES as readonly EngagementCapability[]).includes(
+    capability,
+  );
+}
+
 /** The side a capability is restricted to, or null when either side may hold it. */
 export function capabilitySide(capability: EngagementCapability): MemberSide | null {
   if (
@@ -120,9 +132,11 @@ export function effectiveCapabilities(
 
 /**
  * Whether the viewer may grant or revoke `capability` for a member.
- * Mirrors private.can_manage_capability: nobody but a System Administrator
- * changes their own capabilities; financial capabilities need financial
- * authority; the rest need engagement management rights.
+ * Mirrors private.can_manage_capability: architecture authority
+ * (edit_architecture, publish_architecture) is granted only by Principal
+ * Architects, never to themselves; otherwise nobody but a System
+ * Administrator changes their own capabilities, financial capabilities need
+ * financial authority and the rest need engagement management rights.
  */
 export function canManageCapability({
   viewerRole,
@@ -135,6 +149,9 @@ export function canManageCapability({
   isSelf: boolean;
   capability: EngagementCapability;
 }): boolean {
+  if (isArchitectureAuthorityCapability(capability)) {
+    return viewerRole === "principal_architect" && !isSelf;
+  }
   if (isSelf && viewerRole !== "system_administrator") return false;
   if (isFinancialCapability(capability)) {
     return (

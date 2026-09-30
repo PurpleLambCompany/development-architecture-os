@@ -16,3 +16,9 @@ Postgres enum values cannot be removed, and the capability defaults decide who m
 ## Consequences
 
 - The values are permanent. Changing defaults later is a migration on `role_capability_defaults`.
+
+## Amendment (2026-09-30): who manages architecture authority
+
+Overrides of `edit_architecture` and `publish_architecture` are granted or revoked only by Principal Architects, and never for themselves. System Administrators cannot grant either to themselves or to anyone else through their administration authority, and Project Administrators cannot grant or revoke either. Role defaults, the override model and the rules for every other capability are unchanged. Enforced by `private.can_manage_capability` (migration `20261001000300_architecture_governance.sql`) and tested in `11_architecture_governance`.
+
+Architects and Researchers read architecture activity through `public.architecture_activity()`, a curated read model limited to architecture events for holders of `edit_architecture` on the engagement. The Phase 1 `activity_log` policy is unchanged.

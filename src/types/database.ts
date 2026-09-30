@@ -3162,6 +3162,21 @@ export type Database = {
         Returns: string;
       };
       approve_change_order: { Args: { p_change_order_id: string }; Returns: undefined };
+      architecture_activity: {
+        Args: { p_element_id?: string; p_engagement_id: string; p_limit?: number };
+        Returns: {
+          actor_name: string;
+          actor_user_id: string;
+          created_at: string;
+          details: Json;
+          element_id: string;
+          entity_id: string;
+          entity_type: string;
+          event: string;
+          id: number;
+          related_element_id: string;
+        }[];
+      };
       architecture_domain_states: {
         Args: { p_engagement_id: string };
         Returns: {
@@ -3361,6 +3376,10 @@ export type Database = {
           status: Database["public"]["Enums"]["invoice_status"];
           total_minor: number;
         }[];
+      };
+      is_architecture_authority_capability: {
+        Args: { capability: Database["public"]["Enums"]["engagement_capability"] };
+        Returns: boolean;
       };
       is_financial_capability: {
         Args: { capability: Database["public"]["Enums"]["engagement_capability"] };

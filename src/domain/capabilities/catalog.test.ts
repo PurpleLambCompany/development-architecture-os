@@ -120,6 +120,18 @@ describe("canManageCapability", () => {
     );
   });
 
+  it("lets only Principal Architects grant drafting and publishing authority", () => {
+    for (const capability of ["edit_architecture", "publish_architecture"] as const) {
+      expect(check("principal_architect", "principal_architect", capability)).toBe(true);
+      expect(check("principal_architect", null, capability, true)).toBe(false);
+      expect(check("system_administrator", null, capability)).toBe(false);
+      expect(check("system_administrator", null, capability, true)).toBe(false);
+      expect(check("project_administrator", "project_administrator", capability)).toBe(false);
+      expect(check("architect", "architect", capability)).toBe(false);
+    }
+    expect(check("project_administrator", "project_administrator", "view_architecture")).toBe(true);
+  });
+
   it("stops anyone but a System Administrator changing their own capabilities", () => {
     expect(check("principal_architect", null, "approve_architecture", true)).toBe(false);
     expect(check("system_administrator", null, "view_financials", true)).toBe(true);

@@ -80,17 +80,17 @@
 
 ## 2. Files changed
 
-83 files against `main`; `git diff --stat origin/main` gives the full list.
+86 files against `main`; `git diff --stat origin/main` gives the full list.
 
-| Area           | Files                                                                                                                                                                                    |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Migrations     | `20261001000000_architecture_capabilities.sql`, `20261001000100_architecture_core.sql`, `20261001000200_architecture_element_creation.sql`                                               |
-| Seed and types | `supabase/seed.sql`, `src/types/database.ts`                                                                                                                                             |
-| pgTAP          | New: `07_architecture_access`, `08_architecture_integrity`, `09_architecture_versions`, `10_architecture_creation`, `99_architecture_concurrency`. Updated: `03_engagement_capabilities` |
-| Domain layer   | `src/domain/architecture/*` (13 files, three of them tests), `src/domain/capabilities/catalog.ts` and its test                                                                           |
-| Components     | `src/components/architecture/*` (12), `src/components/portal/engagement-nav.tsx`, `src/components/ui/action-form.tsx` (moved), finance panels (import path only)                         |
-| Routes         | 11 internal and 3 client pages added; the engagement page, internal layout, finance workspace and client overview and billing pages updated                                              |
-| Docs           | ADR-0013 to ADR-0025, `PHASE_3_PROPOSAL.md`, this report, `docs/database/architecture.md`, links from `rls.md` and `schema.md`, `README.md`, `CLAUDE.md`                                 |
+| Area           | Files                                                                                                                                                                                                                  |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Migrations     | `20261001000000_architecture_capabilities.sql`, `20261001000100_architecture_core.sql`, `20261001000200_architecture_element_creation.sql`, `20261001000300_architecture_governance.sql`                               |
+| Seed and types | `supabase/seed.sql`, `src/types/database.ts`                                                                                                                                                                           |
+| pgTAP          | New: `07_architecture_access`, `08_architecture_integrity`, `09_architecture_versions`, `10_architecture_creation`, `11_architecture_governance`, `99_architecture_concurrency`. Updated: `03_engagement_capabilities` |
+| Domain layer   | `src/domain/architecture/*` (13 files, three of them tests), `src/domain/capabilities/catalog.ts` and its test                                                                                                         |
+| Components     | `src/components/architecture/*` (13), `src/components/portal/engagement-nav.tsx`, `src/components/ui/action-form.tsx` (moved), finance panels (import path only)                                                       |
+| Routes         | 11 internal and 3 client pages added; the engagement page, internal layout, finance workspace and client overview and billing pages updated                                                                            |
+| Docs           | ADR-0013 to ADR-0025, `PHASE_3_PROPOSAL.md`, this report, `docs/database/architecture.md`, links from `rls.md` and `schema.md`, `README.md`, `CLAUDE.md`                                                               |
 
 ## 3. Schema changes
 
@@ -111,6 +111,8 @@ All schema changes are additive; nothing from Phases 1 or 2 changes shape.
   - 16 public operations;
   - 9 read models, and `element_reference_prefix`;
   - `create_architecture_element`;
+  - `architecture_activity` and `is_architecture_authority_capability` (governance, §8);
+  - `private.can_manage_capability` replaced so only Principal Architects manage architecture authority (§8);
   - private guards, snapshot builders and capability helpers.
 
 `docs/database/architecture.md` is the reference.
@@ -134,18 +136,20 @@ All schema changes are additive; nothing from Phases 1 or 2 changes shape.
 - **Client Finance** sees only the latest client-visible domain state per domain. An override of `view_architecture` shows more, and this is tested.
 - **Finance Administrators** read the working architecture only on engagements they are assigned to, and never edit or publish it.
 - **Client visibility** can be set only by holders of `publish_architecture`. A Researcher can draft, but can make nothing client-visible.
+- **Architecture authority is granted only by Principal Architects** (decision 1, §8). Overrides of `edit_architecture` and `publish_architecture` are granted or revoked only by a Principal Architect, never for themself. System Administrators (for themselves or anyone else) and Project Administrators cannot, in the database as well as the UI.
+- **Architecture activity** (decision 2, §8) is read through `architecture_activity()`, which returns curated architecture events only to holders of `edit_architecture` on the engagement and to those who already read the full log. The Phase 1 `activity_log` policy is unchanged.
 - **Anonymous callers** have nothing, and suspending a membership removes access immediately.
 
 ## 5. Tests and checks performed
 
-| Check                                                   | Result                                                                                                 |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| pgTAP (`pnpm db:test`)                                  | **495 assertions in 12 files, all passing.** Phase 3 adds 208 (07: 65, 08: 73, 09: 44, 10: 16, 99: 10) |
-| Unit tests (`pnpm test`)                                | **81 passing** in 11 files (49 at the end of Phase 2)                                                  |
-| `pnpm check` (lint, typecheck, format) and `pnpm build` | Clean                                                                                                  |
-| Browser workflow, Phase 3 (Playwright, not committed)   | **67/67**, against a freshly reset database and the production build                                   |
-| Phase 1 and Phase 2 browser suites, re-run              | **41/41** and **33/33**                                                                                |
-| CI on PR #3                                             | Required checks App and Database; the result on the final commit is reported with this report          |
+| Check                                                   | Result                                                                                                         |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| pgTAP (`pnpm db:test`)                                  | **543 assertions in 13 files, all passing.** Phase 3 adds 256 (07: 65, 08: 73, 09: 44, 10: 16, 11: 48, 99: 10) |
+| Unit tests (`pnpm test`)                                | **82 passing** in 11 files (49 at the end of Phase 2)                                                          |
+| `pnpm check` (lint, typecheck, format) and `pnpm build` | Clean                                                                                                          |
+| Browser workflow, Phase 3 (Playwright, not committed)   | **70/70**, against a freshly reset database and the production build                                           |
+| Phase 1 and Phase 2 browser suites, re-run              | **41/41** and **33/33**                                                                                        |
+| CI on PR #3                                             | Required checks App and Database; the result on the final commit is reported with this report                  |
 
 **The Phase 3 browser workflow** follows proposal §14:
 
@@ -164,6 +168,7 @@ The run also checks the following:
 - An internal-only element (`KNW-008`) returns 404 to a client, even by direct link.
 - Preview as client omits the internal statement.
 - A baseline is created, filled with every published version, frozen and compared with a seed baseline.
+- The Architect reads the element's activity (submitted for review, version published, approval requested, client responded, evidence cited), the Researcher reads the engagement's recent activity, and the assigned Finance Administrator sees none.
 
 ## 6. Deviations from the approved proposal and clarifications
 
@@ -185,15 +190,15 @@ None of these changes a principle. Each is how a rule was made precise in the bu
 10. **The snapshot builder is in SQL,** in `private.build_element_snapshot`. The TypeScript side only reads snapshots, so the client snapshot cannot drift from the database's rules.
 11. **New function `create_architecture_element`,** in its own migration. A deferred integrity trigger requires the subtype row and reference code at commit, and each API request is one transaction. The function inserts the spine, subtype and record domains together as the caller, so RLS and the guards still apply.
 12. **Timestamps use `clock_timestamp()`,** so histories written in one transaction still order correctly.
-13. **The client Architecture area shows tables grouped by domain,** not the internal map and matrix views. §11 describes the client seeing "the domain's own view (map, matrix, table)". The client area lists published items in a table per domain; the richer views are internal only for now.
+13. **The client Architecture area shows tables grouped by domain,** not the internal map and matrix views. §11 describes the client seeing "the domain's own view (map, matrix, table)". The client area lists published items in a table per domain. Confirmed 2026-09-30: the tables stay as built, and richer client domain maps, capability matrices and other visualizations are Phase 4 work (§8, decision 3).
 14. **Maturity is shown as a word, not a bar,** to keep to "no progress bars".
 15. **`ActionForm` moved to `components/ui`,** because architecture and finance now share it.
 
 ## 7. Known limitations
 
 1. **Evidence is references only.** There is no file upload yet, and it shares the pre-production upload requirement from Phase 2.
-2. **Activity is empty for Architects and Researchers.** Phase 1's `activity_log` policy lets only administrators and Principal Architects read the log. Architecture events are recorded, but an Architect sees "No recorded activity" on the element page.
-3. **The client domain views are tables** (deviation 13).
+2. **Architecture activity is curated, not the full audit trail.** Architects and Researchers see architecture events through `architecture_activity()`; the full `activity_log` (with raw before and after rows) stays with administrators and Principal Architects.
+3. **The client domain views are tables** (deviation 13); maps and matrices are Phase 4.
 4. **Project Intelligence lists are plain.** Triage, filtering and deeper registers are Phase 4, as agreed.
 5. **The AI review queue is always empty.** The gate is built and tested in the database, but nothing generates AI content in Phase 3.
 6. **Notifications:** there are no emails for approval requests, responses or decisions. This shares the Phase 2 email-provider requirement.
@@ -201,16 +206,22 @@ None of these changes a principle. Each is how a rule was made precise in the bu
 8. **Harbor's seed has only two objects.** The full worked example is Meridian's.
 9. **The browser suites are not committed.** They live outside the repository, as in Phases 1 and 2; CI runs pgTAP and unit tests.
 
-## 8. Unresolved questions
+## 8. Decisions confirmed 2026-09-30
 
-1. **Who may grant architecture capabilities by override?** Phase 1's rule applies: whoever can manage the engagement. That means System Administrators, Principal Architects and assigned Project Administrators, and a System Administrator can grant capabilities to themself.
-   - As a result, an assigned Project Administrator could give a Researcher `publish_architecture`, and a System Administrator could give themself publishing authority.
-   - Should `edit_architecture` and `publish_architecture` overrides be limited to Principal Architects, as financial capabilities are limited? This is a small change: one migration and tests.
-2. **Should Architects and Researchers read the architecture activity** on engagements they are assigned to (limitation 2)?
-3. **Should the client Architecture area get the map and matrix views** (deviation 13), now or in Phase 4?
+1. **Architecture capability grants are restricted.** Only Principal Architects grant or revoke `edit_architecture` and `publish_architecture` overrides, and never their own. System Administrators cannot grant either to themselves or to anyone else through their administration authority, and Project Administrators cannot grant or revoke either. Role defaults and the per-engagement override model are unchanged, and the other capabilities keep their Phase 1 and 2 rules.
+   - Built in `20261001000300_architecture_governance.sql` (`private.can_manage_capability`, with `is_architecture_authority_capability`), mirrored in `canManageCapability` so the team controls offer only what the database allows.
+   - `11_architecture_governance` proves: a Principal Architect grants and revokes both capabilities, and each override takes effect (a Researcher publishes under a granted `publish_architecture`; a revoked Architect cannot publish); a Principal cannot change their own; a System Administrator cannot grant either to themself or to another member, cannot revoke, and cannot remove an existing override; a Project Administrator cannot grant or revoke either, and cannot alter an existing override, which keeps working. Other capabilities are still managed as before.
+2. **Architects and Researchers read architecture activity.** `public.architecture_activity(engagement, element?, limit)` returns curated events: element created or edited, submitted or returned from review, version published, relationship added, published or retired, statement and provenance changes, evidence cited, approval requested or responded, decision recommended, recorded or deferred, domain assessment recorded, and baseline created or frozen. It returns them only to holders of `edit_architecture` on the engagement (Principal Architects, Architects and Researchers by default) and to System Administrators and Principal Architects, who already read the full log. It never returns financial, membership, capability, organization or other audit events, and never raw audit rows. The Phase 1 `activity_log` policy is unchanged.
+   - The element page's Activity panel and a new Recent activity panel on the architecture home use it.
+   - `11_architecture_governance` proves Architects and Researchers read the events, still cannot read `activity_log`, receive no non-architecture event and no raw row, see nothing on engagements they are not assigned to or while suspended, and that Finance Administrators, clients and anonymous callers get nothing.
+3. **Client maps and matrices are deferred to Phase 4.** The Phase 3 client Architecture tables stay exactly as built. Richer client domain maps, capability matrices and other architecture visualizations are recorded as Phase 4 work.
 
-## 9. Recommended next step
+## 9. Unresolved questions
 
-1. Review this report and the deviations in §6.
-2. Answer the three questions in §8. Question 1 is the only one touching authority, and I recommend limiting architecture overrides to Principal Architects before real client data enters.
-3. On your "merge PR #3" instruction, merge it. Then update the status in `CLAUDE.md` and the README to "Phase 3 complete — Phase 4 planning".
+None.
+
+## 10. Recommended next step
+
+1. Verify the final commit and CI on PR #3.
+2. On your "merge PR #3" instruction, merge it. Then update the status in `CLAUDE.md` and the README to "Phase 3 complete — Phase 4 planning".
+3. Phase 4 planning then includes the client domain maps and capability matrices (§8, decision 3).

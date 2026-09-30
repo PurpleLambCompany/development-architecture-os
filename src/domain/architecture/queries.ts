@@ -246,7 +246,7 @@ export const listEvidence = cache(async (engagementId: string) => {
 export type LoadedEvidence = Awaited<ReturnType<typeof listEvidence>>[number];
 
 /** Everything the element page needs beyond the engagement-wide load. */
-export async function getElementDetail(elementId: string) {
+export async function getElementDetail(engagementId: string, elementId: string) {
   const supabase = await createSupabaseServerClient();
   const [statements, lineage, activity, elementLinks] = await Promise.all([
     supabase
@@ -261,12 +261,11 @@ export async function getElementDetail(elementId: string) {
       .from("element_method_lineage")
       .select("*, method_assets(id, title, category, version)")
       .eq("element_id", elementId),
-    supabase
-      .from("activity_log")
-      .select("id, action_type, created_at, metadata_json, entity_type, actor_user_id")
-      .eq("entity_id", elementId)
-      .order("created_at", { ascending: false })
-      .limit(30),
+    supabase.rpc("architecture_activity", {
+      p_engagement_id: engagementId,
+      p_element_id: elementId,
+      p_limit: 50,
+    }),
     supabase
       .from("element_evidence_links")
       .select("*, evidence_sources(id, title, source_type, client_visibility)")
@@ -275,14 +274,30 @@ export async function getElementDetail(elementId: string) {
   if (statements.error) throw statements.error;
   if (lineage.error) throw lineage.error;
   if (elementLinks.error) throw elementLinks.error;
+  if (activity.error) throw activity.error;
   return {
     statements: statements.data ?? [],
     lineage: lineage.data ?? [],
-    // Activity is best-effort context; a failure here should not hide the element.
-    activity: activity.error ? [] : (activity.data ?? []),
+    activity: activity.data ?? [],
     elementEvidence: elementLinks.data ?? [],
   };
 }
+
+/**
+ * Architecture activity on an engagement: curated events only, for holders of
+ * Edit architecture and those who read the full log. Others get no rows.
+ */
+export const getArchitectureActivity = cache(async (engagementId: string, limit = 20) => {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("architecture_activity", {
+    p_engagement_id: engagementId,
+    p_limit: limit,
+  });
+  if (error) throw error;
+  return data ?? [];
+});
+
+export type ArchitectureActivityEvent = Awaited<ReturnType<typeof getArchitectureActivity>>[number];
 
 export type ElementStatement = Awaited<ReturnType<typeof getElementDetail>>["statements"][number];
 
