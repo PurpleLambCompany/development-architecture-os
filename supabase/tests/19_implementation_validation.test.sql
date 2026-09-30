@@ -10,7 +10,7 @@
 -- =============================================================================
 begin;
 
-select plan(34);
+select plan(35);
 
 create function pg_temp.act_as(user_email text)
 returns void
@@ -110,6 +110,10 @@ select is((select count(*)::int from public.architecture_relationships
              and target_element_id = (select id from pg_temp.ids where key = 'init')
              and relationship_type = 'validates' and retired_at is null), 1,
   'exactly one validates relationship is recorded');
+select is((select count(*)::int from public.validation_criteria v join public.architecture_relationships x
+           on x.id = v.validation_relationship_id
+           where x.source_element_id = (select id from pg_temp.ids where key = 'a')), 0,
+  'with no agreed criteria, the validation is still valid and captures none (D34; suite 26 covers capture)');
 select throws_ok($$ select public.record_review_validation(
   (select id from pg_temp.ids where key = 'a'), (select id from pg_temp.ids where key = 'init')) $$,
   '23514', 'This review has already validated this initiative', 'refused: already validated by this review');

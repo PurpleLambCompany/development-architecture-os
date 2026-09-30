@@ -23,6 +23,125 @@ export type Database = {
   };
   public: {
     Tables: {
+      acceptance_criteria: {
+        Row: {
+          agreed_on: string | null;
+          agreed_recorded_by: string | null;
+          agreed_with: string | null;
+          agreement_evidence_source_id: string | null;
+          body: string;
+          client_visible: boolean;
+          closed_at: string | null;
+          closure_reason: string | null;
+          created_at: string;
+          created_by: string | null;
+          engagement_id: string;
+          governed_element_id: string;
+          governed_kind: Database["public"]["Enums"]["element_kind"];
+          id: string;
+          informing_criterion_key: string | null;
+          informing_standard_version_id: string | null;
+          reference_code: string;
+          state: Database["public"]["Enums"]["acceptance_criterion_state"];
+          supersedes_criterion_id: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          agreed_on?: string | null;
+          agreed_recorded_by?: string | null;
+          agreed_with?: string | null;
+          agreement_evidence_source_id?: string | null;
+          body: string;
+          client_visible?: boolean;
+          closed_at?: string | null;
+          closure_reason?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          engagement_id: string;
+          governed_element_id: string;
+          governed_kind: Database["public"]["Enums"]["element_kind"];
+          id?: string;
+          informing_criterion_key?: string | null;
+          informing_standard_version_id?: string | null;
+          reference_code: string;
+          state?: Database["public"]["Enums"]["acceptance_criterion_state"];
+          supersedes_criterion_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          agreed_on?: string | null;
+          agreed_recorded_by?: string | null;
+          agreed_with?: string | null;
+          agreement_evidence_source_id?: string | null;
+          body?: string;
+          client_visible?: boolean;
+          closed_at?: string | null;
+          closure_reason?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          engagement_id?: string;
+          governed_element_id?: string;
+          governed_kind?: Database["public"]["Enums"]["element_kind"];
+          id?: string;
+          informing_criterion_key?: string | null;
+          informing_standard_version_id?: string | null;
+          reference_code?: string;
+          state?: Database["public"]["Enums"]["acceptance_criterion_state"];
+          supersedes_criterion_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "acceptance_criteria_agreed_recorded_by_fkey";
+            columns: ["agreed_recorded_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "acceptance_criteria_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "acceptance_criteria_element_fk";
+            columns: ["governed_element_id", "engagement_id", "governed_kind"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id", "kind"];
+          },
+          {
+            foreignKeyName: "acceptance_criteria_engagement_id_fkey";
+            columns: ["engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "acceptance_criteria_evidence_fk";
+            columns: ["agreement_evidence_source_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "evidence_sources";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "acceptance_criteria_informing_standard_version_id_fkey";
+            columns: ["informing_standard_version_id"];
+            isOneToOne: false;
+            referencedRelation: "method_asset_versions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "acceptance_criteria_supersedes_fk";
+            columns: ["supersedes_criterion_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "acceptance_criteria";
+            referencedColumns: ["id", "engagement_id"];
+          },
+        ];
+      };
       activity_log: {
         Row: {
           action_type: string;
@@ -6091,6 +6210,65 @@ export type Database = {
           },
         ];
       };
+      validation_criteria: {
+        Row: {
+          captured_at: string;
+          criterion_id: string;
+          engagement_id: string;
+          note: string;
+          note_updated_at: string | null;
+          note_updated_by: string | null;
+          validation_relationship_id: string;
+        };
+        Insert: {
+          captured_at?: string;
+          criterion_id: string;
+          engagement_id: string;
+          note?: string;
+          note_updated_at?: string | null;
+          note_updated_by?: string | null;
+          validation_relationship_id: string;
+        };
+        Update: {
+          captured_at?: string;
+          criterion_id?: string;
+          engagement_id?: string;
+          note?: string;
+          note_updated_at?: string | null;
+          note_updated_by?: string | null;
+          validation_relationship_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "validation_criteria_criterion_id_fkey";
+            columns: ["criterion_id"];
+            isOneToOne: false;
+            referencedRelation: "acceptance_criteria";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "validation_criteria_engagement_id_fkey";
+            columns: ["engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "validation_criteria_note_updated_by_fkey";
+            columns: ["note_updated_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "validation_criteria_validation_relationship_id_fkey";
+            columns: ["validation_relationship_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_relationships";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -6137,6 +6315,15 @@ export type Database = {
           p_form: Database["public"]["Enums"]["method_asset_form"];
         };
         Returns: string;
+      };
+      agree_acceptance_criterion: {
+        Args: {
+          p_agreed_on: string;
+          p_agreed_with: string;
+          p_agreement_evidence_source_id?: string;
+          p_criterion_id: string;
+        };
+        Returns: undefined;
       };
       allocate_payment: {
         Args: { p_amount_minor: number; p_invoice_id: string; p_payment_id: string };
@@ -6446,11 +6633,43 @@ export type Database = {
         };
         Returns: string;
       };
+      criteria_in_force: {
+        Args: { p_initiative_element_id: string };
+        Returns: {
+          agreed_on: string | null;
+          agreed_recorded_by: string | null;
+          agreed_with: string | null;
+          agreement_evidence_source_id: string | null;
+          body: string;
+          client_visible: boolean;
+          closed_at: string | null;
+          closure_reason: string | null;
+          created_at: string;
+          created_by: string | null;
+          engagement_id: string;
+          governed_element_id: string;
+          governed_kind: Database["public"]["Enums"]["element_kind"];
+          id: string;
+          informing_criterion_key: string | null;
+          informing_standard_version_id: string | null;
+          reference_code: string;
+          state: Database["public"]["Enums"]["acceptance_criterion_state"];
+          supersedes_criterion_id: string | null;
+          updated_at: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "acceptance_criteria";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       decide_decision: {
         Args: { p_decision_id: string; p_note?: string; p_option_id: string };
         Returns: undefined;
       };
       defer_decision: { Args: { p_decision_id: string; p_reason: string }; Returns: undefined };
+      delete_acceptance_criterion: { Args: { p_criterion_id: string }; Returns: undefined };
       delete_dam_release: { Args: { p_release_id: string }; Returns: undefined };
       delete_method_asset_version: { Args: { p_version_id: string }; Returns: undefined };
       deliverable_register: {
@@ -6820,6 +7039,16 @@ export type Database = {
         }[];
       };
       preview_client_snapshot: { Args: { p_element_id: string }; Returns: Json };
+      propose_acceptance_criterion: {
+        Args: {
+          p_body: string;
+          p_client_visible?: boolean;
+          p_element_id: string;
+          p_informing_criterion_key?: string;
+          p_informing_standard_version_id?: string;
+        };
+        Returns: string;
+      };
       publish_dam_release: {
         Args: { p_change_summary?: string; p_effective_on?: string; p_release_id: string };
         Returns: undefined;
@@ -7222,6 +7451,10 @@ export type Database = {
         };
         Returns: undefined;
       };
+      set_validation_criterion_note: {
+        Args: { p_criterion_id: string; p_note: string; p_validation_relationship_id: string };
+        Returns: undefined;
+      };
       start_method_application: {
         Args: {
           p_architectural_question?: string;
@@ -7241,6 +7474,17 @@ export type Database = {
         Returns: string;
       };
       submit_element_for_review: { Args: { p_element_id: string }; Returns: undefined };
+      supersede_acceptance_criterion: {
+        Args: {
+          p_agreed_on?: string;
+          p_agreed_with?: string;
+          p_agreement_evidence_source_id?: string;
+          p_criterion_id: string;
+          p_new_body: string;
+          p_reason: string;
+        };
+        Returns: string;
+      };
       supersede_element: {
         Args: { p_new_element_id: string; p_old_element_id: string; p_reason: string };
         Returns: string;
@@ -7278,6 +7522,16 @@ export type Database = {
       };
       unlink_method_application_element: { Args: { p_link_id: string }; Returns: undefined };
       unlink_method_application_evidence: { Args: { p_link_id: string }; Returns: undefined };
+      update_acceptance_criterion: {
+        Args: {
+          p_body: string;
+          p_client_visible?: boolean;
+          p_criterion_id: string;
+          p_informing_criterion_key?: string;
+          p_informing_standard_version_id?: string;
+        };
+        Returns: undefined;
+      };
       update_dam_release: {
         Args: {
           p_change_summary: string;
@@ -7332,6 +7586,10 @@ export type Database = {
       };
       void_invoice: { Args: { p_invoice_id: string; p_reason: string }; Returns: undefined };
       void_refund: { Args: { p_reason: string; p_refund_id: string }; Returns: undefined };
+      withdraw_acceptance_criterion: {
+        Args: { p_criterion_id: string; p_reason: string };
+        Returns: undefined;
+      };
       withdraw_client_action: { Args: { p_action_id: string; p_note: string }; Returns: undefined };
     };
     Enums: {
