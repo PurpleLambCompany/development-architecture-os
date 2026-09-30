@@ -1,6 +1,6 @@
 # Phase 2 — Commercial Engagement System: Proposal
 
-**Status:** Decisions approved by Kerrick Jordan on 2026-09-30 (§15). **The database schema (§3) and balance definitions (§6) are awaiting final review.** No Phase 2 migrations or application code have been written.
+**Status:** Approved for implementation by Kerrick Jordan on 2026-09-30, with the four adjustments in §18, which take precedence over earlier sections where they differ.
 **Scope:** Phase 2 only, per `DSA_OS_MASTER_BUILD_SPEC.md` §9, §10, §26 and §31, and the Phase 2 brief from the PR #1 review.
 **Builds on:** ADR-0007 (multiple organizations) and ADR-0008 (engagement capabilities). Capability overrides remain a TPLCo-only action; Executive Sponsors do not manage them in Phase 2.
 
@@ -572,3 +572,21 @@ Capability overrides remain TPLCo-controlled, and `payment_allocations` is retai
 3. Internal finance screens.
 4. Client billing screens and the live financial snapshot.
 5. ADR-0010 to ADR-0012, the schema and RLS docs, the full suite, the browser run, and the Phase 2 report.
+
+---
+
+## 18. Approved adjustments (2026-09-30)
+
+1. **Refunds are in Phase 2.** An immutable `refunds` table records the contract, an optional originating payment, the amount, date, method, reference, reason, status (`completed` or `void`), processor reference, processed-by user and timestamps. A refund is allowed only when enough unapplied credit exists: on the contract and, when a payment is named, on that payment. Completed refunds are never edited or deleted; a refund recorded in error is voided with a reason. Every calculation accounts for refunds:
+   - payments received = payments applied + unapplied credit + refunds
+   - unapplied credit = payments received − payments applied − refunds
+2. **Net Remaining to Collect** (client-facing) = revised contract value − net cash received, where net cash received = recorded (not reversed) payments − completed refunds. It answers "how much more cash is due under this contract?" It is shown alongside, never instead of, invoice balance, currently due, past due and remaining to invoice. Identity: net remaining to collect = remaining contract balance − unapplied credit.
+3. **Anti-double-billing.**
+   - Across issued (non-void) invoices, the lines billing a milestone may not add up to more than the milestone amount. The same applies to an approved positive change order. Partial billing is allowed.
+   - A line may reference a milestone or a change order, not both.
+   - Composite foreign keys enforce that the contract, engagement, currency, invoice, milestone, change order, credit note, payment, allocation and refund of a record all belong to the same contract.
+4. **Concurrency-safe money operations.**
+   - Every operation that moves money or numbers (issuing, voiding, allocating, reversing, refunding, crediting) runs in one transaction that first locks the contract row, so operations on the same contract run one at a time.
+   - Payments, allocations and refunds cannot be written directly by any user, only through those operations.
+   - A deferred integrity check re-verifies every invariant at commit.
+   - A database test uses two real concurrent sessions to prove that simultaneous allocations cannot over-allocate.

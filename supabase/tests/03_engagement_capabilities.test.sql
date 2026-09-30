@@ -132,8 +132,8 @@ select pg_temp.reset_actor();
 select pg_temp.act_as('finance@tplco.test');
 select is(
   pg_temp.caps('e0000000-0000-4000-8000-000000000003'),
-  array['view_financials'],
-  'Finance Administrator has financial visibility on an engagement they are not assigned to'
+  array['manage_financials', 'view_financials'],
+  'Finance Administrator has financial visibility and management on an engagement they are not assigned to'
 );
 select ok(private.can_view_engagement_financials('e0000000-0000-4000-8000-000000000002'),
   'Finance Administrator passes the Phase 2 financial check portfolio-wide');
