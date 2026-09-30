@@ -8,7 +8,6 @@ const valid = {
   engagementType: "development_architecture_intensive",
   objective: "",
   description: "",
-  methodologyVersion: "DAM 1.0",
   currentPhase: "",
   status: "proposed",
   startDate: "2026-08-03",

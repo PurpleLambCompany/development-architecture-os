@@ -84,3 +84,34 @@ export function compareOutputs(
   const unexpected = outputs.filter((a) => !expected.some((e) => matches(e, a)));
   return { comparison, unexpected };
 }
+
+/** The text fields a version's history compares, in reading order. */
+export const VERSION_TEXT_FIELDS = [
+  ["architectural_question", "Architectural question"],
+  ["summary", "Summary"],
+  ["applicability", "Applicability"],
+  ["exclusions", "Exclusions"],
+  ["prerequisites", "Prerequisites"],
+  ["expected_inputs", "Expected inputs"],
+  ["evidence_expectations", "Evidence expectations"],
+  ["practitioner_roles", "Practitioner roles"],
+  ["completion_criteria", "Completion criteria"],
+  ["review_implications", "Review implications"],
+  ["implementation_implications", "Implementation implications"],
+  ["practitioner_instructions", "Practitioner instructions"],
+  ["external_basis", "External basis"],
+] as const;
+
+export type VersionTextField = (typeof VERSION_TEXT_FIELDS)[number][0];
+
+/** Field-level differences between two versions' text (§29.2 History). */
+export function diffVersionFields(
+  prior: Partial<Record<VersionTextField, string | null>> | null,
+  current: Partial<Record<VersionTextField, string | null>>,
+): { field: VersionTextField; label: string; before: string; after: string }[] {
+  return VERSION_TEXT_FIELDS.flatMap(([field, label]) => {
+    const before = (prior?.[field] ?? "").trim();
+    const after = (current[field] ?? "").trim();
+    return before === after ? [] : [{ field, label, before, after }];
+  });
+}

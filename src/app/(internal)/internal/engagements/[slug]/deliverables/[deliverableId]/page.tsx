@@ -1,3 +1,4 @@
+import { getApproachGuidance } from "@/domain/methodology/queries";
 import { notFound } from "next/navigation";
 import {
   publishElement,
@@ -200,6 +201,7 @@ export default async function DeliverableDetailPage({
 
       <StatementsPanel
         elementId={element.id}
+        approach={await getApproachGuidance(element.id)}
         statements={detail.statements}
         evidenceOptions={evidenceOptions}
         canEdit={canEdit}

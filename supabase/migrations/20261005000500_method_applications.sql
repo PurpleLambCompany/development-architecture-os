@@ -724,7 +724,7 @@ begin
     raise exception 'Element not found on this engagement' using errcode = 'P0002';
   end if;
   if not private.method_element_role_allows(p_role, e.kind) then
-    raise exception 'A % cannot be % by method work', replace(e.kind::text, '_', ' '), p_role using errcode = '23514';
+    raise exception 'Method work cannot record this % as %', replace(e.kind::text, '_', ' '), p_role using errcode = '23514';
   end if;
   perform private.begin_methodology_operation();
   insert into public.method_application_elements (

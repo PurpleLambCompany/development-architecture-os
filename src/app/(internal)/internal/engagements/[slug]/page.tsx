@@ -165,7 +165,17 @@ export default async function EngagementPage({
               { label: "Current phase", value: engagement.current_phase },
               { label: "Start date", value: formatDate(engagement.start_date) },
               { label: "Target end date", value: formatDate(engagement.target_end_date) },
-              { label: "Methodology version", value: engagement.methodology_version },
+              {
+                label: "Method release",
+                value: (
+                  <Link
+                    href={`/internal/engagements/${engagement.slug}/method`}
+                    className="hover:underline"
+                  >
+                    {engagement.methodology_version}
+                  </Link>
+                ),
+              },
               { label: "Last updated", value: formatDate(engagement.updated_at) },
             ]}
           />

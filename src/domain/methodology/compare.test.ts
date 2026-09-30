@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compareOutputs, diffRelease, type ReleaseMember } from "./compare";
+import { compareOutputs, diffRelease, diffVersionFields, type ReleaseMember } from "./compare";
 
 const member = (assetId: string, versionId: string, label = "1.0"): ReleaseMember => ({
   assetId,
@@ -71,5 +71,27 @@ describe("expected and actual outputs", () => {
       [{ role: "produced", kind: "object", objectTypeKey: "metric", deliverableType: null }],
     );
     expect(comparison[0]!.produced).toBe(1);
+  });
+});
+
+describe("version field diff", () => {
+  it("lists only the text fields that changed, in reading order", () => {
+    expect(
+      diffVersionFields(
+        { architectural_question: "How ready?", applicability: "Regions", summary: "" },
+        {
+          architectural_question: "How ready?",
+          applicability: "Regions and districts",
+          exclusions: " No ",
+        },
+      ).map((d) => [d.field, d.before, d.after]),
+    ).toEqual([
+      ["applicability", "Regions", "Regions and districts"],
+      ["exclusions", "", "No"],
+    ]);
+  });
+
+  it("treats a first version as all additions", () => {
+    expect(diffVersionFields(null, { summary: "New" }).map((d) => d.field)).toEqual(["summary"]);
   });
 });

@@ -33,7 +33,6 @@ const EMPTY: EngagementUpdateForm = {
   engagementType: "development_architecture_sprint",
   objective: "",
   description: "",
-  methodologyVersion: "DAM 1.0",
   currentPhase: "",
   status: "proposed",
   startDate: "",
@@ -180,13 +179,6 @@ export function EngagementForm(props: Props) {
           error={errors.currentPhase?.message}
         >
           <Input id="currentPhase" {...form.register("values.currentPhase")} />
-        </Field>
-        <Field
-          label="Methodology version"
-          htmlFor="methodologyVersion"
-          error={errors.methodologyVersion?.message}
-        >
-          <Input id="methodologyVersion" {...form.register("values.methodologyVersion")} />
         </Field>
       </div>
 
