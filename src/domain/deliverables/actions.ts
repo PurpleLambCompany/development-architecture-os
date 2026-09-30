@@ -11,7 +11,7 @@ import {
   MAX_FILE_BYTES,
 } from "@/domain/intelligence/catalog";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { attachDeliverableFileSchema, createDeliverableSchema } from "./schemas";
+import { attachDeliverableFileSchema, createDeliverableSchema, updateDeliverableSchema } from "./schemas";
 
 /**
  * Deliverable server actions. Each validates its input for clear messages
@@ -52,6 +52,34 @@ export async function createDeliverable(engagementId: string, input: unknown) {
       p_confidential: v.confidential,
       ...(v.summary ? { p_summary: v.summary } : {}),
     }),
+  );
+}
+
+/** An update or delete that RLS silently filtered out means no permission. */
+function expectRow<T>(result: { data: T[] | null; error: PostgrestError | null }): Work<T> {
+  if (result.error) return { error: result.error };
+  if (!result.data?.length) {
+    return {
+      error: { code: "42501", message: "No permission", details: "", hint: "", name: "PostgrestError" } as PostgrestError,
+    };
+  }
+  return { data: result.data[0], error: null };
+}
+
+/** Direct edit of a deliverable's own working fields (manage_deliverables). */
+export async function updateDeliverable(elementId: string, input: unknown) {
+  return run(updateDeliverableSchema, input, async (supabase, v) =>
+    expectRow(
+      await supabase
+        .from("deliverables")
+        .update({
+          deliverable_type: v.deliverableType,
+          baseline_id: v.baselineId,
+          confidential: v.confidential,
+        })
+        .eq("element_id", elementId)
+        .select("element_id"),
+    ),
   );
 }
 

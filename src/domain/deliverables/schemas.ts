@@ -42,3 +42,10 @@ export const createDeliverableSchema = z.object({
 export const attachDeliverableFileSchema = z.object({
   fileIds: idList.refine((v) => v.length > 0, "Choose at least one file"),
 });
+
+/** Direct edits to the deliverable's own working fields (manage_deliverables). */
+export const updateDeliverableSchema = z.object({
+  deliverableType: z.enum(DELIVERABLE_TYPES, "Choose the kind of deliverable"),
+  baselineId: optionalId,
+  confidential: yesNo,
+});
