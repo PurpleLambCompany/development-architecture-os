@@ -129,7 +129,7 @@ select pg_temp.reset_actor();
 select pg_temp.act_as('researcher@tplco.test');
 select is(pg_temp.visible('architecture_elements', 'e0000000-0000-4000-8000-000000000001'), 39,
   'an assigned Researcher reads the working architecture');
-select is(pg_temp.visible('element_method_lineage', 'e0000000-0000-4000-8000-000000000001'), 2,
+select is(pg_temp.visible('element_method_lineage', 'e0000000-0000-4000-8000-000000000001'), 3,
   'and its internal Method lineage');
 select lives_ok($$ select pg_temp.new_object('knowledge_area', 'Researcher draft') $$, 'a Researcher drafts');
 select lives_ok($$ insert into public.architecture_statements (element_id, statement_kind, body, provenance)

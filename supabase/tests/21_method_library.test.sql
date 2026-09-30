@@ -48,7 +48,7 @@ $$;
 -- -----------------------------------------------------------------------------
 select pg_temp.act_as('researcher@tplco.test');
 select is((select count(*)::int from public.method_asset_categories), 12, 'internal users read the categories');
-select is((select count(*)::int from public.method_assets), 2, 'and the Method Assets');
+select is((select count(*)::int from public.method_assets), 3, 'and the Method Assets');
 select pg_temp.act_as('sponsor@meridian.test');
 select is((select count(*)::int from public.method_asset_categories), 0, 'clients read no categories');
 select is((select count(*)::int from public.method_assets), 0, 'clients read no Method Assets');

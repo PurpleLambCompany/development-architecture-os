@@ -38,6 +38,7 @@ import {
 } from "@/domain/architecture/queries";
 import type { ObjectTypeKey } from "@/domain/architecture/rules";
 import { getBusinessToday } from "@/domain/finance/queries";
+import { LINEAGE_ROLE, LINEAGE_RULES, lineageRolesForKind } from "@/domain/methodology/catalog";
 import {
   getClientActions,
   getContributions,
@@ -146,6 +147,22 @@ export default async function ElementPage({
     getReviewRegister(engagement.id),
     getDeliverableRegister(engagement.id),
   ]);
+
+  // Lineage the element's kind accepts, against current published proper versions.
+  const lineageOptions = lineageRolesForKind(element.kind).flatMap((role) =>
+    methodAssets
+      .filter(
+        (a) =>
+          a.form === LINEAGE_RULES[role].form &&
+          a.status === "active" &&
+          a.method_asset_versions?.lifecycle === "published" &&
+          !a.method_asset_versions.legacy,
+      )
+      .map((a) => ({
+        value: `${role}:${a.method_asset_versions!.id}`,
+        label: `${LINEAGE_ROLE[role]} · ${a.title} ${a.method_asset_versions!.version_label ?? ""}`,
+      })),
+  );
   const preview = query.preview === "1" ? await previewClientSnapshot(element.id) : null;
   const versionId = typeof query.version === "string" ? query.version : null;
   const shownVersion = versionId ? element.versions.find((v) => v.id === versionId) : null;
@@ -519,7 +536,7 @@ export default async function ElementPage({
 
       <Panel
         title="Method lineage"
-        description="Which TPLCo Method assets this element derives from. Internal only: never in a client snapshot."
+        description="The exact Method Asset versions this element instantiates, is produced from or is judged against. Internal only: never in a client snapshot."
         actions={<InternalMark />}
       >
         <div className="space-y-4">
@@ -530,11 +547,12 @@ export default async function ElementPage({
               {detail.lineage.map((l) => (
                 <li key={l.id} className="flex flex-wrap items-center justify-between gap-3 py-2">
                   <span>
+                    <span className="text-ink-subtle">{LINEAGE_ROLE[l.lineage_role]}</span>{" "}
                     {l.method_assets?.title}{" "}
-                    <span className="text-ink-subtle">· Method {l.method_version}</span>
+                    <span className="text-ink-subtle">· {l.method_version}</span>
                     {l.note ? <span className="text-ink-muted"> · {l.note}</span> : null}
                   </span>
-                  {editable ? (
+                  {editable && l.lineage_role !== "legacy_derived_from" ? (
                     <ActionButton
                       action={removeLineage.bind(null, l.id)}
                       label="Remove"
@@ -545,23 +563,19 @@ export default async function ElementPage({
               ))}
             </ul>
           )}
-          {editable && methodAssets.length > 0 ? (
+          {editable && lineageOptions.length > 0 ? (
             <ActionForm
               fields={[
                 {
-                  name: "methodAssetId",
-                  label: "Method asset",
+                  name: "target",
+                  label: "Derives from",
                   type: "select",
-                  options: methodAssets.map((a) => ({ value: a.id, label: a.title })),
+                  options: lineageOptions,
                   wide: true,
                 },
-                { name: "methodVersion", label: "Method version" },
                 { name: "note", label: "Note" },
               ]}
-              defaultValues={{
-                methodAssetId: methodAssets[0]!.id,
-                methodVersion: engagement.methodology_version ?? "",
-              }}
+              defaultValues={{ target: lineageOptions[0]!.value }}
               action={addLineage.bind(null, element.id)}
               submitLabel="Record lineage"
               trigger="Record lineage"

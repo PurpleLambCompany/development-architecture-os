@@ -279,9 +279,14 @@ export const decisionOptionSchema = z.object({
   tradeoffs: text(4000),
 });
 
+// The form offers "role:versionId" pairs; the database enforces form, role and kind.
 export const lineageSchema = z.object({
-  methodAssetId: id,
-  methodVersion: required(50),
+  target: z
+    .string()
+    .regex(
+      /^(instantiates|produced_from|judged_against):[0-9a-f-]{36}$/,
+      "Choose what it derives from",
+    ),
   note: text(1000),
 });
 

@@ -705,11 +705,12 @@ insert into public.element_evidence_links (element_id, evidence_source_id, stanc
   ('b3000000-0000-4000-8000-000000000101', 'b3000000-0000-4000-8000-000000000701', 'supports', 'Whole report');
 
 -- Method lineage (internal only) ---------------------------------------------------------------
-insert into public.element_method_lineage (element_id, method_asset_id, method_version, note)
-select 'b3000000-0000-4000-8000-000000000302', id, 'DAM 1.0', 'Applied from the strategic model library'
+-- Recorded before Phase 6, so it stays legacy_derived_from lineage (D28).
+select private.insert_legacy_method_lineage('b3000000-0000-4000-8000-000000000302', id, 'DAM 1.0',
+  'Applied from the strategic model library')
 from public.method_assets where title = 'Strategic Model Library Index';
-insert into public.element_method_lineage (element_id, method_asset_id, method_version, note)
-select 'b3000000-0000-4000-8000-000000000201', id, 'DAM 1.0', 'Readiness assessed with the diagnostic'
+select private.insert_legacy_method_lineage('b3000000-0000-4000-8000-000000000201', id, 'DAM 1.0',
+  'Readiness assessed with the diagnostic')
 from public.method_assets where title = 'Capability Readiness Diagnostic';
 
 -- Relationships ----------------------------------------------------------------------------------
@@ -749,6 +750,34 @@ select pg_temp.rel('b3000000-0000-4000-8000-000000000507', 'addresses', 'b300000
 select pg_temp.rel('b3000000-0000-4000-8000-000000000202', 'mitigates', 'b3000000-0000-4000-8000-000000000501');
 select pg_temp.rel('b3000000-0000-4000-8000-000000000404', 'conflicts_with', 'b3000000-0000-4000-8000-000000000403', 'internal',
   null, 'The $5M delegation limit contradicts the board''s mandate to approve every acquisition.');
+
+-- The anchor-led model as a Method Library Model (Phase 6, D19) ------------------------------------
+-- Methodology-derived content must record the Model it instantiates before it is
+-- published. The Architect authors the Model; the Principal Architect publishes it.
+create temporary table seed_model (asset_id uuid, version_id uuid) on commit drop;
+insert into seed_model (asset_id)
+select public.create_method_asset('anchor-led-cluster-development-model', 'Anchor-led cluster development model',
+  'model', 'strategic_models');
+update seed_model set version_id = (select id from public.method_asset_versions v where v.asset_id = seed_model.asset_id);
+select public.update_method_asset_version(version_id, jsonb_build_object(
+  'architectural_question', 'How can anchor institutions organize the growth of a development district?',
+  'summary', 'Growth led by anchor institutions whose commitments of land, space and demand draw tenants and investment.',
+  'applicability', 'Districts with one or more institutions able to commit land, space or procurement over a long horizon.',
+  'exclusions', 'Districts without an anchor willing to make binding commitments.',
+  'identity_disclosure', 'may_be_named',
+  'disclosable_name', 'Anchor-led cluster development',
+  'change_summary', 'First published version.'))
+from seed_model;
+select public.set_method_version_domains(version_id, array['strategic_model']::public.architecture_domain[]) from seed_model;
+select public.set_method_version_outputs(version_id,
+  '[{"output_kind": "object", "object_type_key": "strategic_model", "note": "The applied model"}]'::jsonb)
+from seed_model;
+select pg_temp.act_as('10000000-0000-4000-8000-000000000002');  -- Principal Architect (publish_methodology)
+select public.publish_method_asset_version(version_id, '1.0') from seed_model;
+select pg_temp.act_as('10000000-0000-4000-8000-000000000003');  -- Architect
+select public.record_method_lineage('b3000000-0000-4000-8000-000000000302', version_id, 'instantiates',
+  'Applied from the anchor-led cluster development model.')
+from seed_model;
 
 -- Publish everything except the stage 2 draft --------------------------------------------------
 select public.publish_element_version(id, 'First published version')

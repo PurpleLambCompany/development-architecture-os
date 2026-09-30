@@ -42,7 +42,7 @@ $$;
 -- Seed results
 -- -----------------------------------------------------------------------------
 select is((select string_agg(key || ':' || status || ':' || coalesce(form::text, '-') || ':' || category_key, ', ' order by key)
-  from public.method_assets),
+  from public.method_assets where status = 'legacy'),
   'capability-readiness-diagnostic:legacy:-:diagnostic_frameworks, strategic-model-library-index:legacy:-:strategic_models',
   'both pre-Phase 6 assets are legacy, with no inferred form and governed categories');
 select is((select title from public.method_assets where key = 'strategic-model-library-index'),
@@ -66,7 +66,8 @@ select is((select count(*)::int from public.method_asset_versions v where v.lega
 select is((select count(*)::int from information_schema.columns where table_schema = 'public'
   and table_name = 'method_assets' and column_name in ('category', 'version', 'methodology_domain', 'description', 'owner_user_id')),
   0, 'the pre-Phase 6 content columns are gone');
-select is((select count(*)::int from public.element_method_lineage), 2, 'element lineage is untouched');
+select is((select count(*)::int from public.element_method_lineage where lineage_role = 'legacy_derived_from'), 2,
+  'element lineage is carried over as legacy lineage');
 
 -- Edge cases of the same conversion.
 select private.insert_legacy_method_asset('Old Protocol', 'Research Protocol', null, 'v0.9 (beta)', 'retired',

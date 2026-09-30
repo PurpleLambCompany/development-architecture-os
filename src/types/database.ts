@@ -2411,7 +2411,9 @@ export type Database = {
           element_id: string;
           engagement_id: string;
           id: string;
+          lineage_role: Database["public"]["Enums"]["method_lineage_role"];
           method_asset_id: string;
+          method_asset_version_id: string;
           method_version: string;
           note: string;
         };
@@ -2421,7 +2423,9 @@ export type Database = {
           element_id: string;
           engagement_id: string;
           id?: string;
+          lineage_role: Database["public"]["Enums"]["method_lineage_role"];
           method_asset_id: string;
+          method_asset_version_id: string;
           method_version?: string;
           note?: string;
         };
@@ -2431,7 +2435,9 @@ export type Database = {
           element_id?: string;
           engagement_id?: string;
           id?: string;
+          lineage_role?: Database["public"]["Enums"]["method_lineage_role"];
           method_asset_id?: string;
+          method_asset_version_id?: string;
           method_version?: string;
           note?: string;
         };
@@ -2455,6 +2461,13 @@ export type Database = {
             columns: ["method_asset_id"];
             isOneToOne: false;
             referencedRelation: "method_assets";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "element_method_lineage_method_asset_version_id_fkey";
+            columns: ["method_asset_version_id"];
+            isOneToOne: false;
+            referencedRelation: "method_asset_versions";
             referencedColumns: ["id"];
           },
         ];
@@ -7126,6 +7139,15 @@ export type Database = {
         };
         Returns: undefined;
       };
+      record_method_lineage: {
+        Args: {
+          p_element_id: string;
+          p_method_version_id: string;
+          p_note?: string;
+          p_role: Database["public"]["Enums"]["method_lineage_role"];
+        };
+        Returns: string;
+      };
       record_method_rights_holder: {
         Args: {
           p_agreement_reference?: string;
@@ -7207,6 +7229,7 @@ export type Database = {
         Args: { p_application_id: string; p_asset_version_id: string };
         Returns: undefined;
       };
+      remove_method_lineage: { Args: { p_lineage_id: string }; Returns: undefined };
       remove_method_version_file: { Args: { p_file_id: string }; Returns: string };
       remove_method_version_learning_source: {
         Args: { p_application_id: string; p_version_id: string };
