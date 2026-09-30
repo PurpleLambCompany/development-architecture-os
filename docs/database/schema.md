@@ -1,5 +1,7 @@
 # Database schema (Phase 1)
 
+> Phase 2 financial tables, functions and rules are documented in [finance.md](finance.md).
+
 Migrations: `20260929230000_phase1_foundation.sql`, `20260929233000_engagement_capabilities.sql`.
 
 Source of truth: `supabase/migrations/`. Generated TypeScript types: `src/types/database.ts` (`pnpm db:types`).

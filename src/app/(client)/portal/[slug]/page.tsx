@@ -10,21 +10,12 @@ import { getEngagementBySlug } from "@/domain/engagements/queries";
 import { getMyEngagementCapabilities } from "@/domain/capabilities/queries";
 import { ROLE_LABELS } from "@/domain/roles/roles";
 import { EngagementStatusTag } from "@/components/engagements/engagement-status";
-import { NavPlaceholder } from "@/components/shell/nav-link";
+import { formatMoney } from "@/domain/finance/money";
+import { getBusinessToday, getEngagementFinances } from "@/domain/finance/queries";
+import { EngagementNav } from "@/components/portal/engagement-nav";
+import { ButtonLink } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { DetailList, EmptyState, Panel } from "@/components/ui/panel";
-
-/** Client navigation from spec §7. Only Overview is live in Phase 1. */
-const CLIENT_SECTIONS = [
-  "Architecture",
-  "Decisions",
-  "Actions",
-  "Reviews",
-  "Documents",
-  "Implementation",
-  "Billing",
-  "Messages",
-];
 
 export default async function ClientEngagementPage({ params }: PageProps<"/portal/[slug]">) {
   const { slug } = await params;
@@ -44,22 +35,14 @@ export default async function ClientEngagementPage({ params }: PageProps<"/porta
   // financial tables enforce the same check in RLS.
   const capabilities = await getMyEngagementCapabilities(engagement.id);
   const seesBilling = capabilities.has("view_financials");
+  const finances = seesBilling
+    ? await getEngagementFinances(engagement.id, getBusinessToday())
+    : null;
+  const summary = finances?.contract ? finances.summary : null;
 
   return (
     <div className="space-y-8">
-      <nav
-        className="-mt-4 flex flex-wrap gap-x-1 border-b border-rule text-sm"
-        aria-label="Engagement"
-      >
-        <span aria-current="page" className="-mb-px border-b-2 border-accent px-3 py-2 text-ink">
-          Overview
-        </span>
-        {CLIENT_SECTIONS.filter((s) => s !== "Billing" || seesBilling).map((section) => (
-          <span key={section} className="px-0 py-0.5">
-            <NavPlaceholder>{section}</NavPlaceholder>
-          </span>
-        ))}
-      </nav>
+      <EngagementNav slug={engagement.slug} current="overview" seesBilling={seesBilling} />
 
       <PageHeader
         eyebrow={[
@@ -125,10 +108,44 @@ export default async function ClientEngagementPage({ params }: PageProps<"/porta
       </div>
 
       {seesBilling ? (
-        <Panel title="Financial snapshot">
-          <EmptyState title="Billing information is not yet available">
-            Contract, payment schedule and invoices will appear here.
-          </EmptyState>
+        <Panel
+          title="Financial snapshot"
+          actions={
+            summary ? (
+              <ButtonLink href={`/portal/${engagement.slug}/billing`} variant="secondary" size="sm">
+                View billing
+              </ButtonLink>
+            ) : null
+          }
+        >
+          {summary ? (
+            <DetailList
+              items={[
+                {
+                  label: "Revised contract value",
+                  value: formatMoney(summary.revised_value_minor, summary.currency),
+                },
+                {
+                  label: "Currently due",
+                  value: formatMoney(summary.currently_due_minor, summary.currency),
+                },
+                {
+                  label: "Next payment",
+                  value: summary.next_payment_amount_minor
+                    ? `${formatMoney(summary.next_payment_amount_minor, summary.currency)}${summary.next_payment_date ? ` · ${formatDate(summary.next_payment_date)}` : ""}`
+                    : null,
+                },
+                {
+                  label: "Net remaining to collect",
+                  value: formatMoney(summary.net_remaining_to_collect_minor, summary.currency),
+                },
+              ]}
+            />
+          ) : (
+            <EmptyState title="Billing information is not yet available">
+              Contract, payment schedule and invoices will appear here.
+            </EmptyState>
+          )}
         </Panel>
       ) : null}
 

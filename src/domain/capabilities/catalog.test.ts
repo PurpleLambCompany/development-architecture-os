@@ -3,7 +3,6 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CLIENT_ROLES, INTERNAL_ROLES, type AppRole } from "@/domain/roles/roles";
 import {
-  ENGAGEMENT_CAPABILITIES,
   ROLE_CAPABILITY_DEFAULTS,
   canManageCapability,
   capabilitySide,

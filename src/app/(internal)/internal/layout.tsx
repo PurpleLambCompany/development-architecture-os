@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { requireInternal } from "@/lib/auth/viewer";
+import { getFinanceDirectory } from "@/domain/finance/queries";
 import { NavLink, NavPlaceholder } from "@/components/shell/nav-link";
 import { UserMenu } from "@/components/shell/user-menu";
 
@@ -12,6 +13,8 @@ import { UserMenu } from "@/components/shell/user-menu";
  */
 export default async function InternalLayout({ children }: LayoutProps<"/internal">) {
   const viewer = await requireInternal();
+  // Finance appears only for people with financial visibility somewhere.
+  const hasFinance = (await getFinanceDirectory()).length > 0;
 
   return (
     <div className="flex min-h-screen">
@@ -41,12 +44,16 @@ export default async function InternalLayout({ children }: LayoutProps<"/interna
                 <NavLink href="/internal/engagements?view=upcoming">Upcoming</NavLink>
                 <NavLink href="/internal/engagements?view=completed">Completed</NavLink>
               </NavGroup>
+              {hasFinance ? (
+                <NavGroup label="Finance">
+                  <NavLink href="/internal/finance">Portfolio</NavLink>
+                </NavGroup>
+              ) : null}
               <NavGroup label="Later phases">
                 <NavPlaceholder>Architecture</NavPlaceholder>
                 <NavPlaceholder>Intelligence</NavPlaceholder>
                 <NavPlaceholder>Reviews</NavPlaceholder>
                 <NavPlaceholder>Deliverables</NavPlaceholder>
-                <NavPlaceholder>Finance</NavPlaceholder>
                 <NavPlaceholder>Method Library</NavPlaceholder>
                 <NavPlaceholder>Portfolio</NavPlaceholder>
               </NavGroup>
@@ -63,6 +70,7 @@ export default async function InternalLayout({ children }: LayoutProps<"/interna
             <Link href="/internal">Dashboard</Link>
             <Link href="/internal/organizations">Organizations</Link>
             <Link href="/internal/engagements">Engagements</Link>
+            {hasFinance ? <Link href="/internal/finance">Finance</Link> : null}
           </nav>
           <span className="hidden md:block" />
           <UserMenu

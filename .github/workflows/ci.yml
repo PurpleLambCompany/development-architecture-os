@@ -27,6 +27,7 @@ jobs:
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder
       NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
       SUPABASE_SECRET_KEY: ci-placeholder
+      BUSINESS_TIME_ZONE: America/Chicago
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v4
@@ -59,7 +60,7 @@ jobs:
         run: >-
           pnpm exec supabase start
           -x logflare,vector,studio,imgproxy,edge-runtime,realtime,supavisor,postgres-meta
-      - name: pnpm db:test (pgTAP RLS and capability tests)
+      - name: pnpm db:test (pgTAP RLS, capability, finance and concurrency tests)
         run: pnpm db:test
       - name: Generated database types are up to date
         run: |
