@@ -55,7 +55,11 @@ export function excludedPaths(kind: ElementKind): string[] {
   return [...EXCLUDED_FOR_ALL_KINDS, ...EXCLUDED_BY_KIND[kind]];
 }
 
-export const CHANGE_TYPES = ["first_publication", "substantive_revision", "status_publication"] as const;
+export const CHANGE_TYPES = [
+  "first_publication",
+  "substantive_revision",
+  "status_publication",
+] as const;
 export type RevisionChangeType = (typeof CHANGE_TYPES)[number];
 
 export const CHANGE_TYPE_LABELS: Record<RevisionChangeType, string> = {
@@ -70,7 +74,10 @@ type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
  * The reduced snapshot, as the SQL computes it. Used by tests and to explain a
  * classification; the database remains the authority.
  */
-export function substantiveSnapshot(kind: ElementKind, snapshot: Record<string, Json>): Record<string, Json> {
+export function substantiveSnapshot(
+  kind: ElementKind,
+  snapshot: Record<string, Json>,
+): Record<string, Json> {
   const out: Record<string, Json> = { ...snapshot };
   for (const path of EXCLUDED_FOR_ALL_KINDS) {
     if (!path.includes(".") && !path.includes("[")) delete out[path];

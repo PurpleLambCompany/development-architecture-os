@@ -41,7 +41,8 @@ export function orderKeyOf(item: {
     reachClass: reachClassOf(f),
     responsible: f.responsible === true,
     triggerAt: item.trigger_at ?? f.trigger_at ?? null,
-    referenceCode: f.reference_code ?? item.subject_reference_code ?? item.trigger_reference_code ?? "",
+    referenceCode:
+      f.reference_code ?? item.subject_reference_code ?? item.trigger_reference_code ?? "",
     tiebreak: item.item_key,
   };
 }
@@ -80,7 +81,10 @@ export function compareOrderKeys(a: OrderKey, b: OrderKey): number {
 export function strongestOrderKey(keys: readonly OrderKey[]): OrderKey {
   if (keys.length === 0) throw new Error("strongestOrderKey needs at least one key");
   const sorted = [...keys].sort(compareOrderKeys);
-  const dates = keys.map((k) => k.governanceDate).filter((d): d is string => d !== null).sort();
+  const dates = keys
+    .map((k) => k.governanceDate)
+    .filter((d): d is string => d !== null)
+    .sort();
   const triggers = keys.map((k) => k.triggerAt).filter((d): d is string => d !== null);
   triggers.sort((x, y) => Date.parse(y) - Date.parse(x));
   return {

@@ -17,7 +17,10 @@ const sql = readFileSync(
   join(process.cwd(), "supabase/migrations/20261006000000_phase7a_edge_catalog.sql"),
   "utf8",
 );
-const traceSql = readFileSync(join(process.cwd(), "supabase/migrations/20261006000400_impact_trace.sql"), "utf8");
+const traceSql = readFileSync(
+  join(process.cwd(), "supabase/migrations/20261006000400_impact_trace.sql"),
+  "utf8",
+);
 
 const sqlRows = [
   ...sql.matchAll(
@@ -62,12 +65,16 @@ describe("relationship-impact direction matrix", () => {
     expect(recursive).toEqual(RECURSIVE_WALKS.map((w) => [...w]));
     expect(IMPACT_MAX_DEPTH).toBe(2);
     for (const rule of IMPACT_MATRIX) {
-      expect(rule.maxDepth).toBe(rule.propagation === "never" ? 0 : rule.propagation === "recursive" ? 2 : 1);
+      expect(rule.maxDepth).toBe(
+        rule.propagation === "never" ? 0 : rule.propagation === "recursive" ? 2 : 1,
+      );
     }
   });
 
   it("recurses underpins only from an invalidated assumption", () => {
-    const conditioned = IMPACT_MATRIX.filter((r) => r.condition === INVALIDATED_UNDERPINS_CONDITION);
+    const conditioned = IMPACT_MATRIX.filter(
+      (r) => r.condition === INVALIDATED_UNDERPINS_CONDITION,
+    );
     expect(conditioned.map((r) => r.linkKey)).toEqual(["underpins"]);
     expect(conditioned[0].propagation).not.toBe("recursive");
   });
@@ -94,8 +101,12 @@ describe("relationship-impact direction matrix", () => {
   });
 
   it("keeps the legacy traces documented as legacy and never walks generically", () => {
-    expect(traceSql).toMatch(/comment on function public\.intelligence_impact\(uuid, int\)[\s\S]*?[Ll]egacy/);
-    expect(traceSql).toMatch(/comment on function public\.implementation_impact\(uuid, int\)[\s\S]*?[Ll]egacy/);
+    expect(traceSql).toMatch(
+      /comment on function public\.intelligence_impact\(uuid, int\)[\s\S]*?[Ll]egacy/,
+    );
+    expect(traceSql).toMatch(
+      /comment on function public\.implementation_impact\(uuid, int\)[\s\S]*?[Ll]egacy/,
+    );
     expect(traceSql).toContain("relationship_impact_rules");
   });
 });

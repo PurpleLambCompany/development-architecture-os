@@ -41,6 +41,8 @@ import {
   getMethodApplication,
   getUsableVersions,
 } from "@/domain/methodology/queries";
+import { getEdgeItems } from "@/domain/edge/queries";
+import { ContextualEdgePanel } from "@/components/edge/edge-panel";
 import { formatDate } from "@/lib/format";
 import { ArchitectureNav } from "@/components/architecture/architecture-nav";
 import { ApplicationStateTag, FormBadge, ReleaseChip } from "@/components/methodology/badges";
@@ -62,13 +64,16 @@ export default async function MethodApplicationPage({
   const { engagement, canEdit } = await getInternalArchitectureContext(slug);
   const detail = await getMethodApplication(applicationId);
   if (!detail || detail.app.engagement_id !== engagement.id) notFound();
-  const [architecture, evidence, contexts, usable, deliverableTypes] = await Promise.all([
-    loadArchitecture(engagement.id),
-    listEvidence(engagement.id),
-    getDevelopmentContexts(),
-    getUsableVersions(),
-    getDeliverableTypes(engagement.id),
-  ]);
+  const [architecture, evidence, contexts, usable, deliverableTypes, edgeItems] = await Promise.all(
+    [
+      loadArchitecture(engagement.id),
+      listEvidence(engagement.id),
+      getDevelopmentContexts(),
+      getUsableVersions(),
+      getDeliverableTypes(engagement.id),
+      getEdgeItems(engagement.id, { subjectId: applicationId }),
+    ],
+  );
 
   const { app } = detail;
   const version = app.method_asset_versions;
@@ -360,6 +365,16 @@ export default async function MethodApplicationPage({
           ) : null}
         </Panel>
       </div>
+
+      <ContextualEdgePanel
+        slug={slug}
+        engagementId={engagement.id}
+        items={edgeItems}
+        canJudge={canEdit}
+        title="Practice conditions"
+        description="Conditions on this application from the Method Library and the architecture it touched: a superseded method basis, stages without a recorded treatment, examined elements revised since. Internal only."
+        empty="No practice conditions on this application."
+      />
 
       <Panel
         title="Stages"

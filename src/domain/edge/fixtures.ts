@@ -1,7 +1,9 @@
 import type { EdgeItem } from "./items";
 
 /** A test envelope row with defaults; override what a case needs. */
-export function edgeItem(overrides: Partial<EdgeItem> & Pick<EdgeItem, "rule_key" | "subject_id">): EdgeItem {
+export function edgeItem(
+  overrides: Partial<EdgeItem> & Pick<EdgeItem, "rule_key" | "subject_id">,
+): EdgeItem {
   const base: EdgeItem = {
     item_key: `${overrides.rule_key}:${overrides.subject_id}`,
     rule_key: overrides.rule_key,

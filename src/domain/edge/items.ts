@@ -114,7 +114,13 @@ export function toEdgeItems(rows: readonly unknown[] | null | undefined): EdgeIt
 
 export const CHANGE_REACHES_KEY = "change_reaches";
 
-export const JUDGMENT_KINDS = ["investigating", "not_material", "deferred", "disagree", "promoted"] as const;
+export const JUDGMENT_KINDS = [
+  "investigating",
+  "not_material",
+  "deferred",
+  "disagree",
+  "promoted",
+] as const;
 export type JudgmentKind = (typeof JUDGMENT_KINDS)[number];
 
 export const JUDGMENT_LABELS: Record<JudgmentKind, string> = {

@@ -1,7 +1,13 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { FIRST_BRIEFING_DAYS, FIRST_BRIEFING_NOTE, briefingWindow, isNewSince, markThroughFor } from "./briefing";
+import {
+  FIRST_BRIEFING_DAYS,
+  FIRST_BRIEFING_NOTE,
+  briefingWindow,
+  isNewSince,
+  markThroughFor,
+} from "./briefing";
 
 const now = new Date("2026-10-14T15:00:00.000Z");
 
@@ -17,13 +23,22 @@ describe("Since You Were Away", () => {
 
   it("starts at the user's own mark when one exists", () => {
     const w = briefingWindow("2026-10-10T09:30:00Z", now);
-    expect(w).toEqual({ since: "2026-10-10T09:30:00.000Z", until: now.toISOString(), isDefault: false });
+    expect(w).toEqual({
+      since: "2026-10-10T09:30:00.000Z",
+      until: now.toISOString(),
+      isDefault: false,
+    });
   });
 
   it("marks through the newest change shown, not now", () => {
-    expect(markThroughFor(["2026-10-12T10:00:00Z", null, "2026-10-13T08:00:00Z", "2026-10-11T00:00:00Z"])).toBe(
-      "2026-10-13T08:00:00.000Z",
-    );
+    expect(
+      markThroughFor([
+        "2026-10-12T10:00:00Z",
+        null,
+        "2026-10-13T08:00:00Z",
+        "2026-10-11T00:00:00Z",
+      ]),
+    ).toBe("2026-10-13T08:00:00.000Z");
     expect(markThroughFor([])).toBeNull();
   });
 

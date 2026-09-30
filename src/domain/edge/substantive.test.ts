@@ -1,9 +1,18 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { ELEMENT_KINDS, EXCLUDED_BY_KIND, EXCLUDED_FOR_ALL_KINDS, excludedPaths, substantiveSnapshot } from "./substantive";
+import {
+  ELEMENT_KINDS,
+  EXCLUDED_BY_KIND,
+  EXCLUDED_FOR_ALL_KINDS,
+  excludedPaths,
+  substantiveSnapshot,
+} from "./substantive";
 
-const sql = readFileSync(join(process.cwd(), "supabase/migrations/20261006000100_substantive_revisions.sql"), "utf8");
+const sql = readFileSync(
+  join(process.cwd(), "supabase/migrations/20261006000100_substantive_revisions.sql"),
+  "utf8",
+);
 
 function sqlExclusions(): Record<string, string[]> {
   const start = sql.indexOf("function private.substantive_detail_exclusions(");
@@ -49,10 +58,17 @@ describe("substantive revision", () => {
     const statusOnly = {
       ...before,
       ai_review_state: "pending",
-      details: { ...before.details, implementation_status: "operational", actual_operational_on: "2026-10-01" },
+      details: {
+        ...before.details,
+        implementation_status: "operational",
+        actual_operational_on: "2026-10-01",
+      },
       statements: [{ body: "b", ai_review_state: "reviewed", ai_reviewed_by: "u" }],
     };
-    const substantive = { ...before, details: { ...before.details, target_operational_on: "2027-01-01" } };
+    const substantive = {
+      ...before,
+      details: { ...before.details, target_operational_on: "2027-01-01" },
+    };
     const kind = "implementation_initiative" as const;
     expect(substantiveSnapshot(kind, statusOnly)).toEqual(substantiveSnapshot(kind, before));
     expect(substantiveSnapshot(kind, substantive)).not.toEqual(substantiveSnapshot(kind, before));

@@ -111,7 +111,8 @@ function buildConsequence(items: EdgeItem[]): EdgeConsequence {
 function refCodeFor(items: EdgeItem[], id: string): string | null {
   for (const item of items) {
     if (item.subject_id === id && item.subject_reference_code) return item.subject_reference_code;
-    if (item.trigger_subject_id === id && item.trigger_reference_code) return item.trigger_reference_code;
+    if (item.trigger_subject_id === id && item.trigger_reference_code)
+      return item.trigger_reference_code;
     for (const ref of item.basis ?? []) {
       if (ref.id === id && ref.reference_code) return ref.reference_code;
     }
@@ -125,7 +126,9 @@ function buildEvent(key: string, items: EdgeItem[]): EdgeEvent {
     const k = consequenceKey(item);
     bySubject.set(k, [...(bySubject.get(k) ?? []), item]);
   }
-  const all = [...bySubject.values()].map(buildConsequence).sort((a, b) => compareOrderKeys(a.orderKey, b.orderKey));
+  const all = [...bySubject.values()]
+    .map(buildConsequence)
+    .sort((a, b) => compareOrderKeys(a.orderKey, b.orderKey));
 
   // Rule 6: a hub collapses only when two or more lines pass through it.
   const hubMembers = new Map<string, EdgeConsequence[]>();
@@ -138,7 +141,11 @@ function buildEvent(key: string, items: EdgeItem[]): EdgeEvent {
   const collapsed = new Set<string>();
   for (const [hub, members] of hubMembers) {
     if (members.length < 2) continue;
-    hubs.push({ hubElementId: hub, hubReferenceCode: refCodeFor(items, hub), consequences: members });
+    hubs.push({
+      hubElementId: hub,
+      hubReferenceCode: refCodeFor(items, hub),
+      consequences: members,
+    });
     for (const m of members) collapsed.add(m.key);
   }
   hubs.sort((a, b) => compareOrderKeys(a.consequences[0].orderKey, b.consequences[0].orderKey));
@@ -146,7 +153,9 @@ function buildEvent(key: string, items: EdgeItem[]): EdgeEvent {
   const head = [...items].sort((a, b) => compareOrderKeys(orderKeyOf(a), orderKeyOf(b)))[0];
   const withTrigger = items.find((i) => i.trigger_subject_id) ?? head;
   const orderKey = strongestOrderKey(items.map(orderKeyOf));
-  const summaries = items.map((i) => detailString(i, "change_summary")).filter((s): s is string => s !== null);
+  const summaries = items
+    .map((i) => detailString(i, "change_summary"))
+    .filter((s): s is string => s !== null);
   return {
     key,
     triggerType: head.trigger_type,

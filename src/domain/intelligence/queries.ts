@@ -16,7 +16,6 @@ type Row<T extends keyof Tables> = Tables[T]["Row"];
 
 export type SignalRow = Database["public"]["Functions"]["intelligence_signals"]["Returns"][number];
 export type HistoryRow = Database["public"]["Functions"]["intelligence_history"]["Returns"][number];
-export type ImpactRow = Database["public"]["Functions"]["intelligence_impact"]["Returns"][number];
 export type EscalationRow = Row<"intelligence_escalations">;
 export type StewardshipRow = Row<"intelligence_stewardship">;
 export type EngagementFileRow = Row<"engagement_files">;
@@ -58,16 +57,6 @@ export async function getStewardship(elementId: string): Promise<StewardshipRow 
 export async function getRecordHistory(elementId: string): Promise<HistoryRow[]> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("intelligence_history", { p_element_id: elementId });
-  if (error) throw error;
-  return data ?? [];
-}
-
-export async function getImpact(elementId: string, depth = 3): Promise<ImpactRow[]> {
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.rpc("intelligence_impact", {
-    p_element_id: elementId,
-    p_depth: depth,
-  });
   if (error) throw error;
   return data ?? [];
 }

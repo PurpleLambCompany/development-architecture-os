@@ -17,8 +17,6 @@ export type ImplementationRegisterRow =
   Database["public"]["Functions"]["implementation_register"]["Returns"][number];
 export type ImplementationSignalRow =
   Database["public"]["Functions"]["implementation_signals"]["Returns"][number];
-export type ImplementationImpactRow =
-  Database["public"]["Functions"]["implementation_impact"]["Returns"][number];
 export type ClientImplementationRow =
   Database["public"]["Functions"]["client_implementation"]["Returns"][number];
 export type EscalationRow = Row<"implementation_escalations">;
@@ -70,16 +68,6 @@ export async function getStatusHistory(elementId: string): Promise<StatusChangeR
     .select("*")
     .eq("element_id", elementId)
     .order("changed_at");
-  if (error) throw error;
-  return data ?? [];
-}
-
-export async function getImpact(elementId: string, depth = 3): Promise<ImplementationImpactRow[]> {
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.rpc("implementation_impact", {
-    p_element_id: elementId,
-    p_depth: depth,
-  });
   if (error) throw error;
   return data ?? [];
 }

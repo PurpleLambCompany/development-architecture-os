@@ -10,6 +10,7 @@ import {
 import { getInternalArchitectureContext } from "@/domain/architecture/context";
 import { getDomainStates, loadArchitecture, objectsIn } from "@/domain/architecture/queries";
 import { objectTypesIn, type ObjectTypeKey } from "@/domain/architecture/rules";
+import { getElementRevisions } from "@/domain/edge/queries";
 import { formatDate } from "@/lib/format";
 import { ArchitectureNav } from "@/components/architecture/architecture-nav";
 import {
@@ -40,11 +41,22 @@ export default async function DomainWorkspacePage({
   const domain = domainFromSlug(domainSlug);
   if (!domain) notFound();
   const { engagement, canEdit, canPublish } = await getInternalArchitectureContext(slug);
-  const [architecture, states] = await Promise.all([
+  const [architecture, states, revisions] = await Promise.all([
     loadArchitecture(engagement.id),
     getDomainStates(engagement.id),
+    getElementRevisions(engagement.id),
   ]);
   const state = states.find((s) => s.domain === domain);
+  // A fact beside the judgment, never a judgment (ADR-0019): substantive
+  // revisions of this domain's objects published after its latest assessment.
+  const revisedSince = state
+    ? revisions.filter(
+        (r) =>
+          r.change_type === "substantive_revision" &&
+          r.published_at > state.assessed_at &&
+          architecture.byId.get(r.element_id)?.object?.domain === domain,
+      ).length
+    : 0;
   const types = objectTypesIn(domain);
   const objects = objectsIn(architecture, domain).filter(
     (o) => query.show === "all" || (o.lifecycle !== "retired" && o.lifecycle !== "superseded"),
@@ -66,6 +78,11 @@ export default async function DomainWorkspacePage({
                 <MaturityMark maturity={state.maturity} />
                 <span className="text-xs text-ink-subtle">
                   assessed {formatDate(state.assessed_at.slice(0, 10))}
+                </span>
+                <span className="text-xs text-ink-subtle">
+                  {revisedSince === 0
+                    ? "No substantive revisions since"
+                    : `Revised since the latest judgment: ${revisedSince} substantive ${revisedSince === 1 ? "revision" : "revisions"}`}
                 </span>
               </>
             ) : (

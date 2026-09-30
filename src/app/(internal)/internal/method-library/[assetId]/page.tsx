@@ -33,6 +33,8 @@ import {
   getPublishGaps,
   getUsableVersions,
 } from "@/domain/methodology/queries";
+import { getPracticeCounts } from "@/domain/edge/queries";
+import { PracticeCountsPanel } from "@/components/methodology/practice-counts";
 import { requireInternal } from "@/lib/auth/viewer";
 import { formatDate } from "@/lib/format";
 import {
@@ -81,12 +83,13 @@ export default async function MethodAssetPage({
   const detail = await getMethodAsset(assetId);
   if (!detail) notFound();
   const { asset, versions, rights } = detail;
-  const [practice, categories, contexts, usage, usable] = await Promise.all([
+  const [practice, categories, contexts, usage, usable, practiceCounts] = await Promise.all([
     getMyPracticeCapabilities(),
     getMethodCategories(),
     getDevelopmentContexts(),
     getMethodUsage(asset.id),
     getUsableVersions(),
+    getPracticeCounts(asset.id),
   ]);
 
   const draft = versions.find((v) => v.lifecycle === "draft");
@@ -559,7 +562,10 @@ export default async function MethodAssetPage({
           editing={editing}
         />
       ) : tab === "usage" ? (
-        <UsageSection usage={usage} />
+        <>
+          <UsageSection usage={usage} />
+          <PracticeCountsPanel rows={practiceCounts} />
+        </>
       ) : (
         <RightsSection asset={asset} rights={rights} canPublish={practice.canPublish} />
       )}

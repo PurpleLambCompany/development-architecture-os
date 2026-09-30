@@ -16,9 +16,13 @@ export type BriefingWindow = {
   isDefault: boolean;
 };
 
-export function briefingWindow(briefedThrough: string | null | undefined, now: Date): BriefingWindow {
+export function briefingWindow(
+  briefedThrough: string | null | undefined,
+  now: Date,
+): BriefingWindow {
   const until = now.toISOString();
-  if (briefedThrough) return { since: new Date(briefedThrough).toISOString(), until, isDefault: false };
+  if (briefedThrough)
+    return { since: new Date(briefedThrough).toISOString(), until, isDefault: false };
   const since = new Date(now.getTime() - FIRST_BRIEFING_DAYS * 24 * 60 * 60 * 1000).toISOString();
   return { since, until, isDefault: true };
 }
@@ -39,7 +43,10 @@ export function markThroughFor(occurredAts: readonly (string | null | undefined)
 }
 
 /** "New on the Edge": items whose trigger time is after the mark. State and date items have none (Q7). */
-export function isNewSince<T extends { trigger_at: string | null }>(item: T, since: string): boolean {
+export function isNewSince<T extends { trigger_at: string | null }>(
+  item: T,
+  since: string,
+): boolean {
   return item.trigger_at !== null && Date.parse(item.trigger_at) > Date.parse(since);
 }
 

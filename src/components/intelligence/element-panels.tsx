@@ -22,6 +22,9 @@ import {
 import type { HistoryRow, LoadedEscalation, StewardshipRow } from "@/domain/intelligence/queries";
 import type { ImpactTraceRow } from "@/domain/edge/queries";
 import { linkWords } from "@/domain/edge/words";
+import { groupEdgeItems } from "@/domain/edge/grouping";
+import type { EdgeItem } from "@/domain/edge/items";
+import { EdgeEventCard } from "@/components/edge/edge-event";
 import { edgeSubjectHref } from "@/components/edge/links";
 import { isActiveRecord, type RegisterRow } from "@/domain/intelligence/register";
 import { formatDate, formatDateTime, personName } from "@/lib/format";
@@ -387,52 +390,92 @@ export function ImpactPanel({
 /** Project Intelligence records bearing on an architecture element. */
 export function BearingPanel({
   slug,
+  engagementId,
   elementId,
   rows,
   today,
+  edgeItems,
+  canJudge,
+  servesOutcomes,
 }: {
   slug: string;
+  engagementId: string;
   elementId: string;
   rows: RegisterRow[];
   today: string;
+  /** Edge items where this element is subject, trigger or reached (§16). */
+  edgeItems: EdgeItem[];
+  canJudge: boolean;
+  /** The D-38 fact: Intended Outcomes this element serves. A fact, never a condition. */
+  servesOutcomes: number;
 }) {
   const active = rows.filter(isActiveRecord);
+  const events = groupEdgeItems(edgeItems);
   return (
     <Panel
       title="Bearing on this element"
-      description="Open assumptions, risks, constraints, dependencies, decisions, recommendations and opportunities related to it."
+      description="Open assumptions, risks, constraints, dependencies, decisions, recommendations and opportunities related to it, then what the Development Edge finds bearing on it. Each Edge line is a prompt to look, never a conclusion."
       actions={
-        <Link
-          href={`/internal/engagements/${slug}/intelligence?element=${elementId}&status=all`}
-          className="text-sm text-ink-muted hover:underline"
-        >
-          Open in the register
-        </Link>
+        <span className="flex flex-wrap gap-4">
+          <Link
+            href={`/internal/engagements/${slug}/intelligence?element=${elementId}&status=all`}
+            className="text-sm text-ink-muted hover:underline"
+          >
+            Open in the register
+          </Link>
+          <Link
+            href={`/internal/engagements/${slug}/edge`}
+            className="text-sm text-ink-muted hover:underline"
+          >
+            Open the Edge
+          </Link>
+        </span>
       }
     >
-      {active.length === 0 ? (
-        <EmptyState title="Nothing open bears on it" />
-      ) : (
-        <ul className="divide-y divide-rule border-y border-rule text-sm">
-          {active.map((row) => (
-            <li key={row.element_id} className="flex flex-wrap items-center gap-3 py-2">
-              <Link
-                href={`/internal/engagements/${slug}/architecture/elements/${row.element_id}`}
-                className="group inline-flex items-baseline gap-2"
-              >
-                <ReferenceCode code={row.reference_code} />
-                <span className="text-ink group-hover:underline">{row.title}</span>
-              </Link>
-              <span className="text-xs text-ink-subtle">{RECORD_KIND_LABELS[row.kind]}</span>
-              <RecordStatusTag kind={row.kind} status={row.status} />
-              <AttentionTag attention={row.attention} />
-              {row.next_review_on && row.next_review_on < today ? (
-                <span className="text-xs text-negative">Review overdue</span>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className="space-y-4">
+        {servesOutcomes >= 2 ? (
+          <p className="text-sm text-ink-muted">Serves {servesOutcomes} Intended Outcomes.</p>
+        ) : null}
+        {active.length === 0 ? (
+          <EmptyState title="Nothing open bears on it" />
+        ) : (
+          <ul className="divide-y divide-rule border-y border-rule text-sm">
+            {active.map((row) => (
+              <li key={row.element_id} className="flex flex-wrap items-center gap-3 py-2">
+                <Link
+                  href={`/internal/engagements/${slug}/architecture/elements/${row.element_id}`}
+                  className="group inline-flex items-baseline gap-2"
+                >
+                  <ReferenceCode code={row.reference_code} />
+                  <span className="text-ink group-hover:underline">{row.title}</span>
+                </Link>
+                <span className="text-xs text-ink-subtle">{RECORD_KIND_LABELS[row.kind]}</span>
+                <RecordStatusTag kind={row.kind} status={row.status} />
+                <AttentionTag attention={row.attention} />
+                {row.next_review_on && row.next_review_on < today ? (
+                  <span className="text-xs text-negative">Review overdue</span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+        {events.length > 0 ? (
+          <div>
+            <p className="text-xs tracking-wide text-ink-subtle uppercase">
+              On the Development Edge
+            </p>
+            {events.map((event) => (
+              <EdgeEventCard
+                key={event.key}
+                slug={slug}
+                engagementId={engagementId}
+                event={event}
+                canJudge={canJudge}
+              />
+            ))}
+          </div>
+        ) : null}
+      </div>
     </Panel>
   );
 }

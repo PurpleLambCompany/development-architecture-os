@@ -20,8 +20,15 @@ function reach(subject: string, code: string, extra: Record<string, unknown> = {
     rule_key: "change_reaches",
     subject_id: subject,
     subject_reference_code: code,
-    consequence_path: [{ to_id: subject, link_key: "implements", direction: "target_to_source", terminal: true }],
-    details: { trigger_element_id: APP, hub_element_id: APP, change_summary: "Membership extended.", ...extra },
+    consequence_path: [
+      { to_id: subject, link_key: "implements", direction: "target_to_source", terminal: true },
+    ],
+    details: {
+      trigger_element_id: APP,
+      hub_element_id: APP,
+      change_summary: "Membership extended.",
+      ...extra,
+    },
   });
 }
 
@@ -31,8 +38,18 @@ describe("groupEdgeItems", () => {
       reach("imp-1", "IMP-001"),
       reach("imp-3", "IMP-003"),
       reach("acr-1", "ACR-001"),
-      edgeItem({ ...revised, rule_key: "implemented_element_revised", subject_id: "imp-1", subject_reference_code: "IMP-001" }),
-      edgeItem({ ...revised, rule_key: "examined_element_revised_since_review", subject_id: "rev-1", subject_reference_code: "REV-001" }),
+      edgeItem({
+        ...revised,
+        rule_key: "implemented_element_revised",
+        subject_id: "imp-1",
+        subject_reference_code: "IMP-001",
+      }),
+      edgeItem({
+        ...revised,
+        rule_key: "examined_element_revised_since_review",
+        subject_id: "rev-1",
+        subject_reference_code: "REV-001",
+      }),
     ];
     const events = groupEdgeItems(items);
     expect(events).toHaveLength(1);
@@ -44,7 +61,12 @@ describe("groupEdgeItems", () => {
   it("merges a rule item and a matrix consequence on the same record into one line", () => {
     const events = groupEdgeItems([
       reach("imp-1", "IMP-001"),
-      edgeItem({ ...revised, rule_key: "implemented_element_revised", subject_id: "imp-1", subject_reference_code: "IMP-001" }),
+      edgeItem({
+        ...revised,
+        rule_key: "implemented_element_revised",
+        subject_id: "imp-1",
+        subject_reference_code: "IMP-001",
+      }),
     ]);
     const lines = events[0].consequences;
     expect(lines).toHaveLength(1);
@@ -70,7 +92,12 @@ describe("groupEdgeItems", () => {
   });
 
   it("groups standing conditions on one subject into one event", () => {
-    const state = { trigger_type: "state", trigger_key: "state:imp-1", subject_reference_code: "IMP-001", subject_title: "Stand-up" };
+    const state = {
+      trigger_type: "state",
+      trigger_key: "state:imp-1",
+      subject_reference_code: "IMP-001",
+      subject_title: "Stand-up",
+    };
     const events = groupEdgeItems([
       edgeItem({ ...state, rule_key: "realization_without_evidence", subject_id: "imp-1" }),
       edgeItem({ ...state, rule_key: "criterion_without_validation", subject_id: "imp-1" }),
@@ -86,7 +113,12 @@ describe("groupEdgeItems", () => {
       reach("b", "CAP-003", viaHub),
       reach("c", "CAP-004", viaHub),
       reach("d", "IMP-001"),
-      edgeItem({ rule_key: "x", subject_id: "out-1", subject_reference_code: "OUT-001", trigger_key: "state:out-1" }),
+      edgeItem({
+        rule_key: "x",
+        subject_id: "out-1",
+        subject_reference_code: "OUT-001",
+        trigger_key: "state:out-1",
+      }),
     ]);
     const event = events.find((e) => e.key === REV_KEY)!;
     expect(event.hubs).toHaveLength(1);
@@ -96,7 +128,11 @@ describe("groupEdgeItems", () => {
   });
 
   it("does not collapse when the hub is the trigger itself or holds only one line", () => {
-    const events = groupEdgeItems([reach("a", "IMP-001"), reach("b", "IMP-003"), reach("c", "CAP-002", { hub_element_id: "out-1" })]);
+    const events = groupEdgeItems([
+      reach("a", "IMP-001"),
+      reach("b", "IMP-003"),
+      reach("c", "CAP-002", { hub_element_id: "out-1" }),
+    ]);
     expect(events[0].hubs).toHaveLength(0);
     expect(events[0].consequences).toHaveLength(3);
   });
@@ -114,15 +150,28 @@ describe("groupEdgeItems", () => {
 
   it("names engagement-level conditions by their rule", () => {
     const events = groupEdgeItems([
-      edgeItem({ rule_key: "method_basis_superseded", subject_type: "engagement", subject_id: "eng", trigger_key: "state:eng", trigger_type: "state" }),
+      edgeItem({
+        rule_key: "method_basis_superseded",
+        subject_type: "engagement",
+        subject_id: "eng",
+        trigger_key: "state:eng",
+        trigger_type: "state",
+      }),
     ]);
     expect(eventHeading(events[0])).toBe("Method basis has moved");
   });
 
   it("is deterministic for any input order", () => {
-    const items = [reach("a", "IMP-001"), reach("b", "IMP-003"), edgeItem({ rule_key: "a", subject_id: "s1" })];
+    const items = [
+      reach("a", "IMP-001"),
+      reach("b", "IMP-003"),
+      edgeItem({ rule_key: "a", subject_id: "s1" }),
+    ];
     const one = groupEdgeItems(items).map((e) => [e.key, e.consequences.map((c) => c.key)]);
-    const two = groupEdgeItems([...items].reverse()).map((e) => [e.key, e.consequences.map((c) => c.key)]);
+    const two = groupEdgeItems([...items].reverse()).map((e) => [
+      e.key,
+      e.consequences.map((c) => c.key),
+    ]);
     expect(two).toEqual(one);
   });
 });

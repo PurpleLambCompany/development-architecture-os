@@ -438,18 +438,42 @@ export default async function ElementPage({
       ) : (
         <BearingPanel
           slug={slug}
+          engagementId={engagement.id}
           elementId={element.id}
           rows={register.filter((r) => bearing.has(r.element_id))}
           today={today}
+          edgeItems={edgeItems}
+          canJudge={canEdit}
+          servesOutcomes={
+            architecture.relationships.filter(
+              (r) =>
+                r.source_element_id === element.id &&
+                r.relationship_type === "serves" &&
+                !r.retired_at &&
+                architecture.byId.get(r.target_element_id)?.object?.object_type ===
+                  "intended_outcome",
+            ).length
+          }
         />
       )}
 
-      <ContextualEdgePanel
-        slug={slug}
-        engagementId={engagement.id}
-        items={edgeItems}
-        canJudge={canEdit}
-      />
+      {isRecord ? (
+        <ContextualEdgePanel
+          slug={slug}
+          engagementId={engagement.id}
+          items={edgeItems}
+          canJudge={canEdit}
+          {...(element.kind === "decision"
+            ? {
+                title: "Reflected in architecture?",
+                description:
+                  "For each element this decision affects: whether a version has been published since the decision was recorded. A prompt to look, never a finding that the architecture is wrong.",
+                empty:
+                  "Every element this decision affects has been published since it was decided.",
+              }
+            : {})}
+        />
+      ) : null}
 
       <DecisionPanel
         element={element}

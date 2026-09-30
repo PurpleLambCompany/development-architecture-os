@@ -3,7 +3,9 @@ import { edgeItem } from "./fixtures";
 import { compareOrderKeys, describeOrderFacts, orderKeyOf, strongestOrderKey } from "./ordering";
 
 function sorted(items: ReturnType<typeof edgeItem>[]) {
-  return [...items].sort((a, b) => compareOrderKeys(orderKeyOf(a), orderKeyOf(b))).map((i) => i.subject_id);
+  return [...items]
+    .sort((a, b) => compareOrderKeys(orderKeyOf(a), orderKeyOf(b)))
+    .map((i) => i.subject_id);
 }
 
 describe("deterministic-first ordering", () => {
@@ -21,14 +23,46 @@ describe("deterministic-first ordering", () => {
   it("then nearest governance date, then reach class, then responsibility, then recency, then code", () => {
     expect(
       sorted([
-        edgeItem({ rule_key: "r", subject_id: "later-date", order_facts: { governance_date: "2026-10-20", reach_class: 1 } }),
-        edgeItem({ rule_key: "r", subject_id: "sooner-date", order_facts: { governance_date: "2026-10-10", reach_class: 4 } }),
+        edgeItem({
+          rule_key: "r",
+          subject_id: "later-date",
+          order_facts: { governance_date: "2026-10-20", reach_class: 1 },
+        }),
+        edgeItem({
+          rule_key: "r",
+          subject_id: "sooner-date",
+          order_facts: { governance_date: "2026-10-10", reach_class: 4 },
+        }),
         edgeItem({ rule_key: "r", subject_id: "no-date-reach1", order_facts: { reach_class: 1 } }),
-        edgeItem({ rule_key: "r", subject_id: "no-date-reach2-mine", order_facts: { reach_class: 2, responsible: true } }),
-        edgeItem({ rule_key: "r", subject_id: "no-date-reach2-new", trigger_at: "2026-10-12T00:00:00Z", order_facts: { reach_class: 2 } }),
-        edgeItem({ rule_key: "r", subject_id: "no-date-reach2-old", trigger_at: "2026-10-01T00:00:00Z", order_facts: { reach_class: 2 } }),
-        edgeItem({ rule_key: "r", subject_id: "b", subject_reference_code: "RSK-002", order_facts: { reach_class: 4 } }),
-        edgeItem({ rule_key: "r", subject_id: "a", subject_reference_code: "RSK-001", order_facts: { reach_class: 4 } }),
+        edgeItem({
+          rule_key: "r",
+          subject_id: "no-date-reach2-mine",
+          order_facts: { reach_class: 2, responsible: true },
+        }),
+        edgeItem({
+          rule_key: "r",
+          subject_id: "no-date-reach2-new",
+          trigger_at: "2026-10-12T00:00:00Z",
+          order_facts: { reach_class: 2 },
+        }),
+        edgeItem({
+          rule_key: "r",
+          subject_id: "no-date-reach2-old",
+          trigger_at: "2026-10-01T00:00:00Z",
+          order_facts: { reach_class: 2 },
+        }),
+        edgeItem({
+          rule_key: "r",
+          subject_id: "b",
+          subject_reference_code: "RSK-002",
+          order_facts: { reach_class: 4 },
+        }),
+        edgeItem({
+          rule_key: "r",
+          subject_id: "a",
+          subject_reference_code: "RSK-001",
+          order_facts: { reach_class: 4 },
+        }),
       ]),
     ).toEqual([
       "sooner-date",
@@ -51,9 +85,30 @@ describe("deterministic-first ordering", () => {
 
   it("takes each fact at its strongest for an event", () => {
     const k = strongestOrderKey([
-      orderKeyOf(edgeItem({ rule_key: "r", subject_id: "1", tier: "attention", order_facts: { governance_date: "2026-10-20", reach_class: 3 } })),
-      orderKeyOf(edgeItem({ rule_key: "r", subject_id: "2", tier: "elevated", order_facts: { reach_class: 1, responsible: true } })),
-      orderKeyOf(edgeItem({ rule_key: "r", subject_id: "3", trigger_at: "2026-10-12T00:00:00Z", order_facts: { governance_date: "2026-10-08" } })),
+      orderKeyOf(
+        edgeItem({
+          rule_key: "r",
+          subject_id: "1",
+          tier: "attention",
+          order_facts: { governance_date: "2026-10-20", reach_class: 3 },
+        }),
+      ),
+      orderKeyOf(
+        edgeItem({
+          rule_key: "r",
+          subject_id: "2",
+          tier: "elevated",
+          order_facts: { reach_class: 1, responsible: true },
+        }),
+      ),
+      orderKeyOf(
+        edgeItem({
+          rule_key: "r",
+          subject_id: "3",
+          trigger_at: "2026-10-12T00:00:00Z",
+          order_facts: { governance_date: "2026-10-08" },
+        }),
+      ),
     ]);
     expect(k.tier).toBe("elevated");
     expect(k.governanceDate).toBe("2026-10-08");

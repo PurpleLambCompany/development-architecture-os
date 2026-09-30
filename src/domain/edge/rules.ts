@@ -81,34 +81,43 @@ export type ListTier = (typeof LIST_TIERS)[number];
 
 /** Governance acts that would make a condition stop holding (reconciliation §27). */
 export const RESOLVING_ACTS = {
-  revise_statement_or_validate: "Revise the statement and publish, or record the assumption's validation status",
+  revise_statement_or_validate:
+    "Revise the statement and publish, or record the assumption's validation status",
   retire_or_repoint_relationship: "Retire or re-point the relationship",
-  retire_conflict_or_judge: "Retire the relationship with a reason, or record that the tension is accepted",
+  retire_conflict_or_judge:
+    "Retire the relationship with a reason, or record that the tension is accepted",
   record_method_lineage: "Record the method lineage, or publish with corrected provenance",
   relate_metric: "Relate a Metric, or record your judgment",
   relate_outcome: "Relate it to an Intended Outcome, or record your judgment",
   relate_governance: "Relate a holder or a governed element, or record your judgment",
   create_pathway: "Create an initiative that implements it, or relate an operating form",
   validate_through_review: "Record a validation through a held Review",
-  repoint_implements: "Re-point or retire the implements relationship, or change the initiative's status",
+  repoint_implements:
+    "Re-point or retire the implements relationship, or change the initiative's status",
   review_after_revision: "Hold a Review that examines the revised version, or record your judgment",
   link_realization_evidence: "Link evidence to the initiative or to an achieved checkpoint",
   achieve_or_retarget_checkpoint: "Achieve the checkpoint or record a new target",
   schedule_review: "Schedule a Review that examines it",
   supersede_criterion: "Supersede the criterion with a newly agreed one, or record your judgment",
   later_review: "Hold a later Review that examines the element, or record your judgment",
-  revise_affected_element: "Publish a revision of the affected element, or record that it needs none",
-  new_deliverable_version: "Publish a new Deliverable version and record its approval, or record your judgment",
+  revise_affected_element:
+    "Publish a revision of the affected element, or record that it needs none",
+  new_deliverable_version:
+    "Publish a new Deliverable version and record its approval, or record your judgment",
   handle_contribution: "Handle the contribution",
-  none_required_method: "None required: pins are deliberate. Record your judgment, or change the engagement's release",
+  none_required_method:
+    "None required: pins are deliberate. Record your judgment, or change the engagement's release",
   request_latest_approval: "Request and record approval of the latest version",
   satisfy_dependency: "Satisfy or re-scope a dependency, or record your judgment",
-  resolve_escalation_or_hold: "Resolve the escalation, or hold the Review with the risk on its agenda",
-  revise_threatened: "Revise the threatened architecture, retire the relationship, or close the risk",
+  resolve_escalation_or_hold:
+    "Resolve the escalation, or hold the Review with the risk on its agenda",
+  revise_threatened:
+    "Revise the threatened architecture, retire the relationship, or close the risk",
   decide_pursuit: "Decide how to pursue it, or record your judgment",
   relate_carrier: "Relate a carrier, or change the opportunity's status",
   examine_architecture: "None required. Examine the architecture, or record your judgment",
-  record_outputs: "Record the output through ordinary operations, or record an addendum explaining it",
+  record_outputs:
+    "Record the output through ordinary operations, or record an addendum explaining it",
   link_gathered_evidence: "Link gathered evidence, or record an addendum",
   validate_assumption: "Validate or invalidate the assumption",
   revise_underpinned: "Revise or retire the underpinned architecture",
@@ -168,7 +177,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     thresholds: null,
     fingerprint: "The sorted ids of the contradicting evidence links",
     label: "Evidence contradicts a statement",
-    definition: "A published statement on this element cites evidence recorded as contradicting it.",
+    definition:
+      "A published statement on this element cites evidence recorded as contradicting it.",
     why: "A claim the architecture rests on has evidence against it. It may warrant examination.",
   },
   {
@@ -188,7 +198,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     thresholds: null,
     fingerprint: "The relationship ids with the replaced end and its lifecycle",
     label: "Relationship to a replaced element",
-    definition: "A live element is still related to an element that has been superseded or retired.",
+    definition:
+      "A live element is still related to an element that has been superseded or retired.",
     why: "The design may be pointing at something the architecture no longer holds.",
   },
   {
@@ -219,7 +230,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     lens: "integrity",
     epistemicStatus: "recorded",
     subjectType: "element",
-    scope: "Live element or statement with methodology-derived provenance and no instantiates lineage",
+    scope:
+      "Live element or statement with methodology-derived provenance and no instantiates lineage",
     triggerType: "state",
     timeBasis: "none",
     substantiveOnly: false,
@@ -228,7 +240,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     thresholds: null,
     fingerprint: "The ids of the element and statements recorded as methodology-derived",
     label: "Methodology-derived without its model",
-    definition: "Content is recorded as derived from the methodology, but names no Model it instantiates.",
+    definition:
+      "Content is recorded as derived from the methodology, but names no Model it instantiates.",
     why: "Provenance that names the method should say which part of the method it came from.",
   },
   {
@@ -239,7 +252,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     lens: "integrity",
     epistemicStatus: "derived",
     subjectType: "element",
-    scope: "Published Intended Outcome without measured_by, or published Metric that measures nothing",
+    scope:
+      "Published Intended Outcome without measured_by, or published Metric that measures nothing",
     triggerType: "state",
     timeBasis: "none",
     substantiveOnly: false,
@@ -259,7 +273,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     lens: "integrity",
     epistemicStatus: "derived",
     subjectType: "element",
-    scope: "Published Capability that serves no Intended Outcome, directly or through its part_of ancestors",
+    scope:
+      "Published Capability that serves no Intended Outcome, directly or through its part_of ancestors",
     triggerType: "state",
     timeBasis: "none",
     substantiveOnly: false,
@@ -268,7 +283,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     thresholds: null,
     fingerprint: "Constant: the condition itself",
     label: "Capability serves no outcome",
-    definition: "A published Capability serves no Intended Outcome, directly or through what it is part of.",
+    definition:
+      "A published Capability serves no Intended Outcome, directly or through what it is part of.",
     why: "A capability with no outcome to serve may be unexplained in the architecture.",
   },
   {
@@ -279,7 +295,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     lens: "integrity",
     epistemicStatus: "derived",
     subjectType: "element",
-    scope: "Published Decision Right with no holder, or published Governance Body that governs nothing",
+    scope:
+      "Published Decision Right with no holder, or published Governance Body that governs nothing",
     triggerType: "state",
     timeBasis: "none",
     substantiveOnly: false,
@@ -371,7 +388,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     thresholds: null,
     fingerprint: "The implemented element and its latest substantive version",
     label: "Implemented design was revised",
-    definition: "The element this initiative implements was substantively revised after implementation began.",
+    definition:
+      "The element this initiative implements was substantively revised after implementation began.",
     why: "Reality may be tracking the earlier design.",
   },
   {
@@ -382,7 +400,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     lens: "realization",
     epistemicStatus: "derived",
     subjectType: "element",
-    scope: "Validated initiative whose implemented element was substantively revised after the validation",
+    scope:
+      "Validated initiative whose implemented element was substantively revised after the validation",
     triggerType: "substantive_revision",
     timeBasis: "system_time",
     substantiveOnly: true,
@@ -391,7 +410,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     thresholds: null,
     fingerprint: "The implemented element and its latest substantive version",
     label: "Validated design was revised",
-    definition: "The element this validated initiative implements was substantively revised after the validation.",
+    definition:
+      "The element this validated initiative implements was substantively revised after the validation.",
     why: "The validation judged an earlier design.",
   },
   {
@@ -402,7 +422,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     lens: "realization",
     epistemicStatus: "derived",
     subjectType: "element",
-    scope: "Operational or validated initiative with no evidence link and no checkpoint achieved with evidence",
+    scope:
+      "Operational or validated initiative with no evidence link and no checkpoint achieved with evidence",
     triggerType: "state",
     timeBasis: "none",
     substantiveOnly: false,
@@ -411,7 +432,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     thresholds: null,
     fingerprint: "The initiative's status",
     label: "Realization without evidence",
-    definition: "The initiative is recorded as operational or validated, and no evidence is cited for it.",
+    definition:
+      "The initiative is recorded as operational or validated, and no evidence is cited for it.",
     why: "A realization claim rests on the team's word alone.",
   },
   {
@@ -422,7 +444,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     lens: "realization",
     epistemicStatus: "recorded",
     subjectType: "element",
-    scope: "Live initiative with a checkpoint not achieved whose target is before the business date",
+    scope:
+      "Live initiative with a checkpoint not achieved whose target is before the business date",
     triggerType: "date",
     timeBasis: "business_date",
     substantiveOnly: false,
@@ -442,7 +465,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     lens: "realization",
     epistemicStatus: "derived",
     subjectType: "element",
-    scope: "Live initiative with agreed criteria in force and no scheduled or held Review examining it or what it implements",
+    scope:
+      "Live initiative with agreed criteria in force and no scheduled or held Review examining it or what it implements",
     triggerType: "state",
     timeBasis: "none",
     substantiveOnly: false,
@@ -473,7 +497,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     thresholds: null,
     fingerprint: "The governed element's latest substantive version",
     label: "Criterion agreed before a revision",
-    definition: "The element this criterion governs was substantively revised after the criterion was agreed.",
+    definition:
+      "The element this criterion governs was substantively revised after the criterion was agreed.",
     why: "The agreed criterion may describe an earlier design.",
   },
   {
@@ -494,7 +519,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     thresholds: null,
     fingerprint: "The examined element and its latest substantive version",
     label: "Examined element revised since the Review",
-    definition: "An element this Review examined has a substantive revision later than the version it examined.",
+    definition:
+      "An element this Review examined has a substantive revision later than the version it examined.",
     why: "The Review's judgment predates the revision.",
   },
   {
@@ -505,7 +531,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     lens: "change",
     epistemicStatus: "derived",
     subjectType: "element",
-    scope: "Held Review with a capture, where evidence was linked to a captured element after the capture",
+    scope:
+      "Held Review with a capture, where evidence was linked to a captured element after the capture",
     triggerType: "evidence_link",
     timeBasis: "system_time",
     substantiveOnly: false,
@@ -534,7 +561,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     thresholds: null,
     fingerprint: "The decision's version and the affected element's latest content version",
     label: "Decision not yet reflected",
-    definition: "The decision was recorded after the latest content version of an element it affects.",
+    definition:
+      "The decision was recorded after the latest content version of an element it affects.",
     why: "The architecture may not yet reflect what was decided.",
   },
   {
@@ -555,7 +583,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     thresholds: null,
     fingerprint: "The documented element and its latest substantive version",
     label: "Deliverable documents a revised element",
-    definition: "An element this Deliverable documents was substantively revised after the Deliverable's reference point.",
+    definition:
+      "An element this Deliverable documents was substantively revised after the Deliverable's reference point.",
     why: "The Deliverable may describe an earlier design.",
   },
   {
@@ -566,7 +595,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     lens: "change",
     epistemicStatus: "derived",
     subjectType: "element",
-    scope: "Unhandled client contribution made on a version that has since been substantively revised",
+    scope:
+      "Unhandled client contribution made on a version that has since been substantively revised",
     triggerType: "substantive_revision",
     timeBasis: "exact_version",
     substantiveOnly: true,
@@ -575,7 +605,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     thresholds: null,
     fingerprint: "The contribution and the element's latest substantive version",
     label: "Client input on an earlier version",
-    definition: "A client contribution not yet handled was made on a version that has since been revised.",
+    definition:
+      "A client contribution not yet handled was made on a version that has since been revised.",
     why: "The client was responding to content that has changed.",
   },
   {
@@ -593,10 +624,12 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     substantiveOnly: false,
     listTier: "ambient",
     resolvingAct: "none_required_method",
-    thresholds: "pinned_version_superseded Ambient; release_moved Attention, one engagement-level item",
+    thresholds:
+      "pinned_version_superseded Ambient; release_moved Attention, one engagement-level item",
     fingerprint: "The pinned version, or the releases and the open applications",
     label: "Method basis has moved",
-    definition: "Open method work rests on a Method version or DAM release that has since moved on.",
+    definition:
+      "Open method work rests on a Method version or DAM release that has since moved on.",
     why: "Pins are deliberate, but the practice basis under open work is worth knowing.",
   },
   {
@@ -607,7 +640,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     lens: "change",
     epistemicStatus: "derived",
     subjectType: "element",
-    scope: "Element whose latest approved version is behind its latest published version, with a substantive revision between",
+    scope:
+      "Element whose latest approved version is behind its latest published version, with a substantive revision between",
     triggerType: "substantive_revision",
     timeBasis: "exact_version",
     substantiveOnly: true,
@@ -616,7 +650,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     thresholds: "Ambient while an approval request on the latest version is pending",
     fingerprint: "The approved version and the latest substantive version",
     label: "Approval is behind the published version",
-    definition: "The client approved an earlier version, and the element has been substantively revised since.",
+    definition:
+      "The client approved an earlier version, and the element has been substantively revised since.",
     why: "What was approved is not what is published.",
   },
   // Exposure -------------------------------------------------------------------
@@ -628,7 +663,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     lens: "exposure",
     epistemicStatus: "derived",
     subjectType: "element",
-    scope: "Live element that is the depended-on end of two or more blocking, unsatisfied dependencies",
+    scope:
+      "Live element that is the depended-on end of two or more blocking, unsatisfied dependencies",
     triggerType: "status_change",
     timeBasis: "system_time",
     substantiveOnly: false,
@@ -689,7 +725,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     lens: "potential",
     epistemicStatus: "worth_considering",
     subjectType: "element",
-    scope: "Open opportunity that advances a Capability or Application Format no initiative implements",
+    scope:
+      "Open opportunity that advances a Capability or Application Format no initiative implements",
     triggerType: "state",
     timeBasis: "none",
     substantiveOnly: false,
@@ -709,7 +746,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     lens: "potential",
     epistemicStatus: "derived",
     subjectType: "element",
-    scope: "Opportunity being evaluated with no pursues from any capability, decision or recommendation",
+    scope:
+      "Opportunity being evaluated with no pursues from any capability, decision or recommendation",
     triggerType: "state",
     timeBasis: "none",
     substantiveOnly: false,
@@ -730,7 +768,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     lens: "learning",
     epistemicStatus: "worth_considering",
     subjectType: "element",
-    scope: "Element whose implementing initiatives record two or more transitions into stalled or abandoned, or reopenings",
+    scope:
+      "Element whose implementing initiatives record two or more transitions into stalled or abandoned, or reopenings",
     triggerType: "status_change",
     timeBasis: "system_time",
     substantiveOnly: false,
@@ -739,7 +778,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     thresholds: "2 or more difficulties",
     fingerprint: "The counted status history rows",
     label: "Realization has been difficult",
-    definition: "Initiatives realizing this element have stalled, been abandoned or reopened more than once.",
+    definition:
+      "Initiatives realizing this element have stalled, been abandoned or reopened more than once.",
     why: "Worth examining. Recurrence is not a cause.",
   },
   {
@@ -759,7 +799,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     thresholds: null,
     fingerprint: "The declared outputs with no produced element",
     label: "Declared outputs not recorded",
-    definition: "The Method declares outputs this completed application did not record as produced.",
+    definition:
+      "The Method declares outputs this completed application did not record as produced.",
     why: "The practice record is incomplete, or the output was not produced.",
   },
   {
@@ -770,7 +811,8 @@ export const EDGE_RULES: readonly EdgeRule[] = [
     lens: "learning",
     epistemicStatus: "derived",
     subjectType: "method_application",
-    scope: "Completed or discontinued Method Application whose Method declares an Instrument no gathered evidence cites",
+    scope:
+      "Completed or discontinued Method Application whose Method declares an Instrument no gathered evidence cites",
     triggerType: "state",
     timeBasis: "none",
     substantiveOnly: false,
@@ -1024,7 +1066,9 @@ export const CHANGE_REACHES = {
 } as const;
 
 export const NEW_RULE_KEYS = EDGE_RULES.filter((r) => r.origin === "new").map((r) => r.key);
-export const EXISTING_RULE_KEYS = EDGE_RULES.filter((r) => r.origin === "existing").map((r) => r.key);
+export const EXISTING_RULE_KEYS = EDGE_RULES.filter((r) => r.origin === "existing").map(
+  (r) => r.key,
+);
 
 const BY_KEY = new Map<string, EdgeRule>(EDGE_RULES.map((r) => [r.key, r]));
 
