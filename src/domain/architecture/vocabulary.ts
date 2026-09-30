@@ -4,7 +4,7 @@
 // and 20261002000100_project_intelligence.sql; vocabulary.test.ts checks
 // they agree.
 
-import type { ArchitectureDomain, ElementKind, RelationshipCategory } from "./catalog";
+import type { ArchitectureDomain, ElementKind, Phase5Kind, RelationshipCategory } from "./catalog";
 
 export const OBJECT_TYPES = [
   {
@@ -512,6 +512,61 @@ export const RELATIONSHIP_TYPES = [
     definition:
       "An architect has recognized a tension between the two. Recorded explicitly so it is resolved deliberately, and later available to coherence analysis.",
   },
+  {
+    key: "examines",
+    category: "implementation",
+    label: "examines",
+    inverseLabel: "examined in",
+    symmetric: false,
+    acyclic: false,
+    definition: "The review's agenda: an element or Project Intelligence record the review looks at.",
+  },
+  {
+    key: "raises",
+    category: "implementation",
+    label: "raises",
+    inverseLabel: "raised in",
+    symmetric: false,
+    acyclic: false,
+    definition: "A new judgment record, or implementation initiative, produced by the review.",
+  },
+  {
+    key: "documents",
+    category: "implementation",
+    label: "documents",
+    inverseLabel: "documented in",
+    symmetric: false,
+    acyclic: false,
+    definition: "What the deliverable presents or summarizes.",
+  },
+  {
+    key: "implements",
+    category: "implementation",
+    label: "implements",
+    inverseLabel: "implemented by",
+    symmetric: false,
+    acyclic: false,
+    definition: "The architecture the initiative is realizing.",
+  },
+  {
+    key: "initiates",
+    category: "implementation",
+    label: "initiates",
+    inverseLabel: "initiated by",
+    symmetric: false,
+    acyclic: false,
+    definition: "Why the initiative exists: the decision or recommendation that started it.",
+  },
+  {
+    key: "validates",
+    category: "implementation",
+    label: "validates",
+    inverseLabel: "validated by",
+    symmetric: false,
+    acyclic: false,
+    definition:
+      "Formal judgment that operating reality sufficiently conforms to architectural intent. Written only by record_review_validation — never a free-form relationship insert (D13).",
+  },
 ] as const satisfies readonly {
   key: string;
   category: RelationshipCategory;
@@ -638,6 +693,60 @@ export const PHASE_4_RULE_SPEC: readonly (readonly [
   ["pursues", ["@capability", "@application", "decision", "recommendation"], ["opportunity"]],
 ];
 
+/**
+ * Phase 5 additions, as written in 20261003000100_reviews_deliverables_implementation.sql.
+ * Existing pairings are extended to the three new kinds by naming them
+ * explicitly (§4.2); @record and @element keep their Phase 3/4 meaning.
+ */
+export const PHASE_5_RULE_SPEC: readonly (readonly [
+  string,
+  readonly string[],
+  readonly string[],
+])[] = [
+  ["part_of", ["implementation_initiative"], ["implementation_initiative"]],
+  ["precedes", ["implementation_initiative"], ["implementation_initiative"]],
+  ["threatens", ["risk"], ["review", "deliverable", "implementation_initiative"]],
+  ["mitigates", ["implementation_initiative"], ["risk"]],
+  ["underpins", ["assumption"], ["review", "deliverable", "implementation_initiative"]],
+  ["constrains", ["constraint"], ["review", "deliverable", "implementation_initiative"]],
+  [
+    "affects",
+    ["review", "deliverable", "implementation_initiative"],
+    ["review", "deliverable", "implementation_initiative"],
+  ],
+  ["affects", ["@record"], ["review", "deliverable", "implementation_initiative"]],
+  ["affects", ["review", "deliverable", "implementation_initiative"], ["@element"]],
+  ["addresses", ["recommendation"], ["review", "deliverable", "implementation_initiative"]],
+  ["has_stake_in", ["stakeholder"], ["review", "deliverable", "implementation_initiative"]],
+  ["subject_to", ["review", "deliverable", "implementation_initiative"], ["regulatory_factor"]],
+  ["conflicts_with", ["review", "deliverable", "implementation_initiative"], ["@element"]],
+  ["conflicts_with", ["@element"], ["review", "deliverable", "implementation_initiative"]],
+  [
+    "conflicts_with",
+    ["review", "deliverable", "implementation_initiative"],
+    ["review", "deliverable", "implementation_initiative"],
+  ],
+  ["examines", ["review"], ["@element", "review", "deliverable", "implementation_initiative"]],
+  [
+    "raises",
+    ["review"],
+    [
+      "assumption",
+      "risk",
+      "constraint",
+      "dependency",
+      "decision",
+      "recommendation",
+      "opportunity",
+      "implementation_initiative",
+    ],
+  ],
+  ["documents", ["deliverable"], ["@element", "review", "deliverable", "implementation_initiative"]],
+  ["implements", ["implementation_initiative"], ["@core"]],
+  ["initiates", ["decision", "recommendation"], ["implementation_initiative"]],
+  ["validates", ["review"], ["implementation_initiative"]],
+];
+
 export const RECORD_KINDS = [
   "assumption",
   "risk",
@@ -646,4 +755,14 @@ export const RECORD_KINDS = [
   "decision",
   "recommendation",
   "opportunity",
-] as const satisfies readonly Exclude<ElementKind, "object">[];
+] as const satisfies readonly Exclude<
+  ElementKind,
+  "object" | "review" | "deliverable" | "implementation_initiative"
+>[];
+
+/** The three Phase 5 kinds, as plain rule tokens (not @record/@element - see PHASE_5_RULE_SPEC). */
+export const PHASE_5_KINDS = [
+  "review",
+  "deliverable",
+  "implementation_initiative",
+] as const satisfies readonly Phase5Kind[];

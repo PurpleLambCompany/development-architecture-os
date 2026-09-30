@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   DOMAIN_PREFIXES,
+  PHASE_5_PREFIXES,
   PROVENANCE_CLIENT_LABELS,
   PROVENANCE_LABELS,
   PROVENANCE_TYPES,
@@ -27,6 +28,7 @@ import {
 import {
   OBJECT_TYPES,
   PHASE_4_RULE_SPEC,
+  PHASE_5_RULE_SPEC,
   RELATIONSHIP_RULE_SPEC,
   RELATIONSHIP_TYPES,
 } from "./vocabulary";
@@ -37,6 +39,13 @@ const migration = readFileSync(
 );
 const intelligenceMigration = readFileSync(
   join(process.cwd(), "supabase/migrations/20261002000100_project_intelligence.sql"),
+  "utf8",
+);
+const phase5Migration = readFileSync(
+  join(
+    process.cwd(),
+    "supabase/migrations/20261003000100_reviews_deliverables_implementation.sql",
+  ),
   "utf8",
 );
 const seed = readFileSync(join(process.cwd(), "supabase/seed.sql"), "utf8");
@@ -61,14 +70,24 @@ describe("the vocabulary matches the migration", () => {
     expect(perDomain.application).toHaveLength(9);
   });
 
-  it("has the 33 relationship types with the same labels, in sort order", () => {
+  it("has the 39 relationship types with the same labels, in sort order", () => {
     const phase3 = insertedKeys("relationship_types", 4);
     const phase4 = insertedKeys("relationship_types", 4, intelligenceMigration);
+    const phase5 = insertedKeys("relationship_types", 4, phase5Migration);
     expect(phase4.map((t) => t[0])).toEqual(["advances", "pursues"]);
-    // Phase 4 places advances and pursues before supersedes and conflicts_with.
+    expect(phase5.map((t) => t[0])).toEqual([
+      "examines",
+      "raises",
+      "documents",
+      "implements",
+      "initiates",
+      "validates",
+    ]);
+    // Phase 4 places advances and pursues before supersedes and conflicts_with;
+    // Phase 5's six new types append after conflicts_with.
     const lineage = phase3.slice(-2);
     expect(lineage.map((t) => t[0])).toEqual(["supersedes", "conflicts_with"]);
-    expect([...phase3.slice(0, -2), ...phase4, ...lineage]).toEqual(
+    expect([...phase3.slice(0, -2), ...phase4, ...lineage, ...phase5]).toEqual(
       RELATIONSHIP_TYPES.map((t) => [t.key, t.category, t.label, t.inverseLabel]),
     );
     expect(RELATIONSHIP_TYPES.filter((t) => t.acyclic).map((t) => t.key)).toEqual([
@@ -104,10 +123,12 @@ describe("the vocabulary matches the migration", () => {
     for (const call of phase4.slice(0, -additions.length)) {
       expect(spec(RELATIONSHIP_RULE_SPEC)).toContainEqual(call);
     }
+    // Phase 5 names its extended pairings and new types explicitly.
+    expect(calls(phase5Migration)).toEqual(spec(PHASE_5_RULE_SPEC));
   });
 
-  it("expands to the 2,130 rules the database holds", () => {
-    expect(RELATIONSHIP_RULES).toHaveLength(2130);
+  it("expands to the 2,608 rules the database holds", () => {
+    expect(RELATIONSHIP_RULES).toHaveLength(2608);
     const counts = Object.fromEntries(
       Object.entries(Object.groupBy(RELATIONSHIP_RULES, (r) => r.relationshipType)).map(
         ([k, v]) => [k, v!.length],
@@ -115,50 +136,60 @@ describe("the vocabulary matches the migration", () => {
     );
     expect(counts).toEqual({
       accountable_for: 12,
-      addresses: 33,
+      addresses: 36,
       advances: 32,
-      affects: 238,
+      affects: 370,
       bounded_by: 26,
-      conflicts_with: 1156,
-      constrains: 30,
+      conflicts_with: 1369,
+      constrains: 33,
       delivered_through: 2,
       documented_by: 26,
+      documents: 37,
+      examines: 37,
       exploits: 11,
       gap_in: 3,
       governed_by: 16,
-      has_stake_in: 33,
+      has_stake_in: 36,
       holds: 2,
       implemented_through: 4,
+      implements: 27,
       implies: 3,
       informs: 208,
+      initiates: 2,
       introduces: 6,
       investigates: 4,
       measured_by: 10,
-      mitigates: 16,
-      part_of: 9,
+      mitigates: 17,
+      part_of: 10,
       positioned_against: 4,
-      precedes: 2,
+      precedes: 3,
       pursues: 16,
+      raises: 8,
       requires: 23,
       serves: 18,
       shapes: 56,
       specializes: 1,
-      subject_to: 33,
+      subject_to: 36,
       supersedes: 34,
-      threatens: 33,
-      underpins: 30,
+      threatens: 36,
+      underpins: 33,
+      validates: 1,
     });
   });
 
   it("uses the reference prefixes of public.element_reference_prefix", () => {
-    const fn = intelligenceMigration.slice(
-      intelligenceMigration.indexOf("create or replace function public.element_reference_prefix"),
+    // Phase 5's create-or-replace is the final, authoritative version.
+    const fn = phase5Migration.slice(
+      phase5Migration.indexOf("create or replace function public.element_reference_prefix"),
     );
     const body = fn.slice(0, fn.indexOf("$$;"));
     for (const [domain, prefix] of Object.entries(DOMAIN_PREFIXES)) {
       expect(body).toContain(`when '${domain}' then '${prefix}'`);
     }
     for (const [kind, prefix] of Object.entries(RECORD_PREFIXES)) {
+      expect(body).toContain(`when '${kind}' then '${prefix}'`);
+    }
+    for (const [kind, prefix] of Object.entries(PHASE_5_PREFIXES)) {
       expect(body).toContain(`when '${kind}' then '${prefix}'`);
     }
   });
@@ -210,13 +241,52 @@ describe("pairing rules", () => {
     expect(isAllowedPairing("threatens", rec("risk"), rec("opportunity"))).toBe(true);
   });
 
-  it("never offers supersedes to editors", () => {
+  it("never offers supersedes or validates to editors", () => {
     expect(allowedRelationshipTypes(rec("decision"), rec("decision"))).not.toContain("supersedes");
+    expect(allowedRelationshipTypes(rec("review"), rec("implementation_initiative"))).not.toContain(
+      "validates",
+    );
     expect(allowedRelationshipTypes(obj("capability"), obj("capability"))).toEqual([
       "part_of",
       "requires",
       "conflicts_with",
     ]);
+  });
+
+  it("holds the Phase 5 pairings (§4.2)", () => {
+    // examines: Review -> any element or Project Intelligence record.
+    expect(isAllowedPairing("examines", rec("review"), obj("capability"))).toBe(true);
+    expect(isAllowedPairing("examines", rec("review"), rec("risk"))).toBe(true);
+    expect(isAllowedPairing("examines", rec("review"), rec("implementation_initiative"))).toBe(true);
+    expect(isAllowedPairing("examines", rec("deliverable"), obj("capability"))).toBe(false);
+    // raises: Review -> a new judgment record or an implementation initiative.
+    expect(isAllowedPairing("raises", rec("review"), rec("risk"))).toBe(true);
+    expect(isAllowedPairing("raises", rec("review"), rec("implementation_initiative"))).toBe(true);
+    expect(isAllowedPairing("raises", rec("review"), obj("capability"))).toBe(false);
+    // documents: Deliverable -> any element.
+    expect(isAllowedPairing("documents", rec("deliverable"), obj("capability"))).toBe(true);
+    expect(isAllowedPairing("documents", rec("review"), obj("capability"))).toBe(false);
+    // implements: Implementation Initiative -> core object only.
+    expect(isAllowedPairing("implements", rec("implementation_initiative"), obj("capability"))).toBe(
+      true,
+    );
+    expect(isAllowedPairing("implements", rec("implementation_initiative"), rec("risk"))).toBe(false);
+    // initiates: Decision or Recommendation -> Implementation Initiative.
+    expect(isAllowedPairing("initiates", rec("decision"), rec("implementation_initiative"))).toBe(
+      true,
+    );
+    expect(isAllowedPairing("initiates", rec("risk"), rec("implementation_initiative"))).toBe(false);
+    // validates: Review -> Implementation Initiative (pairing exists even though it is restricted-write).
+    expect(isAllowedPairing("validates", rec("review"), rec("implementation_initiative"))).toBe(true);
+    expect(isAllowedPairing("validates", rec("deliverable"), rec("implementation_initiative"))).toBe(
+      false,
+    );
+    // Existing pairings extend to the three new kinds.
+    expect(isAllowedPairing("threatens", rec("risk"), rec("implementation_initiative"))).toBe(true);
+    expect(isAllowedPairing("underpins", rec("assumption"), rec("deliverable"))).toBe(true);
+    expect(isAllowedPairing("part_of", rec("implementation_initiative"), rec("implementation_initiative"))).toBe(
+      true,
+    );
   });
 });
 

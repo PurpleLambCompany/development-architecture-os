@@ -1,7 +1,9 @@
-import { DOMAINS, type ArchitectureDomain, type RecordKind } from "./catalog";
+import { DOMAINS, type ArchitectureDomain, type ElementKind } from "./catalog";
 import {
   OBJECT_TYPES,
   PHASE_4_RULE_SPEC,
+  PHASE_5_KINDS,
+  PHASE_5_RULE_SPEC,
   RECORD_KINDS,
   RELATIONSHIP_RULE_SPEC,
   RELATIONSHIP_TYPES,
@@ -17,9 +19,10 @@ import {
 export type ObjectTypeKey = (typeof OBJECT_TYPES)[number]["key"];
 export type RelationshipTypeKey = (typeof RELATIONSHIP_TYPES)[number]["key"];
 
-/** One end of a rule: a core object of a type, or a record of a kind. */
+/** One end of a rule: a core object of a type, or a non-object element of a kind. */
+export type NonObjectKind = Exclude<ElementKind, "object">;
 export type ElementClass =
-  { kind: "object"; objectType: ObjectTypeKey } | { kind: RecordKind; objectType: null };
+  { kind: "object"; objectType: ObjectTypeKey } | { kind: NonObjectKind; objectType: null };
 
 export type RelationshipRule = {
   relationshipType: RelationshipTypeKey;
@@ -28,14 +31,17 @@ export type RelationshipRule = {
 };
 
 const objectClass = (objectType: ObjectTypeKey): ElementClass => ({ kind: "object", objectType });
-const recordClass = (kind: RecordKind): ElementClass => ({ kind, objectType: null });
+const recordClass = (kind: NonObjectKind): ElementClass => ({ kind, objectType: null });
 
 export function classKey(c: ElementClass): string {
   return c.kind === "object" ? c.objectType : c.kind;
 }
 
-function isRecordKind(token: string): token is RecordKind {
-  return (RECORD_KINDS as readonly string[]).includes(token);
+/** Every non-object kind a plain rule token may name (Project Intelligence records + Phase 5 kinds). */
+const ALL_NON_OBJECT_KINDS: readonly string[] = [...RECORD_KINDS, ...PHASE_5_KINDS];
+
+function isRecordKind(token: string): token is NonObjectKind {
+  return ALL_NON_OBJECT_KINDS.includes(token);
 }
 
 function tokenItems(token: string): ElementClass[] {
@@ -74,7 +80,11 @@ export function expandTokens(tokens: readonly string[]): ElementClass[] {
 function buildRules(): RelationshipRule[] {
   const rules: RelationshipRule[] = [];
   const seen = new Set<string>();
-  for (const [type, sources, targets] of [...RELATIONSHIP_RULE_SPEC, ...PHASE_4_RULE_SPEC]) {
+  for (const [type, sources, targets] of [
+    ...RELATIONSHIP_RULE_SPEC,
+    ...PHASE_4_RULE_SPEC,
+    ...PHASE_5_RULE_SPEC,
+  ]) {
     for (const source of expandTokens(sources)) {
       for (const target of expandTokens(targets)) {
         const key = `${type}|${classKey(source)}|${classKey(target)}`;
@@ -109,10 +119,13 @@ export function isAllowedPairing(
   return ruleIndex.get(`${classKey(source)}|${classKey(target)}`)?.has(relationshipType) ?? false;
 }
 
+/** Relationship types never offered for a free-form insert: written only by an operation. */
+const RESTRICTED_WRITE_TYPES: readonly RelationshipTypeKey[] = ["supersedes", "validates"];
+
 /**
  * Relationship types an editor may create between two elements, in
- * vocabulary order. supersedes is excluded: only the supersede operation
- * writes it.
+ * vocabulary order. supersedes and validates are excluded: only their
+ * dedicated operations write them (D13).
  */
 export function allowedRelationshipTypes(
   source: ElementClass,
@@ -121,7 +134,7 @@ export function allowedRelationshipTypes(
   const allowed = ruleIndex.get(`${classKey(source)}|${classKey(target)}`);
   if (!allowed) return [];
   return RELATIONSHIP_TYPES.map((t) => t.key).filter(
-    (key) => key !== "supersedes" && allowed.has(key),
+    (key) => !RESTRICTED_WRITE_TYPES.includes(key) && allowed.has(key),
   );
 }
 
@@ -140,5 +153,5 @@ export function objectTypesIn(domain: ArchitectureDomain) {
 /** The class of an element as loaded from the database. */
 export function elementClass(kind: string, objectTypeKey: string | null): ElementClass {
   if (kind === "object") return objectClass(objectTypeKey as ObjectTypeKey);
-  return recordClass(kind as RecordKind);
+  return recordClass(kind as NonObjectKind);
 }
