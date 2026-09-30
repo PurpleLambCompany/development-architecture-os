@@ -151,7 +151,8 @@ select pg_temp.reset_actor();
 
 select pg_temp.act_as('researcher@tplco.test');
 select is(pg_temp.caps('e0000000-0000-4000-8000-000000000001'),
-  array['edit_architecture', 'manage_client_requests', 'view_confidential_deliverables'],
+  array['edit_architecture', 'manage_client_requests', 'manage_deliverables', 'manage_reviews',
+        'view_confidential_deliverables'],
   'Researcher: drafts architecture and sends client requests, no financial visibility on an assigned engagement');
 select is(pg_temp.caps('e0000000-0000-4000-8000-000000000003'), '{}'::text[],
   'Researcher: nothing on an unassigned engagement');

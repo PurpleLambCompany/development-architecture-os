@@ -1840,6 +1840,48 @@ export type Database = {
           },
         ];
       };
+      deliverables: {
+        Row: {
+          baseline_id: string | null;
+          confidential: boolean;
+          deliverable_type: Database["public"]["Enums"]["deliverable_type"];
+          element_id: string;
+          engagement_id: string;
+          kind: Database["public"]["Enums"]["element_kind"];
+        };
+        Insert: {
+          baseline_id?: string | null;
+          confidential?: boolean;
+          deliverable_type?: Database["public"]["Enums"]["deliverable_type"];
+          element_id: string;
+          engagement_id: string;
+          kind?: Database["public"]["Enums"]["element_kind"];
+        };
+        Update: {
+          baseline_id?: string | null;
+          confidential?: boolean;
+          deliverable_type?: Database["public"]["Enums"]["deliverable_type"];
+          element_id?: string;
+          engagement_id?: string;
+          kind?: Database["public"]["Enums"]["element_kind"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "deliverables_baseline_fk";
+            columns: ["baseline_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_baselines";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "deliverables_element_fk";
+            columns: ["element_id", "engagement_id", "kind"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id", "kind"];
+          },
+        ];
+      };
       dependencies: {
         Row: {
           blocking: boolean;
@@ -2140,6 +2182,7 @@ export type Database = {
           client_contribution_id: string | null;
           content_type: string;
           created_at: string;
+          element_version_id: string | null;
           engagement_id: string;
           evidence_source_id: string | null;
           filename: string;
@@ -2154,6 +2197,7 @@ export type Database = {
           client_contribution_id?: string | null;
           content_type: string;
           created_at?: string;
+          element_version_id?: string | null;
           engagement_id: string;
           evidence_source_id?: string | null;
           filename: string;
@@ -2168,6 +2212,7 @@ export type Database = {
           client_contribution_id?: string | null;
           content_type?: string;
           created_at?: string;
+          element_version_id?: string | null;
           engagement_id?: string;
           evidence_source_id?: string | null;
           filename?: string;
@@ -2211,6 +2256,13 @@ export type Database = {
             columns: ["uploaded_by"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "engagement_files_version_fk";
+            columns: ["element_version_id"];
+            isOneToOne: false;
+            referencedRelation: "element_versions";
             referencedColumns: ["id"];
           },
         ];
@@ -2638,6 +2690,426 @@ export type Database = {
             columns: ["engagement_id"];
             isOneToOne: false;
             referencedRelation: "engagements";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      implementation_categories: {
+        Row: {
+          definition: string;
+          key: string;
+          label: string;
+          sort_order: number;
+        };
+        Insert: {
+          definition: string;
+          key: string;
+          label: string;
+          sort_order: number;
+        };
+        Update: {
+          definition?: string;
+          key?: string;
+          label?: string;
+          sort_order?: number;
+        };
+        Relationships: [];
+      };
+      implementation_checkpoints: {
+        Row: {
+          achieved_evidence_source_id: string | null;
+          achieved_on: string | null;
+          checkpoint_type: Database["public"]["Enums"]["implementation_checkpoint_type"];
+          client_visible: boolean;
+          created_at: string;
+          created_by: string | null;
+          engagement_id: string;
+          id: string;
+          implementation_element_id: string;
+          related_approval_id: string | null;
+          related_review_id: string | null;
+          target_on: string | null;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          achieved_evidence_source_id?: string | null;
+          achieved_on?: string | null;
+          checkpoint_type: Database["public"]["Enums"]["implementation_checkpoint_type"];
+          client_visible?: boolean;
+          created_at?: string;
+          created_by?: string | null;
+          engagement_id: string;
+          id?: string;
+          implementation_element_id: string;
+          related_approval_id?: string | null;
+          related_review_id?: string | null;
+          target_on?: string | null;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          achieved_evidence_source_id?: string | null;
+          achieved_on?: string | null;
+          checkpoint_type?: Database["public"]["Enums"]["implementation_checkpoint_type"];
+          client_visible?: boolean;
+          created_at?: string;
+          created_by?: string | null;
+          engagement_id?: string;
+          id?: string;
+          implementation_element_id?: string;
+          related_approval_id?: string | null;
+          related_review_id?: string | null;
+          target_on?: string | null;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "implementation_checkpoints_approval_fk";
+            columns: ["related_approval_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_approvals";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "implementation_checkpoints_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "implementation_checkpoints_evidence_fk";
+            columns: ["achieved_evidence_source_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "evidence_sources";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "implementation_checkpoints_initiative_fk";
+            columns: ["implementation_element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "implementation_initiatives";
+            referencedColumns: ["element_id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "implementation_checkpoints_review_fk";
+            columns: ["related_review_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "reviews";
+            referencedColumns: ["element_id", "engagement_id"];
+          },
+        ];
+      };
+      implementation_escalations: {
+        Row: {
+          acknowledged_at: string | null;
+          acknowledged_by: string | null;
+          client_action_id: string | null;
+          element_id: string;
+          engagement_id: string;
+          id: string;
+          level: Database["public"]["Enums"]["escalation_level"];
+          raised_at: string;
+          raised_by: string | null;
+          reason: string;
+          resolution_note: string | null;
+          resolved_at: string | null;
+          resolved_by: string | null;
+        };
+        Insert: {
+          acknowledged_at?: string | null;
+          acknowledged_by?: string | null;
+          client_action_id?: string | null;
+          element_id: string;
+          engagement_id: string;
+          id?: string;
+          level: Database["public"]["Enums"]["escalation_level"];
+          raised_at?: string;
+          raised_by?: string | null;
+          reason: string;
+          resolution_note?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+        };
+        Update: {
+          acknowledged_at?: string | null;
+          acknowledged_by?: string | null;
+          client_action_id?: string | null;
+          element_id?: string;
+          engagement_id?: string;
+          id?: string;
+          level?: Database["public"]["Enums"]["escalation_level"];
+          raised_at?: string;
+          raised_by?: string | null;
+          reason?: string;
+          resolution_note?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "implementation_escalations_acknowledged_by_fkey";
+            columns: ["acknowledged_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "implementation_escalations_action_fk";
+            columns: ["client_action_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "client_actions";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "implementation_escalations_element_fk";
+            columns: ["element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "implementation_initiatives";
+            referencedColumns: ["element_id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "implementation_escalations_raised_by_fkey";
+            columns: ["raised_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "implementation_escalations_resolved_by_fkey";
+            columns: ["resolved_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      implementation_initiatives: {
+        Row: {
+          actual_operational_on: string | null;
+          category: string;
+          element_id: string;
+          engagement_id: string;
+          implementation_status: Database["public"]["Enums"]["implementation_status"];
+          kind: Database["public"]["Enums"]["element_kind"];
+          owner_member_id: string | null;
+          target_operational_on: string | null;
+        };
+        Insert: {
+          actual_operational_on?: string | null;
+          category?: string;
+          element_id: string;
+          engagement_id: string;
+          implementation_status?: Database["public"]["Enums"]["implementation_status"];
+          kind?: Database["public"]["Enums"]["element_kind"];
+          owner_member_id?: string | null;
+          target_operational_on?: string | null;
+        };
+        Update: {
+          actual_operational_on?: string | null;
+          category?: string;
+          element_id?: string;
+          engagement_id?: string;
+          implementation_status?: Database["public"]["Enums"]["implementation_status"];
+          kind?: Database["public"]["Enums"]["element_kind"];
+          owner_member_id?: string | null;
+          target_operational_on?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "implementation_initiatives_category_fkey";
+            columns: ["category"];
+            isOneToOne: false;
+            referencedRelation: "implementation_categories";
+            referencedColumns: ["key"];
+          },
+          {
+            foreignKeyName: "implementation_initiatives_element_fk";
+            columns: ["element_id", "engagement_id", "kind"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id", "kind"];
+          },
+          {
+            foreignKeyName: "implementation_initiatives_owner_fk";
+            columns: ["owner_member_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagement_members";
+            referencedColumns: ["id", "engagement_id"];
+          },
+        ];
+      };
+      implementation_signal_dismissals: {
+        Row: {
+          dismissed_at: string;
+          dismissed_by: string | null;
+          element_id: string;
+          engagement_id: string;
+          expires_on: string | null;
+          fingerprint: string;
+          id: string;
+          reason: string;
+          rule_key: string;
+        };
+        Insert: {
+          dismissed_at?: string;
+          dismissed_by?: string | null;
+          element_id: string;
+          engagement_id: string;
+          expires_on?: string | null;
+          fingerprint: string;
+          id?: string;
+          reason: string;
+          rule_key?: string;
+        };
+        Update: {
+          dismissed_at?: string;
+          dismissed_by?: string | null;
+          element_id?: string;
+          engagement_id?: string;
+          expires_on?: string | null;
+          fingerprint?: string;
+          id?: string;
+          reason?: string;
+          rule_key?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "implementation_signal_dismissals_dismissed_by_fkey";
+            columns: ["dismissed_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "implementation_signal_dismissals_element_fk";
+            columns: ["element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "implementation_initiatives";
+            referencedColumns: ["element_id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "implementation_signal_dismissals_engagement_id_fkey";
+            columns: ["engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagements";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      implementation_status_changes: {
+        Row: {
+          changed_at: string;
+          changed_by: string | null;
+          element_id: string;
+          engagement_id: string;
+          field: string;
+          from_value: string | null;
+          id: number;
+          operation: string;
+          rationale: string | null;
+          to_value: string | null;
+        };
+        Insert: {
+          changed_at?: string;
+          changed_by?: string | null;
+          element_id: string;
+          engagement_id: string;
+          field: string;
+          from_value?: string | null;
+          id?: never;
+          operation?: string;
+          rationale?: string | null;
+          to_value?: string | null;
+        };
+        Update: {
+          changed_at?: string;
+          changed_by?: string | null;
+          element_id?: string;
+          engagement_id?: string;
+          field?: string;
+          from_value?: string | null;
+          id?: never;
+          operation?: string;
+          rationale?: string | null;
+          to_value?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "implementation_status_changes_changed_by_fkey";
+            columns: ["changed_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "implementation_status_changes_element_fk";
+            columns: ["element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "implementation_initiatives";
+            referencedColumns: ["element_id", "engagement_id"];
+          },
+        ];
+      };
+      implementation_stewardship: {
+        Row: {
+          attention: Database["public"]["Enums"]["intelligence_attention"];
+          element_id: string;
+          engagement_id: string;
+          next_review_on: string | null;
+          triage_note: string;
+          triage_state: Database["public"]["Enums"]["triage_state"];
+          triaged_at: string | null;
+          triaged_by: string | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          attention?: Database["public"]["Enums"]["intelligence_attention"];
+          element_id: string;
+          engagement_id: string;
+          next_review_on?: string | null;
+          triage_note?: string;
+          triage_state?: Database["public"]["Enums"]["triage_state"];
+          triaged_at?: string | null;
+          triaged_by?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          attention?: Database["public"]["Enums"]["intelligence_attention"];
+          element_id?: string;
+          engagement_id?: string;
+          next_review_on?: string | null;
+          triage_note?: string;
+          triage_state?: Database["public"]["Enums"]["triage_state"];
+          triaged_at?: string | null;
+          triaged_by?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "implementation_stewardship_element_fk";
+            columns: ["element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "implementation_initiatives";
+            referencedColumns: ["element_id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "implementation_stewardship_triaged_by_fkey";
+            columns: ["triaged_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "implementation_stewardship_updated_by_fkey";
+            columns: ["updated_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
         ];
@@ -3891,6 +4363,112 @@ export type Database = {
         };
         Relationships: [];
       };
+      review_participants: {
+        Row: {
+          added_at: string;
+          added_by: string | null;
+          attended: boolean;
+          element_id: string;
+          engagement_id: string;
+          engagement_member_id: string;
+          id: string;
+          role: Database["public"]["Enums"]["review_participant_role"];
+        };
+        Insert: {
+          added_at?: string;
+          added_by?: string | null;
+          attended?: boolean;
+          element_id: string;
+          engagement_id: string;
+          engagement_member_id: string;
+          id?: string;
+          role?: Database["public"]["Enums"]["review_participant_role"];
+        };
+        Update: {
+          added_at?: string;
+          added_by?: string | null;
+          attended?: boolean;
+          element_id?: string;
+          engagement_id?: string;
+          engagement_member_id?: string;
+          id?: string;
+          role?: Database["public"]["Enums"]["review_participant_role"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "review_participants_added_by_fkey";
+            columns: ["added_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "review_participants_element_fk";
+            columns: ["element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "reviews";
+            referencedColumns: ["element_id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "review_participants_member_fk";
+            columns: ["engagement_member_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagement_members";
+            referencedColumns: ["id", "engagement_id"];
+          },
+        ];
+      };
+      reviews: {
+        Row: {
+          baseline_id: string | null;
+          element_id: string;
+          engagement_id: string;
+          held_at: string | null;
+          kind: Database["public"]["Enums"]["element_kind"];
+          review_status: Database["public"]["Enums"]["review_status"];
+          review_type: Database["public"]["Enums"]["review_type"];
+          scheduled_for: string | null;
+          summary: string;
+        };
+        Insert: {
+          baseline_id?: string | null;
+          element_id: string;
+          engagement_id: string;
+          held_at?: string | null;
+          kind?: Database["public"]["Enums"]["element_kind"];
+          review_status?: Database["public"]["Enums"]["review_status"];
+          review_type: Database["public"]["Enums"]["review_type"];
+          scheduled_for?: string | null;
+          summary?: string;
+        };
+        Update: {
+          baseline_id?: string | null;
+          element_id?: string;
+          engagement_id?: string;
+          held_at?: string | null;
+          kind?: Database["public"]["Enums"]["element_kind"];
+          review_status?: Database["public"]["Enums"]["review_status"];
+          review_type?: Database["public"]["Enums"]["review_type"];
+          scheduled_for?: string | null;
+          summary?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "reviews_baseline_fk";
+            columns: ["baseline_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_baselines";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "reviews_element_fk";
+            columns: ["element_id", "engagement_id", "kind"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id", "kind"];
+          },
+        ];
+      };
       risks: {
         Row: {
           category: string;
@@ -4022,6 +4600,30 @@ export type Database = {
     Functions: {
       accept_invitation: { Args: Record<PropertyKey, never>; Returns: undefined };
       acknowledge_escalation: { Args: { p_escalation_id: string }; Returns: undefined };
+      acknowledge_implementation_escalation: {
+        Args: { p_escalation_id: string };
+        Returns: undefined;
+      };
+      add_implementation_checkpoint: {
+        Args: {
+          p_checkpoint_type: Database["public"]["Enums"]["implementation_checkpoint_type"];
+          p_client_visible?: boolean;
+          p_element_id: string;
+          p_related_approval_id?: string;
+          p_related_review_id?: string;
+          p_target_on?: string;
+          p_title: string;
+        };
+        Returns: string;
+      };
+      add_review_participant: {
+        Args: {
+          p_engagement_member_id: string;
+          p_review_element_id: string;
+          p_role?: Database["public"]["Enums"]["review_participant_role"];
+        };
+        Returns: string;
+      };
       allocate_payment: {
         Args: { p_amount_minor: number; p_invoice_id: string; p_payment_id: string };
         Returns: string;
@@ -4062,6 +4664,11 @@ export type Database = {
         };
         Returns: string;
       };
+      attach_deliverable_file: {
+        Args: { p_element_id: string; p_file_ids: string[] };
+        Returns: undefined;
+      };
+      cancel_review: { Args: { p_element_id: string; p_reason: string }; Returns: undefined };
       capability_side: {
         Args: { capability: Database["public"]["Enums"]["engagement_capability"] };
         Returns: Database["public"]["Enums"]["member_side"];
@@ -4118,6 +4725,19 @@ export type Database = {
           version_id: string;
         }[];
       };
+      client_deliverables: {
+        Args: { p_engagement_id: string };
+        Returns: {
+          confidential: boolean;
+          deliverable_type: Database["public"]["Enums"]["deliverable_type"];
+          element_id: string;
+          published_at: string;
+          reference_code: string;
+          summary: string;
+          title: string;
+          version_id: string;
+        }[];
+      };
       client_element_versions: {
         Args: { p_element_id: string };
         Returns: {
@@ -4131,6 +4751,37 @@ export type Database = {
           response_comment: string;
           version_id: string;
           version_no: number;
+        }[];
+      };
+      client_implementation: {
+        Args: { p_engagement_id: string };
+        Returns: {
+          actual_operational_on: string;
+          category: string;
+          checkpoints: Json;
+          element_id: string;
+          implementation_status: Database["public"]["Enums"]["implementation_status"];
+          published_at: string;
+          reference_code: string;
+          summary: string;
+          target_operational_on: string;
+          title: string;
+          version_id: string;
+        }[];
+      };
+      client_reviews: {
+        Args: { p_engagement_id: string };
+        Returns: {
+          element_id: string;
+          held_at: string;
+          published_at: string;
+          reference_code: string;
+          review_status: Database["public"]["Enums"]["review_status"];
+          review_type: Database["public"]["Enums"]["review_type"];
+          scheduled_for: string;
+          summary: string;
+          title: string;
+          version_id: string;
         }[];
       };
       close_client_action: { Args: { p_action_id: string; p_note?: string }; Returns: undefined };
@@ -4198,11 +4849,74 @@ export type Database = {
         };
         Returns: string;
       };
+      create_deliverable: {
+        Args: {
+          p_baseline_id?: string;
+          p_confidential?: boolean;
+          p_deliverable_type: Database["public"]["Enums"]["deliverable_type"];
+          p_engagement_id: string;
+          p_summary?: string;
+          p_title: string;
+        };
+        Returns: string;
+      };
+      create_implementation_initiative: {
+        Args: {
+          p_category?: string;
+          p_engagement_id: string;
+          p_implements_element_ids: string[];
+          p_owner_member_id?: string;
+          p_summary?: string;
+          p_target_operational_on?: string;
+          p_title: string;
+        };
+        Returns: string;
+      };
+      create_review: {
+        Args: {
+          p_baseline_id?: string;
+          p_engagement_id: string;
+          p_review_type: Database["public"]["Enums"]["review_type"];
+          p_scheduled_for?: string;
+          p_summary?: string;
+          p_title: string;
+        };
+        Returns: string;
+      };
       decide_decision: {
         Args: { p_decision_id: string; p_note?: string; p_option_id: string };
         Returns: undefined;
       };
       defer_decision: { Args: { p_decision_id: string; p_reason: string }; Returns: undefined };
+      deliverable_register: {
+        Args: { p_engagement_id?: string };
+        Returns: {
+          approval_state: string;
+          baseline_id: string;
+          client_visibility: Database["public"]["Enums"]["client_visibility"];
+          confidential: boolean;
+          created_at: string;
+          deliverable_type: Database["public"]["Enums"]["deliverable_type"];
+          element_id: string;
+          engagement_id: string;
+          latest_version_id: string;
+          lifecycle: Database["public"]["Enums"]["element_lifecycle"];
+          reference_code: string;
+          summary: string;
+          title: string;
+          updated_at: string;
+        }[];
+      };
+      dismiss_implementation_signal: {
+        Args: {
+          p_element_id: string;
+          p_engagement_id: string;
+          p_expires_on?: string;
+          p_fingerprint: string;
+          p_reason: string;
+        };
+        Returns: string;
+      };
       dismiss_intelligence_signal: {
         Args: {
           p_client_action_id: string;
@@ -4224,6 +4938,16 @@ export type Database = {
       };
       element_version_snapshot: { Args: { p_version_id: string }; Returns: Json };
       engagement_primary_contract_id: { Args: { p_engagement_id: string }; Returns: string };
+      escalate_implementation: {
+        Args: {
+          p_addressee_member_id?: string;
+          p_due_on?: string;
+          p_element_id: string;
+          p_level: Database["public"]["Enums"]["escalation_level"];
+          p_reason: string;
+        };
+        Returns: string;
+      };
       escalate_intelligence_record: {
         Args: {
           p_addressee_member_id?: string;
@@ -4265,6 +4989,63 @@ export type Database = {
           p_status: Database["public"]["Enums"]["contribution_status"];
         };
         Returns: string;
+      };
+      hold_review: {
+        Args: { p_element_id: string; p_held_at?: string; p_summary?: string };
+        Returns: undefined;
+      };
+      implementation_impact: {
+        Args: { p_depth?: number; p_element_id: string };
+        Returns: {
+          depth: number;
+          direction: string;
+          element_id: string;
+          kind: Database["public"]["Enums"]["element_kind"];
+          reference_code: string;
+          relationship_type: string;
+          title: string;
+          via_element_id: string;
+        }[];
+      };
+      implementation_register: {
+        Args: { p_engagement_id?: string };
+        Returns: {
+          achieved_checkpoint_count: number;
+          actual_operational_on: string;
+          attention: Database["public"]["Enums"]["intelligence_attention"];
+          category: string;
+          checkpoint_count: number;
+          client_visibility: Database["public"]["Enums"]["client_visibility"];
+          created_at: string;
+          element_id: string;
+          engagement_id: string;
+          implementation_status: Database["public"]["Enums"]["implementation_status"];
+          lifecycle: Database["public"]["Enums"]["element_lifecycle"];
+          next_review_on: string;
+          open_escalations: Database["public"]["Enums"]["escalation_level"][];
+          owner_member_id: string;
+          reference_code: string;
+          summary: string;
+          target_operational_on: string;
+          title: string;
+          triage_state: Database["public"]["Enums"]["triage_state"];
+          triaged_at: string;
+          updated_at: string;
+        }[];
+      };
+      implementation_signals: {
+        Args: { p_as_of?: string; p_engagement_id: string; p_include_dismissed?: boolean };
+        Returns: {
+          details: Json;
+          dismissal_reason: string;
+          dismissed: boolean;
+          dismissed_at: string;
+          element_id: string;
+          fingerprint: string;
+          reference_code: string;
+          rule_key: string;
+          title: string;
+        }[];
       };
       intelligence_active_statuses: {
         Args: { p_kind: Database["public"]["Enums"]["element_kind"] };
@@ -4440,6 +5221,14 @@ export type Database = {
         Args: { p_action_id: string; p_member_id: string; p_note?: string };
         Returns: undefined;
       };
+      record_checkpoint_achieved: {
+        Args: {
+          p_achieved_evidence_source_id?: string;
+          p_achieved_on?: string;
+          p_checkpoint_id: string;
+        };
+        Returns: undefined;
+      };
       record_domain_assessment: {
         Args: {
           p_client_visible?: boolean;
@@ -4526,6 +5315,10 @@ export type Database = {
         };
         Returns: string;
       };
+      record_review_validation: {
+        Args: { p_initiative_element_id: string; p_review_element_id: string };
+        Returns: string;
+      };
       register_engagement_file: {
         Args: {
           p_content_type: string;
@@ -4545,6 +5338,10 @@ export type Database = {
         Returns: undefined;
       };
       remove_member_area: { Args: { p_area_id: string }; Returns: undefined };
+      reopen_implementation_initiative: {
+        Args: { p_element_id: string; p_rationale: string };
+        Returns: undefined;
+      };
       reopen_intelligence_record: {
         Args: { p_element_id: string; p_rationale: string; p_status: string };
         Returns: undefined;
@@ -4554,6 +5351,20 @@ export type Database = {
         Returns: string;
       };
       resolve_escalation: { Args: { p_escalation_id: string; p_note: string }; Returns: undefined };
+      resolve_implementation_escalation: {
+        Args: { p_escalation_id: string; p_note: string };
+        Returns: undefined;
+      };
+      resolve_implementation_initiative: {
+        Args: {
+          p_change_summary?: string;
+          p_element_id: string;
+          p_publish?: boolean;
+          p_rationale: string;
+          p_status: Database["public"]["Enums"]["implementation_status"];
+        };
+        Returns: string;
+      };
       resolve_intelligence_record: {
         Args: {
           p_change_summary?: string;
@@ -4594,6 +5405,27 @@ export type Database = {
       review_ai_content: {
         Args: { p_accept: boolean; p_element_id: string; p_statement_id: string };
         Returns: undefined;
+      };
+      review_register: {
+        Args: { p_engagement_id?: string };
+        Returns: {
+          agenda_count: number;
+          baseline_id: string;
+          client_visibility: Database["public"]["Enums"]["client_visibility"];
+          created_at: string;
+          element_id: string;
+          engagement_id: string;
+          held_at: string;
+          lifecycle: Database["public"]["Enums"]["element_lifecycle"];
+          participant_count: number;
+          reference_code: string;
+          review_status: Database["public"]["Enums"]["review_status"];
+          review_type: Database["public"]["Enums"]["review_type"];
+          scheduled_for: string;
+          summary: string;
+          title: string;
+          updated_at: string;
+        }[];
       };
       role_side: {
         Args: { role: Database["public"]["Enums"]["app_role"] };
@@ -4637,6 +5469,15 @@ export type Database = {
         Args: { p_new_element_id: string; p_old_element_id: string; p_reason: string };
         Returns: string;
       };
+      triage_implementation: {
+        Args: {
+          p_attention: Database["public"]["Enums"]["intelligence_attention"];
+          p_element_id: string;
+          p_next_review_on?: string;
+          p_note?: string;
+        };
+        Returns: undefined;
+      };
       triage_intelligence_record: {
         Args: {
           p_attention: Database["public"]["Enums"]["intelligence_attention"];
@@ -4645,6 +5486,16 @@ export type Database = {
           p_note?: string;
         };
         Returns: undefined;
+      };
+      update_implementation_status: {
+        Args: {
+          p_change_summary?: string;
+          p_element_id: string;
+          p_publish?: boolean;
+          p_rationale?: string;
+          p_status: Database["public"]["Enums"]["implementation_status"];
+        };
+        Returns: string;
       };
       void_change_order: {
         Args: { p_change_order_id: string; p_note: string };
@@ -4701,6 +5552,14 @@ export type Database = {
       contribution_status: "received" | "incorporated" | "acknowledged";
       credit_note_status: "draft" | "issued" | "void";
       decision_status: "open" | "recommended" | "decided" | "deferred" | "superseded";
+      deliverable_type:
+        | "full_architecture_blueprint"
+        | "executive_strategy_deck"
+        | "capability_map"
+        | "implementation_framework"
+        | "measurement_model"
+        | "executive_summary"
+        | "other";
       dependency_status: "open" | "satisfied" | "at_risk" | "broken";
       dependency_type: "prerequisite" | "sequence" | "input" | "funding" | "external";
       element_kind:
@@ -4711,7 +5570,10 @@ export type Database = {
         | "dependency"
         | "decision"
         | "recommendation"
-        | "opportunity";
+        | "opportunity"
+        | "review"
+        | "deliverable"
+        | "implementation_initiative";
       element_lifecycle: "draft" | "in_review" | "published" | "superseded" | "retired";
       engagement_capability:
         | "view_financials"
@@ -4728,8 +5590,12 @@ export type Database = {
         | "view_full_architecture"
         | "respond_to_client_actions"
         | "assign_client_actions"
-        | "submit_client_input";
-      engagement_file_purpose: "client_response" | "client_contribution" | "evidence";
+        | "submit_client_input"
+        | "manage_reviews"
+        | "manage_deliverables"
+        | "manage_implementation";
+      engagement_file_purpose:
+        "client_response" | "client_contribution" | "evidence" | "deliverable";
       engagement_status: "proposed" | "active" | "paused" | "completed" | "archived";
       engagement_type:
         | "development_architecture_sprint"
@@ -4750,6 +5616,14 @@ export type Database = {
         | "other";
       evidence_stance: "supports" | "contradicts" | "context";
       external_approval_method: "signed_document" | "email" | "letter" | "other";
+      implementation_checkpoint_type:
+        | "design_approved"
+        | "agreement_executed"
+        | "operational_entry"
+        | "scheduled_review"
+        | "other";
+      implementation_status:
+        "not_started" | "in_progress" | "operational" | "validated" | "stalled" | "abandoned";
       intelligence_attention: "critical" | "high" | "routine" | "watch";
       invoice_status: "draft" | "scheduled" | "issued" | "void";
       ip_classification:
@@ -4782,6 +5656,9 @@ export type Database = {
       recommendation_priority: "critical" | "important" | "advisable";
       record_status: "active" | "invited" | "suspended" | "archived";
       refund_status: "completed" | "void";
+      review_participant_role: "organizer" | "reviewer" | "presenter" | "attendee";
+      review_status: "scheduled" | "held" | "cancelled";
+      review_type: "executive_review" | "architecture_review";
       risk_status: "open" | "mitigating" | "accepted" | "closed" | "materialized";
       skill_proficiency: "foundational" | "proficient" | "expert";
       statement_kind:
@@ -4954,6 +5831,15 @@ export const Constants = {
       contribution_status: ["received", "incorporated", "acknowledged"],
       credit_note_status: ["draft", "issued", "void"],
       decision_status: ["open", "recommended", "decided", "deferred", "superseded"],
+      deliverable_type: [
+        "full_architecture_blueprint",
+        "executive_strategy_deck",
+        "capability_map",
+        "implementation_framework",
+        "measurement_model",
+        "executive_summary",
+        "other",
+      ],
       dependency_status: ["open", "satisfied", "at_risk", "broken"],
       dependency_type: ["prerequisite", "sequence", "input", "funding", "external"],
       element_kind: [
@@ -4965,6 +5851,9 @@ export const Constants = {
         "decision",
         "recommendation",
         "opportunity",
+        "review",
+        "deliverable",
+        "implementation_initiative",
       ],
       element_lifecycle: ["draft", "in_review", "published", "superseded", "retired"],
       engagement_capability: [
@@ -4983,8 +5872,16 @@ export const Constants = {
         "respond_to_client_actions",
         "assign_client_actions",
         "submit_client_input",
+        "manage_reviews",
+        "manage_deliverables",
+        "manage_implementation",
       ],
-      engagement_file_purpose: ["client_response", "client_contribution", "evidence"],
+      engagement_file_purpose: [
+        "client_response",
+        "client_contribution",
+        "evidence",
+        "deliverable",
+      ],
       engagement_status: ["proposed", "active", "paused", "completed", "archived"],
       engagement_type: [
         "development_architecture_sprint",
@@ -5007,6 +5904,21 @@ export const Constants = {
       ],
       evidence_stance: ["supports", "contradicts", "context"],
       external_approval_method: ["signed_document", "email", "letter", "other"],
+      implementation_checkpoint_type: [
+        "design_approved",
+        "agreement_executed",
+        "operational_entry",
+        "scheduled_review",
+        "other",
+      ],
+      implementation_status: [
+        "not_started",
+        "in_progress",
+        "operational",
+        "validated",
+        "stalled",
+        "abandoned",
+      ],
       intelligence_attention: ["critical", "high", "routine", "watch"],
       invoice_status: ["draft", "scheduled", "issued", "void"],
       ip_classification: [
@@ -5047,6 +5959,9 @@ export const Constants = {
       recommendation_priority: ["critical", "important", "advisable"],
       record_status: ["active", "invited", "suspended", "archived"],
       refund_status: ["completed", "void"],
+      review_participant_role: ["organizer", "reviewer", "presenter", "attendee"],
+      review_status: ["scheduled", "held", "cancelled"],
+      review_type: ["executive_review", "architecture_review"],
       risk_status: ["open", "mitigating", "accepted", "closed", "materialized"],
       skill_proficiency: ["foundational", "proficient", "expert"],
       statement_kind: ["finding", "observation", "rationale", "implication", "definition", "note"],

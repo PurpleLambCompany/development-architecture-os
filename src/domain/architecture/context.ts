@@ -21,6 +21,9 @@ export const getInternalArchitectureContext = cache(async (slug: string) => {
     canEdit: capabilities.has("edit_architecture"),
     canPublish: capabilities.has("publish_architecture"),
     canManageRequests: capabilities.has("manage_client_requests"),
+    canManageReviews: capabilities.has("manage_reviews"),
+    canManageDeliverables: capabilities.has("manage_deliverables"),
+    canManageImplementation: capabilities.has("manage_implementation"),
   };
 });
 

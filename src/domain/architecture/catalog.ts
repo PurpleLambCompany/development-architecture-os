@@ -4,7 +4,13 @@ import type { Database } from "@/types/database";
 type Enums = Database["public"]["Enums"];
 export type ArchitectureDomain = Enums["architecture_domain"];
 export type ElementKind = Enums["element_kind"];
-export type RecordKind = Exclude<ElementKind, "object">;
+/** Project Intelligence record kinds. review/deliverable/implementation_initiative are their own kinds (Phase 5). */
+export type RecordKind = Exclude<
+  ElementKind,
+  "object" | "review" | "deliverable" | "implementation_initiative"
+>;
+/** The three Phase 5 kinds that reuse the element spine outside Project Intelligence (§3). */
+export type Phase5Kind = "review" | "deliverable" | "implementation_initiative";
 export type ElementLifecycle = Enums["element_lifecycle"];
 export type MaturityState = Enums["maturity_state"];
 export type ClientVisibility = Enums["client_visibility"];
@@ -28,7 +34,8 @@ export type RecommendationPriority = Enums["recommendation_priority"];
 export type OpportunityStatus = Enums["opportunity_status"];
 export type SkillProficiency = Enums["skill_proficiency"];
 export type BaselineStatus = Enums["baseline_status"];
-export type RelationshipCategory = "structure" | "design_flow" | "intelligence" | "lineage";
+export type RelationshipCategory =
+  "structure" | "design_flow" | "intelligence" | "lineage" | "implementation";
 
 /** Derived per published version (private.approval_state). Never stored. */
 export type ApprovalState =
@@ -116,10 +123,31 @@ export const RECORD_PREFIXES: Record<RecordKind, string> = {
   opportunity: "OPP",
 };
 
+/** Mirrors public.element_reference_prefix for the Phase 5 kinds. */
+export const PHASE_5_PREFIXES: Record<Phase5Kind, string> = {
+  review: "REV",
+  deliverable: "DLV",
+  implementation_initiative: "IMP",
+};
+
+/** Singular labels for the three Phase 5 kinds (proposal §4.1). */
+export const PHASE_5_KIND_LABELS: Record<Phase5Kind, string> = {
+  review: "Review",
+  deliverable: "Deliverable",
+  implementation_initiative: "Implementation initiative",
+};
+
+export function isPhase5Kind(kind: ElementKind | string): kind is Phase5Kind {
+  return kind === "review" || kind === "deliverable" || kind === "implementation_initiative";
+}
+
 export function referencePrefix(kind: ElementKind, domain: ArchitectureDomain | null): string {
   if (kind === "object") {
     if (!domain) throw new Error("A core object needs a domain");
     return DOMAIN_PREFIXES[domain];
+  }
+  if (kind === "review" || kind === "deliverable" || kind === "implementation_initiative") {
+    return PHASE_5_PREFIXES[kind];
   }
   return RECORD_PREFIXES[kind];
 }
@@ -485,6 +513,7 @@ export const RELATIONSHIP_CATEGORY_LABELS: Record<RelationshipCategory, string> 
   design_flow: "Design flow",
   intelligence: "Project Intelligence",
   lineage: "Lineage and tension",
+  implementation: "Reviews, deliverables and implementation",
 };
 
 export const BASELINE_STATUS: Record<BaselineStatus, Label> = {

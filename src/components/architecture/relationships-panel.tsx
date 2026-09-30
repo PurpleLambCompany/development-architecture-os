@@ -6,11 +6,13 @@ import {
 import {
   DOMAIN_SHORT_LABELS,
   EDITABLE_PROVENANCE,
+  PHASE_5_KIND_LABELS,
   PROVENANCE_LABELS,
   RECORD_KIND_LABELS,
   RELATIONSHIP_CATEGORY_LABELS,
   SKILL_PROFICIENCIES,
   SKILL_PROFICIENCY_LABELS,
+  isPhase5Kind,
   type RelationshipCategory,
 } from "@/domain/architecture/catalog";
 import type {
@@ -33,6 +35,7 @@ import { ElementLink, InternalMark } from "./badges";
 
 export function elementTypeLabel(element: LoadedElement): string {
   if (element.object) return objectType(element.object.object_type)?.label ?? "Object";
+  if (isPhase5Kind(element.kind)) return PHASE_5_KIND_LABELS[element.kind];
   return RECORD_KIND_LABELS[element.kind as keyof typeof RECORD_KIND_LABELS];
 }
 
@@ -94,10 +97,11 @@ export function RelationshipsPanel({
     types.forEach((t) => allowedTypes.add(t));
     return types.length > 0;
   });
-  const typeOptions = RELATIONSHIP_TYPES.filter((t) => allowedTypes.has(t.key)).map((t) => ({
-    value: t.key,
-    label: t.label,
-  }));
+  // validates is written only by record_review_validation (D13); never offered
+  // as a free-form relationship insert here.
+  const typeOptions = RELATIONSHIP_TYPES.filter(
+    (t) => allowedTypes.has(t.key) && t.key !== "validates",
+  ).map((t) => ({ value: t.key, label: t.label }));
 
   return (
     <Panel

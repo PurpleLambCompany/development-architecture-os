@@ -1012,4 +1012,218 @@ select public.dismiss_intelligence_signal('e0000000-0000-4000-8000-000000000001'
   'b3000000-0000-4000-8000-000000000505', null, 'open',
   'The charter vote is scheduled; the governance design tracks it.', current_date + 30);
 
+-- Phase 5: Reviews, Deliverables and Implementation (proposal §19) ------------------------------
+-- Seeded on Community Expansion Architecture (e...003), not the Regional
+-- Innovation District (e...001): the pgTAP suite (16_reviews, 17_deliverables,
+-- 18_implementation, 19_implementation_validation, 99_implementation_concurrency)
+-- asserts exact per-engagement reference codes (REV-001, DLV-001, IMP-001...)
+-- and exact register counts against e...001, so any Phase 5 fixture placed
+-- there breaks that suite. e...003 already has two published core objects
+-- and its own internal/client team, and no pgTAP test touches it.
+--
+-- create_review / create_deliverable / create_implementation_initiative
+-- generate their own ids, so new elements are looked up afterward by title
+-- within the engagement, matching the pattern already used above for
+-- client_actions.
+
+-- Review 1: a held, published Executive Review that examines the Regional
+-- Expansion Council directly and the "validated" initiative below, with
+-- participants and a client-visible finding.
+select pg_temp.act_as('10000000-0000-4000-8000-000000000002');  -- Principal Architect (manage_reviews)
+select public.create_review('e0000000-0000-4000-8000-000000000003', 'executive_review',
+  'Expansion Readiness Review', current_timestamp - interval '9 days', null,
+  'Board-level review of the Foundation''s readiness to enter new service regions.');
+
+update public.architecture_elements set client_visibility = 'client'
+where engagement_id = 'e0000000-0000-4000-8000-000000000003' and kind = 'review' and title = 'Expansion Readiness Review';
+
+select public.add_review_participant(e.id, pg_temp.member('10000000-0000-4000-8000-000000000002', 'e0000000-0000-4000-8000-000000000003'), 'organizer')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'review' and e.title = 'Expansion Readiness Review';
+select public.add_review_participant(e.id, pg_temp.member('10000000-0000-4000-8000-000000000003', 'e0000000-0000-4000-8000-000000000003'), 'presenter')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'review' and e.title = 'Expansion Readiness Review';
+select public.add_review_participant(e.id, pg_temp.member('30000000-0000-4000-8000-000000000001', 'e0000000-0000-4000-8000-000000000003'), 'reviewer')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'review' and e.title = 'Expansion Readiness Review';
+select public.add_review_participant(e.id, pg_temp.member('30000000-0000-4000-8000-000000000002', 'e0000000-0000-4000-8000-000000000003'), 'attendee')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'review' and e.title = 'Expansion Readiness Review';
+
+select public.hold_review(e.id, current_timestamp - interval '9 days',
+  'The board affirmed the governance council and the region team''s readiness to proceed.')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'review' and e.title = 'Expansion Readiness Review';
+
+select pg_temp.rel(e.id, 'examines', 'b3000000-0000-4000-8000-000000000a01')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'review' and e.title = 'Expansion Readiness Review';
+
+select pg_temp.stmt(gen_random_uuid(), e.id, 'finding',
+  'The Regional Expansion Council and its supporting demand research are both ready for the first new region.',
+  'architect_judgment', true, 0)
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'review' and e.title = 'Expansion Readiness Review';
+
+select pg_temp.act_as('10000000-0000-4000-8000-000000000003');  -- Architect (edit_architecture, publish_architecture)
+select public.publish_element_version(e.id, 'First published version')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'review' and e.title = 'Expansion Readiness Review';
+
+-- Deliverable 1: an approved Executive Strategy Deck documenting the
+-- council and the demand research.
+select pg_temp.act_as('10000000-0000-4000-8000-000000000002');  -- Principal Architect (manage_deliverables)
+select public.create_deliverable('e0000000-0000-4000-8000-000000000003', 'executive_strategy_deck',
+  'Community Expansion: Executive Strategy Deck', null, false,
+  'The board-facing summary of the expansion architecture and its implementation path.');
+
+update public.architecture_elements set client_visibility = 'client'
+where engagement_id = 'e0000000-0000-4000-8000-000000000003' and kind = 'deliverable'
+  and title = 'Community Expansion: Executive Strategy Deck';
+
+select pg_temp.rel(e.id, 'documents', 'b3000000-0000-4000-8000-000000000a01')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'deliverable'
+  and e.title = 'Community Expansion: Executive Strategy Deck';
+select pg_temp.rel(e.id, 'documents', 'b3000000-0000-4000-8000-000000000a02')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'deliverable'
+  and e.title = 'Community Expansion: Executive Strategy Deck';
+
+select pg_temp.act_as('10000000-0000-4000-8000-000000000003');  -- Architect
+select public.publish_element_version(e.id, 'First published version')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'deliverable'
+  and e.title = 'Community Expansion: Executive Strategy Deck';
+
+select public.request_architecture_approval(e.latest_version_id, null, 'Please approve the executive strategy deck.')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'deliverable'
+  and e.title = 'Community Expansion: Executive Strategy Deck';
+select pg_temp.act_as('30000000-0000-4000-8000-000000000001');  -- Community Expansion Executive Sponsor
+select public.respond_to_architecture_approval(a.id, 'approved', 'Approved for circulation to the full board.')
+from public.architecture_approvals a
+join public.architecture_elements e on e.latest_version_id = a.element_version_id
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'deliverable'
+  and e.title = 'Community Expansion: Executive Strategy Deck';
+
+-- Initiative 1: "operational", implementing the Regional Expansion Council,
+-- with a design_approved and an agreement_executed checkpoint, both
+-- achieved (the second client-visible).
+select pg_temp.act_as('10000000-0000-4000-8000-000000000003');  -- Architect (manage_implementation)
+select public.create_implementation_initiative('e0000000-0000-4000-8000-000000000003',
+  'Expansion Council stand-up', array['b3000000-0000-4000-8000-000000000a01']::uuid[],
+  'governance', current_date + 20, pg_temp.member('10000000-0000-4000-8000-000000000003', 'e0000000-0000-4000-8000-000000000003'),
+  'Standing up the Regional Expansion Council: charter approved and the first region agreement executed.');
+
+update public.architecture_elements set client_visibility = 'client'
+where engagement_id = 'e0000000-0000-4000-8000-000000000003' and kind = 'implementation_initiative'
+  and title = 'Expansion Council stand-up';
+
+select public.publish_element_version(e.id, 'First published version')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'implementation_initiative'
+  and e.title = 'Expansion Council stand-up';
+
+-- Published immediately: the client-facing snapshot must show "operational",
+-- not the pre-publication "not_started" the first published version froze.
+select public.update_implementation_status(e.id, 'operational', null, true,
+  'Operational: the Regional Expansion Council has stood up.')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'implementation_initiative'
+  and e.title = 'Expansion Council stand-up';
+
+select public.add_implementation_checkpoint(e.id, 'design_approved', 'Council charter approved',
+  current_date - 30, null, null, false)
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'implementation_initiative'
+  and e.title = 'Expansion Council stand-up';
+select public.record_checkpoint_achieved(c.id, current_date - 28, null)
+from public.implementation_checkpoints c
+join public.architecture_elements e on e.id = c.implementation_element_id
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'implementation_initiative'
+  and e.title = 'Expansion Council stand-up' and c.checkpoint_type = 'design_approved';
+
+select public.add_implementation_checkpoint(e.id, 'agreement_executed', 'First region entry agreement executed',
+  current_date - 5, null, null, true)
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'implementation_initiative'
+  and e.title = 'Expansion Council stand-up';
+select public.record_checkpoint_achieved(c.id, current_date - 5, null)
+from public.implementation_checkpoints c
+join public.architecture_elements e on e.id = c.implementation_element_id
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'implementation_initiative'
+  and e.title = 'Expansion Council stand-up' and c.checkpoint_type = 'agreement_executed';
+
+-- Initiative 2: "validated", implementing the regional service demand
+-- research, examined directly by Review 1 and validated through
+-- record_review_validation, exercising the full gate (examines -> held ->
+-- validates -> resolve) end to end.
+select public.create_implementation_initiative('e0000000-0000-4000-8000-000000000003',
+  'Regional demand study rollout', array['b3000000-0000-4000-8000-000000000a02']::uuid[],
+  'other', current_date - 15, pg_temp.member('10000000-0000-4000-8000-000000000002', 'e0000000-0000-4000-8000-000000000003'),
+  'Commissioning and completing the regional service demand study for the candidate regions.');
+
+update public.architecture_elements set client_visibility = 'client'
+where engagement_id = 'e0000000-0000-4000-8000-000000000003' and kind = 'implementation_initiative'
+  and title = 'Regional demand study rollout';
+
+select public.publish_element_version(e.id, 'First published version')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'implementation_initiative'
+  and e.title = 'Regional demand study rollout';
+
+select pg_temp.rel(rev.id, 'examines', init.id)
+from public.architecture_elements rev, public.architecture_elements init
+where rev.engagement_id = 'e0000000-0000-4000-8000-000000000003' and rev.kind = 'review' and rev.title = 'Expansion Readiness Review'
+  and init.engagement_id = 'e0000000-0000-4000-8000-000000000003' and init.kind = 'implementation_initiative'
+  and init.title = 'Regional demand study rollout';
+
+select public.record_review_validation(rev.id, init.id)
+from public.architecture_elements rev, public.architecture_elements init
+where rev.engagement_id = 'e0000000-0000-4000-8000-000000000003' and rev.kind = 'review' and rev.title = 'Expansion Readiness Review'
+  and init.engagement_id = 'e0000000-0000-4000-8000-000000000003' and init.kind = 'implementation_initiative'
+  and init.title = 'Regional demand study rollout';
+
+-- Published immediately: the client-facing snapshot must show "validated",
+-- not the pre-publication "not_started" the first published version froze.
+select public.resolve_implementation_initiative(e.id, 'validated',
+  'Validated at the Expansion Readiness Review: the study is complete and its findings are in use.',
+  true, 'Validated: the regional demand study is complete and in use.')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'implementation_initiative'
+  and e.title = 'Regional demand study rollout';
+
+-- Initiative 3: escalated and stalled, implementing the Regional Expansion
+-- Council.
+select pg_temp.act_as('10000000-0000-4000-8000-000000000003');  -- Architect (manage_implementation, edit_architecture)
+select public.create_implementation_initiative('e0000000-0000-4000-8000-000000000003',
+  'Third-region governance ratification', array['b3000000-0000-4000-8000-000000000a01']::uuid[],
+  'governance', current_date + 45, pg_temp.member('10000000-0000-4000-8000-000000000003', 'e0000000-0000-4000-8000-000000000003'),
+  'Ratifying the council''s authority to approve the third candidate region.');
+
+select public.publish_element_version(e.id, 'First published version')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'implementation_initiative'
+  and e.title = 'Third-region governance ratification';
+
+select public.update_implementation_status(e.id, 'stalled',
+  'The ratification vote has been postponed twice; the council has not scheduled a new date.')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'implementation_initiative'
+  and e.title = 'Third-region governance ratification';
+
+select public.triage_implementation(e.id, 'critical', current_date + 7,
+  'No new hearing date; the third region''s timeline depends on this ratification.')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'implementation_initiative'
+  and e.title = 'Third-region governance ratification';
+
+select public.escalate_implementation(e.id, 'principal_architect',
+  'The ratification vote has stalled twice; recommend raising it directly with the council chair.',
+  null, current_date + 10)
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'implementation_initiative'
+  and e.title = 'Third-region governance ratification';
+
 select set_config('request.jwt.claims', '', false);

@@ -20,6 +20,9 @@ import { EngagementStatusTag } from "@/components/engagements/engagement-status"
 import { formatMoney } from "@/domain/finance/money";
 import { getBusinessToday, getEngagementFinances } from "@/domain/finance/queries";
 import { getClientActions } from "@/domain/intelligence/queries";
+import { DELIVERABLE_TYPE_LABELS } from "@/domain/deliverables/catalog";
+import { getClientDeliverables } from "@/domain/deliverables/queries";
+import { ApprovalResponseForm } from "@/components/architecture/client-responses";
 import { EngagementNav } from "@/components/portal/engagement-nav";
 import { ButtonLink } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
@@ -64,6 +67,10 @@ export default async function ClientEngagementPage({ params }: PageProps<"/porta
   const myRequests = actions.filter(
     (a) => a.status === "open" && a.addressed_to_user_id === viewer.id,
   ).length;
+  const deliverables = capabilities.has("view_architecture")
+    ? await getClientDeliverables(engagement.id)
+    : [];
+  const deliverableApprovals = pendingApprovals;
   const awaitingCount = pendingApprovals.length + openDecisions + myRequests;
   const parts = [
     [myRequests, "request"],
@@ -163,10 +170,46 @@ export default async function ClientEngagementPage({ params }: PageProps<"/porta
             </EmptyState>
           )}
         </Panel>
-        <Panel title="Delivered and implemented">
-          <EmptyState title="No deliverables yet">
-            Deliverables and implementation status will appear here.
-          </EmptyState>
+        <Panel
+          title="Delivered and implemented"
+          actions={
+            deliverables.length > 0 ? (
+              <ButtonLink
+                href={`/portal/${engagement.slug}/implementation`}
+                variant="secondary"
+                size="sm"
+              >
+                Implementation
+              </ButtonLink>
+            ) : null
+          }
+        >
+          {deliverables.length === 0 ? (
+            <EmptyState title="No deliverables yet">
+              Deliverables and implementation status will appear here.
+            </EmptyState>
+          ) : (
+            <ul className="space-y-3">
+              {deliverables.map((d) => {
+                const approval = deliverableApprovals.find(
+                  (p) => p.element_version_id === d.version_id,
+                );
+                return (
+                  <li key={d.element_id} className="space-y-1">
+                    <p className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm text-ink">{d.title}</span>
+                      <span className="text-xs text-ink-subtle">
+                        {DELIVERABLE_TYPE_LABELS[d.deliverable_type]}
+                      </span>
+                    </p>
+                    {approval && canRespond ? (
+                      <ApprovalResponseForm approvalId={approval.id} label="Respond" />
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </Panel>
       </div>
 

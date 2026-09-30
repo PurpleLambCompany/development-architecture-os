@@ -1,0 +1,22 @@
+# ADR-0040: Area-limited client visibility extends to Phase 5 records
+
+**Status:** Accepted (Phase 5 acceptance-review corrective work; approved 2026-09-30)
+
+## Context
+
+ADR-0030 defined how a Client Contributor's assigned areas (`engagement_member_areas`) gate what Project Intelligence records they see, through one helper, `private.element_in_member_areas`, used by every client policy and client read model via `private.element_client_readable`. That helper's `concerned` CTE maps a non-object record to the architecture objects it "concerns" for area matching, recognizing the Phase 3/4 relationship vocabulary (`underpins`, `threatens`, `constrains`, `mitigates`, `affects`, `addresses`, `advances`, `pursues`).
+
+Phase 5 introduced three new element kinds — Review, Deliverable, Implementation Initiative — with their own structural relationships to core architecture (`examines`, `documents`, `implements`; see ADR-0034). Their client read models (`client_reviews`, `client_deliverables`, `client_implementation`) already gated on `private.element_client_readable`, correctly reusing the Phase 3/4 authorization spine. But because the `concerned` CTE's relationship-type list did not include `examines`/`documents`/`implements`, a Phase 5 record's `concerned` set was always empty for a plain Contributor (who holds `view_architecture` but not `view_full_architecture`). The acceptance review's own report guessed the resulting symptom was over-inclusion ("Contributors get blanket access to everything"); reading the code more closely suggested the opposite, and it was confirmed empirically (a Harbor Client Contributor given the Application area, added for this purpose, saw zero of Harbor's published, client-visible Phase 5 records — not all of them) before any fix was written: an area-limited Client Contributor saw **none** of Phase 5, in any area, ever.
+
+## Decision
+
+- `private.element_in_member_areas` is extended, not replaced: `implements`, `documents` and `examines` are added to the `concerned` CTE's relationship-type list. This resolves the direct cases through the exact same "walk to concerned objects, check against areas" path already used for Phase 3/4 — Implementation Initiative → `implements` → object, Deliverable → `documents` → object, Review → `examines` → object — with no new mechanism.
+- A Review's agenda can also point at an Implementation Initiative rather than an object directly (recorded validation, D5). For that case only, the same function independently resolves the examined initiative's own area membership (what it implements, and its `part_of` ancestry, mirroring the existing `ancestry` CTE's style) in two small additional CTEs, and ORs that into the Review's own visibility. A Review is therefore visible when it examines an object in the member's areas, **or** when it examines an Implementation Initiative that is itself visible under this same rule — never through any other path.
+- Nothing in `private.element_client_readable` or the three Phase 5 `client_*` functions changes: they already deferred entirely to `element_in_member_areas`, so this is a one-function fix, entirely in the database. No React/TypeScript code participates in this authorization decision.
+- Full-architecture client users (`view_full_architecture` — Executive Sponsors, Client Project Leads, Client Viewers by default) are unaffected: their branch of `element_client_readable` never touched `element_in_member_areas` and still sees every published, client-visible record for the engagement.
+
+## Consequences
+
+- An area-limited Client Contributor now sees a Phase 5 record only when it is structurally connected — directly or, for a Review, one hop through an Initiative it examines — to architecture within an area they are authorized to see. Before this fix they saw none; this was always the intended rule (Phase 5 proposal §9/§16), never delivered correctly.
+- The fix adds relationship types to an existing allowlist and two bounded, non-recursive-across-kinds CTEs; it does not change the shape of `engagement_member_areas`, add a new assignment mechanism, or introduce area assignment for Phase 5 elements themselves (a Contributor is never assigned an area on a Review/Deliverable/Initiative directly — only through what it structurally touches, exactly as for Phase 3/4 records).
+- Phase 3/4 area-visibility behavior (pgTAP suites 12–15) is unaffected: the new relationship types add matches only for Phase 5's own relationship vocabulary, which no Phase 3/4 record uses.

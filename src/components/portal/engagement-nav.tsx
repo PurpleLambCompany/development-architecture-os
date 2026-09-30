@@ -8,9 +8,10 @@ import { cn } from "@/lib/utils";
  * Actions for anyone who can be asked, respond or assign; Architecture and
  * Decisions with view_architecture; Billing with view_financials. The database enforces the same capabilities.
  */
-const LATER_SECTIONS = ["Reviews", "Documents", "Implementation", "Messages"];
+const LATER_SECTIONS = ["Documents", "Messages"];
 
-export type PortalSection = "overview" | "actions" | "architecture" | "decisions" | "billing";
+export type PortalSection =
+  "overview" | "actions" | "architecture" | "decisions" | "reviews" | "implementation" | "billing";
 
 export async function EngagementNav({
   slug,
@@ -51,6 +52,10 @@ export async function EngagementNav({
         : null}
       {seesArchitecture
         ? tab(`/portal/${slug}/decisions`, "Decisions", current === "decisions")
+        : null}
+      {seesArchitecture ? tab(`/portal/${slug}/reviews`, "Reviews", current === "reviews") : null}
+      {seesArchitecture
+        ? tab(`/portal/${slug}/implementation`, "Implementation", current === "implementation")
         : null}
       {capabilities.has("view_financials")
         ? tab(`/portal/${slug}/billing`, "Billing", current === "billing")

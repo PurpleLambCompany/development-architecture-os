@@ -25,6 +25,9 @@ export const ENGAGEMENT_CAPABILITIES = [
   "respond_to_client_actions",
   "assign_client_actions",
   "submit_client_input",
+  "manage_reviews",
+  "manage_deliverables",
+  "manage_implementation",
 ] as const satisfies readonly EngagementCapability[];
 
 export const CAPABILITY_LABELS: Record<EngagementCapability, string> = {
@@ -43,6 +46,9 @@ export const CAPABILITY_LABELS: Record<EngagementCapability, string> = {
   respond_to_client_actions: "Respond to requests",
   assign_client_actions: "Assign requests",
   submit_client_input: "Add input",
+  manage_reviews: "Manage reviews",
+  manage_deliverables: "Manage deliverables",
+  manage_implementation: "Manage implementation",
 };
 
 export const FINANCIAL_CAPABILITIES = [
@@ -84,7 +90,10 @@ export function capabilitySide(capability: EngagementCapability): MemberSide | n
     capability === "manage_financials" ||
     capability === "edit_architecture" ||
     capability === "publish_architecture" ||
-    capability === "manage_client_requests"
+    capability === "manage_client_requests" ||
+    capability === "manage_reviews" ||
+    capability === "manage_deliverables" ||
+    capability === "manage_implementation"
   )
     return "internal";
   return null;
@@ -108,18 +117,33 @@ export const ROLE_CAPABILITY_DEFAULTS: Record<AppRole, readonly EngagementCapabi
     "edit_architecture",
     "publish_architecture",
     "manage_client_requests",
+    "manage_reviews",
+    "manage_deliverables",
+    "manage_implementation",
   ],
   architect: [
     "view_confidential_deliverables",
     "edit_architecture",
     "publish_architecture",
     "manage_client_requests",
+    "manage_reviews",
+    "manage_deliverables",
+    "manage_implementation",
   ],
-  researcher: ["view_confidential_deliverables", "edit_architecture", "manage_client_requests"],
+  researcher: [
+    "view_confidential_deliverables",
+    "edit_architecture",
+    "manage_client_requests",
+    "manage_reviews",
+    "manage_deliverables",
+  ],
   project_administrator: [
     "manage_client_team",
     "view_confidential_deliverables",
     "manage_client_requests",
+    "manage_reviews",
+    "manage_deliverables",
+    "manage_implementation",
   ],
   finance_administrator: ["view_financials", "manage_financials"],
   executive_sponsor: [

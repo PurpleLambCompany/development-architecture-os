@@ -8,9 +8,14 @@ import { ApprovalTag, ElementLink, LifecycleTag } from "@/components/architectur
 import { elementTypeLabel } from "@/components/architecture/relationships-panel";
 import { getEscalations, getSignals } from "@/domain/intelligence/queries";
 import { EscalationsPanel } from "@/components/intelligence/escalations-panel";
+import { createReview } from "@/domain/reviews/actions";
+import { REVIEW_TYPES, REVIEW_TYPE_LABELS, reviewStatus } from "@/domain/reviews/catalog";
+import { getReviewRegister } from "@/domain/reviews/queries";
 import { ActionForm } from "@/components/ui/action-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState, Panel } from "@/components/ui/panel";
+import { StatusTag } from "@/components/ui/status-tag";
+import { ReferenceCode } from "@/components/architecture/badges";
 import { Table, Td, Th } from "@/components/ui/table";
 
 /**
@@ -22,13 +27,14 @@ export default async function ReviewsPage({
   params,
 }: PageProps<"/internal/engagements/[slug]/reviews">) {
   const { slug } = await params;
-  const { engagement, canPublish } = await getInternalArchitectureContext(slug);
-  const [architecture, queue, baselines, escalations, signals] = await Promise.all([
+  const { engagement, canPublish, canManageReviews } = await getInternalArchitectureContext(slug);
+  const [architecture, queue, baselines, escalations, signals, sessions] = await Promise.all([
     loadArchitecture(engagement.id),
     getReviewQueue(),
     listBaselines(engagement.id),
     getEscalations(engagement.id, true),
     getSignals(engagement.id),
+    getReviewRegister(engagement.id),
   ]);
   const nameOf = memberNames(engagement);
   const inReview = architecture.elements.filter((e) => e.lifecycle === "in_review");
@@ -60,6 +66,85 @@ export default async function ReviewsPage({
           href: `/internal/engagements/${slug}/intelligence/signals`,
         }}
       />
+
+      <Panel
+        title="Review sessions"
+        description="Executive and Architecture Reviews: scheduled, held and cancelled, with their agenda and participants."
+        actions={
+          canManageReviews ? (
+            <ActionForm
+              fields={[
+                {
+                  name: "reviewType",
+                  label: "Kind",
+                  type: "select",
+                  options: REVIEW_TYPES.map((t) => ({ value: t, label: REVIEW_TYPE_LABELS[t] })),
+                },
+                { name: "title", label: "Title", wide: true },
+                {
+                  name: "scheduledFor",
+                  label: "Scheduled for",
+                  type: "text",
+                  hint: "YYYY-MM-DDTHH:mm",
+                },
+                { name: "summary", label: "Summary", type: "textarea" },
+              ]}
+              defaultValues={{ reviewType: "executive_review" }}
+              action={createReview.bind(null, engagement.id)}
+              submitLabel="Schedule review"
+              trigger="Schedule a review"
+            />
+          ) : null
+        }
+      >
+        {sessions.length === 0 ? (
+          <EmptyState title="No reviews scheduled" />
+        ) : (
+          <Table>
+            <thead>
+              <tr>
+                <Th>Review</Th>
+                <Th>Kind</Th>
+                <Th>Status</Th>
+                <Th>When</Th>
+                <Th className="text-right">Agenda</Th>
+                <Th className="text-right">Participants</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {sessions.map((r) => {
+                const status = reviewStatus(r.review_status);
+                return (
+                  <tr key={r.element_id}>
+                    <Td>
+                      <Link
+                        href={`/internal/engagements/${slug}/reviews/${r.element_id}`}
+                        className="group inline-flex items-baseline gap-2"
+                      >
+                        <ReferenceCode code={r.reference_code} />
+                        <span className="text-ink group-hover:underline">{r.title}</span>
+                      </Link>
+                    </Td>
+                    <Td className="text-ink-muted">{REVIEW_TYPE_LABELS[r.review_type]}</Td>
+                    <Td>
+                      {status ? <StatusTag tone={status.tone}>{status.label}</StatusTag> : null}
+                    </Td>
+                    <Td className="text-xs whitespace-nowrap text-ink-muted">
+                      {r.held_at
+                        ? `Held ${formatDateTime(r.held_at)}`
+                        : r.scheduled_for
+                          ? `Scheduled ${formatDateTime(r.scheduled_for)}`
+                          : "Not yet scheduled"}
+                    </Td>
+                    <Td className="text-right tabular-nums">{r.agenda_count}</Td>
+                    <Td className="text-right tabular-nums">{r.participant_count}</Td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </Table>
+        )}
+      </Panel>
 
       <Panel
         title="In review"
