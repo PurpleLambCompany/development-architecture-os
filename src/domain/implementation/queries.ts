@@ -87,12 +87,15 @@ export async function getImpact(elementId: string, depth = 3): Promise<Implement
 /** Escalations of an engagement, or open ones across every engagement the viewer reads. */
 export const getEscalations = cache(async (engagementId: string | null, openOnly = false) => {
   const supabase = await createSupabaseServerClient();
+  // Note: implementation_escalations_element_fk references implementation_initiatives,
+  // not architecture_elements directly (escalations only ever concern initiatives), so
+  // there is no single-hop embed to architecture_elements here. No current caller reads
+  // an `.architecture_elements` field off an escalation row (the initiative is already
+  // in hand on the page that renders these), so that embed is simply dropped rather than
+  // resolved via a two-hop traversal nobody would consume.
   let query = supabase
     .from("implementation_escalations")
-    .select(
-      `*, architecture_elements!implementation_escalations_element_fk(id, kind, reference_code, title, engagements(slug, title)),
-       client_actions!implementation_escalations_action_fk(id, reference_code, status)`,
-    )
+    .select(`*, client_actions!implementation_escalations_action_fk(id, reference_code, status)`)
     .order("raised_at", { ascending: false });
   if (engagementId) query = query.eq("engagement_id", engagementId);
   if (openOnly) query = query.is("resolved_at", null);
