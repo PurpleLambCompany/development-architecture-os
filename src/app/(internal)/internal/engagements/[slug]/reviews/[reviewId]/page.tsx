@@ -221,15 +221,20 @@ export default async function ReviewDetailPage({
           <EmptyState title="No participants added" />
         ) : (
           <ul className="divide-y divide-rule border-y border-rule text-sm">
-            {participants.map((p) => (
-              <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 py-2">
-                <span className="text-ink">{nameOf(p.engagement_member_id)}</span>
-                <span className="flex items-center gap-2 text-xs text-ink-muted">
-                  {REVIEW_PARTICIPANT_ROLE_LABELS[p.role]}
-                  {p.attended ? <StatusTag tone="positive">Attended</StatusTag> : null}
-                </span>
-              </li>
-            ))}
+            {participants.map((p) => {
+              const member = engagementMembers.find((m) => m.id === p.engagement_member_id);
+              return (
+                <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 py-2">
+                  <span className="text-ink">
+                    {nameOf(member?.user_id ?? p.engagement_member_id)}
+                  </span>
+                  <span className="flex items-center gap-2 text-xs text-ink-muted">
+                    {REVIEW_PARTICIPANT_ROLE_LABELS[p.role]}
+                    {p.attended ? <StatusTag tone="positive">Attended</StatusTag> : null}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         )}
       </Panel>
