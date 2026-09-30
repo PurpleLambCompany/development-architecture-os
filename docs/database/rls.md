@@ -80,7 +80,7 @@ Nobody except a System Administrator can change their own capabilities, and nobo
 | Grant / revoke engagement capabilities            | see the capability table above                                                      |
 | Write activity log                                | nobody (triggers only)                                                              |
 
-Architects, Researchers and Finance Administrators have read access to assigned engagements in Phase 1. Their write permissions arrive with the tables they own (finance in Phase 2; architecture and intelligence in Phases 3–4). Client users have no write access in Phase 1 except their own name.
+Architects, Researchers and Finance Administrators have read access to assigned engagements in Phase 1. Their write permissions arrive with the tables they own (finance in Phase 2; architecture and intelligence in Phases 3–4; reviews, deliverables and implementation in Phase 5). Client users have no write access in Phase 1 except their own name.
 
 ## Spec §30 acceptance checks and where they are proven
 
