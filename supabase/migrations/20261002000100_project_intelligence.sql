@@ -1378,10 +1378,12 @@ begin
   if tg_op = 'UPDATE' then
     raise exception '% is append-only', tg_table_name using errcode = '23514';
   end if;
-  if (tg_table_name = 'intelligence_status_changes'
-      and exists (select 1 from public.architecture_elements where id = old.element_id))
-     or (tg_table_name = 'client_action_events'
-      and exists (select 1 from public.client_actions where id = old.action_id)) then
+  -- A row goes only with its parent (a draft deleted, a cascade).
+  if tg_table_name = 'intelligence_status_changes' then
+    if exists (select 1 from public.architecture_elements where id = old.element_id) then
+      raise exception '% is append-only', tg_table_name using errcode = '23514';
+    end if;
+  elsif exists (select 1 from public.client_actions where id = old.action_id) then
     raise exception '% is append-only', tg_table_name using errcode = '23514';
   end if;
   return old;
@@ -1950,8 +1952,9 @@ begin
     raise exception '"%" does not resolve a %', p_status, e.kind using errcode = '23514';
   end if;
   current_status := private.intelligence_record_status(e.id);
-  if current_status = p_status then
-    raise exception 'The record is already %', p_status using errcode = '23514';
+  if current_status = any (public.intelligence_terminal_statuses(e.kind)) then
+    raise exception 'The record is already %; reopen it first', replace(current_status, '_', ' ')
+      using errcode = '23514';
   end if;
   if (e.kind = 'risk' and p_status = 'accepted') or coalesce(p_publish, false) then
     perform private.require_architecture_capability(e.engagement_id, 'publish_architecture');
