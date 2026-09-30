@@ -1639,6 +1639,138 @@ export type Database = {
         };
         Relationships: [];
       };
+      dam_release_members: {
+        Row: {
+          added_at: string;
+          added_by: string | null;
+          asset_id: string;
+          asset_version_id: string;
+          release_id: string;
+        };
+        Insert: {
+          added_at?: string;
+          added_by?: string | null;
+          asset_id: string;
+          asset_version_id: string;
+          release_id: string;
+        };
+        Update: {
+          added_at?: string;
+          added_by?: string | null;
+          asset_id?: string;
+          asset_version_id?: string;
+          release_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dam_release_members_added_by_fkey";
+            columns: ["added_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dam_release_members_asset_id_fkey";
+            columns: ["asset_id"];
+            isOneToOne: false;
+            referencedRelation: "method_assets";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dam_release_members_release_id_fkey";
+            columns: ["release_id"];
+            isOneToOne: false;
+            referencedRelation: "dam_releases";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dam_release_members_version_fk";
+            columns: ["asset_version_id", "asset_id"];
+            isOneToOne: false;
+            referencedRelation: "method_asset_versions";
+            referencedColumns: ["id", "asset_id"];
+          },
+        ];
+      };
+      dam_releases: {
+        Row: {
+          change_summary: string;
+          created_at: string;
+          created_by: string | null;
+          effective_on: string | null;
+          id: string;
+          published_at: string | null;
+          published_by: string | null;
+          retired_at: string | null;
+          retired_reason: string | null;
+          status: Database["public"]["Enums"]["dam_release_status"];
+          summary: string;
+          supersedes_release_id: string | null;
+          title: string;
+          updated_at: string;
+          version_label: string;
+          vocabulary_record: Json | null;
+        };
+        Insert: {
+          change_summary?: string;
+          created_at?: string;
+          created_by?: string | null;
+          effective_on?: string | null;
+          id?: string;
+          published_at?: string | null;
+          published_by?: string | null;
+          retired_at?: string | null;
+          retired_reason?: string | null;
+          status?: Database["public"]["Enums"]["dam_release_status"];
+          summary?: string;
+          supersedes_release_id?: string | null;
+          title: string;
+          updated_at?: string;
+          version_label: string;
+          vocabulary_record?: Json | null;
+        };
+        Update: {
+          change_summary?: string;
+          created_at?: string;
+          created_by?: string | null;
+          effective_on?: string | null;
+          id?: string;
+          published_at?: string | null;
+          published_by?: string | null;
+          retired_at?: string | null;
+          retired_reason?: string | null;
+          status?: Database["public"]["Enums"]["dam_release_status"];
+          summary?: string;
+          supersedes_release_id?: string | null;
+          title?: string;
+          updated_at?: string;
+          version_label?: string;
+          vocabulary_record?: Json | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dam_releases_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dam_releases_published_by_fkey";
+            columns: ["published_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dam_releases_supersedes_release_id_fkey";
+            columns: ["supersedes_release_id"];
+            isOneToOne: false;
+            referencedRelation: "dam_releases";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       decision_options: {
         Row: {
           created_at: string;
@@ -1937,6 +2069,95 @@ export type Database = {
           },
         ];
       };
+      development_context_revisions: {
+        Row: {
+          context_id: string;
+          id: string;
+          prior_definition: string;
+          prior_label: string;
+          reason: string;
+          revised_at: string;
+          revised_by: string | null;
+        };
+        Insert: {
+          context_id: string;
+          id?: string;
+          prior_definition: string;
+          prior_label: string;
+          reason: string;
+          revised_at?: string;
+          revised_by?: string | null;
+        };
+        Update: {
+          context_id?: string;
+          id?: string;
+          prior_definition?: string;
+          prior_label?: string;
+          reason?: string;
+          revised_at?: string;
+          revised_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "development_context_revisions_context_id_fkey";
+            columns: ["context_id"];
+            isOneToOne: false;
+            referencedRelation: "development_contexts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "development_context_revisions_revised_by_fkey";
+            columns: ["revised_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      development_contexts: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          definition: string;
+          id: string;
+          key: string;
+          label: string;
+          retired_at: string | null;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          definition: string;
+          id?: string;
+          key: string;
+          label: string;
+          retired_at?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          definition?: string;
+          id?: string;
+          key?: string;
+          label?: string;
+          retired_at?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "development_contexts_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       document_number_counters: {
         Row: {
           last_value: number;
@@ -2172,6 +2393,52 @@ export type Database = {
             columns: ["published_by"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      engagement_development_contexts: {
+        Row: {
+          context_id: string;
+          created_at: string;
+          created_by: string | null;
+          engagement_id: string;
+          is_primary: boolean;
+        };
+        Insert: {
+          context_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          engagement_id: string;
+          is_primary?: boolean;
+        };
+        Update: {
+          context_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          engagement_id?: string;
+          is_primary?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "engagement_development_contexts_context_id_fkey";
+            columns: ["context_id"];
+            isOneToOne: false;
+            referencedRelation: "development_contexts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "engagement_development_contexts_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "engagement_development_contexts_engagement_id_fkey";
+            columns: ["engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagements";
             referencedColumns: ["id"];
           },
         ];
@@ -2441,6 +2708,7 @@ export type Database = {
           created_at: string;
           created_by: string | null;
           current_phase: string;
+          dam_release_id: string | null;
           description: string;
           engagement_type: Database["public"]["Enums"]["engagement_type"];
           id: string;
@@ -2458,6 +2726,7 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           current_phase?: string;
+          dam_release_id?: string | null;
           description?: string;
           engagement_type: Database["public"]["Enums"]["engagement_type"];
           id?: string;
@@ -2475,6 +2744,7 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           current_phase?: string;
+          dam_release_id?: string | null;
           description?: string;
           engagement_type?: Database["public"]["Enums"]["engagement_type"];
           id?: string;
@@ -2500,6 +2770,13 @@ export type Database = {
             columns: ["created_by"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "engagements_dam_release_id_fkey";
+            columns: ["dam_release_id"];
+            isOneToOne: false;
+            referencedRelation: "dam_releases";
             referencedColumns: ["id"];
           },
         ];
@@ -4080,6 +4357,36 @@ export type Database = {
           },
         ];
       };
+      method_version_contexts: {
+        Row: {
+          context_id: string;
+          version_id: string;
+        };
+        Insert: {
+          context_id: string;
+          version_id: string;
+        };
+        Update: {
+          context_id?: string;
+          version_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "method_version_contexts_context_id_fkey";
+            columns: ["context_id"];
+            isOneToOne: false;
+            referencedRelation: "development_contexts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "method_version_contexts_version_id_fkey";
+            columns: ["version_id"];
+            isOneToOne: false;
+            referencedRelation: "method_asset_versions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       method_version_domains: {
         Row: {
           domain: Database["public"]["Enums"]["architecture_domain"];
@@ -5556,6 +5863,10 @@ export type Database = {
         };
         Returns: string;
       };
+      create_dam_release: {
+        Args: { p_summary?: string; p_title: string; p_version_label: string };
+        Returns: string;
+      };
       create_deliverable: {
         Args: {
           p_baseline_id?: string;
@@ -5565,6 +5876,10 @@ export type Database = {
           p_summary?: string;
           p_title: string;
         };
+        Returns: string;
+      };
+      create_development_context: {
+        Args: { p_definition: string; p_key: string; p_label: string };
         Returns: string;
       };
       create_implementation_initiative: {
@@ -5607,6 +5922,7 @@ export type Database = {
         Returns: undefined;
       };
       defer_decision: { Args: { p_decision_id: string; p_reason: string }; Returns: undefined };
+      delete_dam_release: { Args: { p_release_id: string }; Returns: undefined };
       delete_method_asset_version: { Args: { p_version_id: string }; Returns: undefined };
       deliverable_register: {
         Args: { p_engagement_id?: string };
@@ -5952,6 +6268,10 @@ export type Database = {
         }[];
       };
       preview_client_snapshot: { Args: { p_element_id: string }; Returns: Json };
+      publish_dam_release: {
+        Args: { p_change_summary?: string; p_effective_on?: string; p_release_id: string };
+        Returns: undefined;
+      };
       publish_element_version: {
         Args: { p_change_summary?: string; p_element_id: string };
         Returns: string;
@@ -6097,6 +6417,10 @@ export type Database = {
         Args: { p_change_order_id: string; p_note: string };
         Returns: undefined;
       };
+      remove_dam_release_member: {
+        Args: { p_asset_id: string; p_release_id: string };
+        Returns: undefined;
+      };
       remove_member_area: { Args: { p_area_id: string }; Returns: undefined };
       remove_method_version_file: { Args: { p_file_id: string }; Returns: string };
       reopen_implementation_initiative: {
@@ -6148,6 +6472,11 @@ export type Database = {
         Args: { p_action_id: string; p_body: string; p_file_ids?: string[]; p_link_url?: string };
         Returns: string;
       };
+      retire_dam_release: { Args: { p_reason: string; p_release_id: string }; Returns: undefined };
+      retire_development_context: {
+        Args: { p_context_id: string; p_reason: string };
+        Returns: undefined;
+      };
       retire_element: { Args: { p_element_id: string; p_reason: string }; Returns: undefined };
       retire_method_asset: { Args: { p_asset_id: string; p_reason: string }; Returns: undefined };
       retire_method_asset_version: {
@@ -6193,6 +6522,10 @@ export type Database = {
           updated_at: string;
         }[];
       };
+      revise_development_context: {
+        Args: { p_context_id: string; p_definition: string; p_label: string; p_reason: string };
+        Returns: undefined;
+      };
       role_side: {
         Args: { role: Database["public"]["Enums"]["app_role"] };
         Returns: Database["public"]["Enums"]["member_side"];
@@ -6217,8 +6550,20 @@ export type Database = {
         Args: { p_contract_id: string; p_status: Database["public"]["Enums"]["contract_status"] };
         Returns: undefined;
       };
+      set_dam_release_member: {
+        Args: { p_asset_version_id: string; p_release_id: string };
+        Returns: undefined;
+      };
       set_decision_recommendation: {
         Args: { p_decision_id: string; p_option_id: string; p_rationale: string };
+        Returns: undefined;
+      };
+      set_engagement_dam_release: {
+        Args: { p_engagement_id: string; p_reason: string; p_release_id: string };
+        Returns: undefined;
+      };
+      set_engagement_development_contexts: {
+        Args: { p_context_ids: string[]; p_engagement_id: string; p_primary_context_id: string };
         Returns: undefined;
       };
       set_instrument_version_evidence_types: {
@@ -6238,6 +6583,10 @@ export type Database = {
       };
       set_method_version_components: {
         Args: { p_components: Json; p_version_id: string };
+        Returns: undefined;
+      };
+      set_method_version_contexts: {
+        Args: { p_context_ids: string[]; p_version_id: string };
         Returns: undefined;
       };
       set_method_version_domains: {
@@ -6322,6 +6671,15 @@ export type Database = {
           p_element_id: string;
           p_next_review_on?: string;
           p_note?: string;
+        };
+        Returns: undefined;
+      };
+      update_dam_release: {
+        Args: {
+          p_change_summary: string;
+          p_release_id: string;
+          p_summary: string;
+          p_title: string;
         };
         Returns: undefined;
       };

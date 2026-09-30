@@ -849,8 +849,11 @@ begin
   if exists (select 1 from public.method_asset_versions where asset_id = a.id and lifecycle = 'draft') then
     raise exception 'This asset already has a draft version' using errcode = '23514';
   end if;
+  -- The published version, or else the latest proper version (retired).
   select id into src from public.method_asset_versions
-  where asset_id = a.id and lifecycle = 'published' and not legacy;
+  where asset_id = a.id and lifecycle <> 'draft' and not legacy
+  order by (lifecycle = 'published') desc, version_no desc
+  limit 1;
 
   perform private.begin_methodology_operation();
   insert into public.method_asset_versions (
@@ -866,9 +869,14 @@ begin
          s.completion_standard_version_id, s.review_implications, s.implementation_implications,
          s.practitioner_instructions, s.internal_notes, s.modes, s.identity_disclosure, s.disclosable_name,
          s.id, s.external_basis
-  from (select 1) one
-  left join public.method_asset_versions s on s.id = src
+  from public.method_asset_versions s
+  where s.id = src
   returning id into new_version;
+  if new_version is null then
+    insert into public.method_asset_versions (asset_id, version_no)
+    values (a.id, (select coalesce(max(version_no), 0) + 1 from public.method_asset_versions where asset_id = a.id))
+    returning id into new_version;
+  end if;
 
   if src is not null then
     insert into public.method_version_domains (version_id, domain)

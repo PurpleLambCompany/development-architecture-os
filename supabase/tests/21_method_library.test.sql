@@ -7,7 +7,7 @@
 -- =============================================================================
 begin;
 
-select plan(70);
+select plan(116);
 
 create function pg_temp.act_as(user_email text)
 returns void
@@ -293,6 +293,149 @@ select private.begin_methodology_operation();
 select throws_ok($$ delete from public.method_asset_rights_holders where id = pg_temp.id('right') $$, '23514', null,
   'rights records are never deleted');
 select private.end_methodology_operation();
+
+-- =============================================================================
+-- DAM releases (D7, D8, D22, D27)
+-- =============================================================================
+select pg_temp.reset_actor();
+select is((select string_agg(r.version_label || ':' || r.status || ':' || (select count(*) from public.dam_release_members m where m.release_id = r.id), ',')
+  from public.dam_releases r), '1.0:published:2', 'the pre-Phase 6 methodology is release 1.0, with both legacy versions');
+select is((select string_agg(distinct methodology_version, ',') from public.engagements
+  where dam_release_id = (select id from public.dam_releases where version_label = '1.0')), 'DAM 1.0',
+  'engagements carrying DAM 1.0 are conducted under release 1.0');
+select ok((select jsonb_array_length(vocabulary_record -> 'object_types') = (select count(*) from public.architecture_object_types)
+  from public.dam_releases where version_label = '1.0'), 'a release documents the vocabulary in force');
+
+select pg_temp.act_as('sponsor@meridian.test');
+select is((select count(*)::int from public.dam_releases) + (select count(*)::int from public.dam_release_members), 0,
+  'clients read no release rows');
+select pg_temp.act_as('sysadmin@tplco.test');
+select throws_ok($$ select public.create_dam_release('1.1', 'DAM 1.1') $$, '42501', null,
+  'a System Administrator cannot draft a release');
+select pg_temp.act_as('architect@tplco.test');
+insert into pg_temp.ids values ('r11', public.create_dam_release('1.1', 'Development Architecture Method™ 1.1'));
+select is((select count(*)::int from public.dam_release_members where release_id = pg_temp.id('r11')), 0,
+  'legacy versions do not carry into a new release');
+select throws_ok($$ select public.create_dam_release('1.2', 'Another') $$, '23514', null, 'one draft release at a time');
+select throws_ok($$ select public.set_dam_release_member(pg_temp.id('r11'),
+  (select id from public.method_asset_versions where legacy limit 1)) $$, '23514', null,
+  'a legacy version cannot join a new release');
+select throws_ok($$ select public.set_dam_release_member(pg_temp.id('r11'),
+  (select id from public.method_asset_versions where lifecycle = 'retired' and not legacy limit 1)) $$, '23514', null,
+  'nor a retired version');
+select lives_ok($$ select public.set_dam_release_member(pg_temp.id('r11'), pg_temp.id('sdraft')) $$,
+  'an author adds an exact published version');
+select lives_ok($$ select public.set_dam_release_member(pg_temp.id('r11'), pg_temp.id('mdraft')) $$,
+  'including a superseded version, pinned exactly');
+select public.set_dam_release_member(pg_temp.id('r11'), pg_temp.id('idraft'));
+select public.set_dam_release_member(pg_temp.id('r11'), pg_temp.id('idraft'));
+select is((select count(*)::int from public.dam_release_members where release_id = pg_temp.id('r11')), 3,
+  'at most one version per asset');
+select throws_ok($$ select public.publish_dam_release(pg_temp.id('r11'), 'Adds the Method Library') $$, '42501', null,
+  'an author cannot publish a release');
+select pg_temp.act_as('principal@tplco.test');
+select throws_ok($$ select public.publish_dam_release(pg_temp.id('r11')) $$, '23514', null, 'a release needs a change summary');
+select lives_ok($$ select public.publish_dam_release(pg_temp.id('r11'), 'Adds the first governed assets') $$,
+  'a methodology authority publishes release 1.1');
+select is((select string_agg(version_label || ':' || status, ',' order by version_label) from public.dam_releases),
+  '1.0:superseded,1.1:published', 'which supersedes 1.0');
+select throws_ok($$ select public.set_dam_release_member(pg_temp.id('r11'), pg_temp.id('tdraft')) $$, '23514', null,
+  'a published release is frozen');
+select throws_ok($$ select public.delete_dam_release(pg_temp.id('r11')) $$, '23514', null, 'and permanent');
+insert into pg_temp.ids values ('r09', public.create_dam_release('0.9', 'Out of order'));
+select public.set_dam_release_member(pg_temp.id('r09'), pg_temp.id('sdraft'));
+select throws_ok($$ select public.publish_dam_release(pg_temp.id('r09'), 'x') $$, '23514', null,
+  'a release must follow the latest published release');
+select lives_ok($$ select public.delete_dam_release(pg_temp.id('r09')) $$, 'a draft release can be deleted');
+select is((select count(*)::int from public.engagements where methodology_version = 'DAM 1.1'), 0,
+  'publishing a release moves no engagement');
+
+-- Engagements move only deliberately.
+select throws_ok($$ update public.engagements set dam_release_id = pg_temp.id('r11')
+  where id = 'e0000000-0000-4000-8000-000000000001' $$, '42501', null, 'the release is never changed directly');
+select throws_ok($$ update public.engagements set methodology_version = 'DAM 9'
+  where id = 'e0000000-0000-4000-8000-000000000001' $$, '23514', null, 'nor the methodology version');
+select throws_ok($$ select public.set_engagement_dam_release('e0000000-0000-4000-8000-000000000001',
+  (select id from public.dam_releases where version_label = '1.0'), 'Back') $$, '23514', null,
+  'an engagement moves only to the published release');
+select throws_ok($$ select public.set_engagement_dam_release('e0000000-0000-4000-8000-000000000001', pg_temp.id('r11'), '') $$,
+  '23514', null, 'and with a reason');
+select pg_temp.act_as('sponsor@meridian.test');
+select throws_ok($$ select public.set_engagement_dam_release('e0000000-0000-4000-8000-000000000001', pg_temp.id('r11'), 'x') $$,
+  'P0002', null, 'clients cannot move an engagement');
+select pg_temp.act_as('architect@tplco.test');
+select lives_ok($$ select public.set_engagement_dam_release('e0000000-0000-4000-8000-000000000001', pg_temp.id('r11'),
+  'Adopting the Method Library') $$, 'a publish_architecture holder moves the engagement to 1.1');
+select is((select methodology_version from public.engagements where id = 'e0000000-0000-4000-8000-000000000001'),
+  'DAM 1.1', 'and the methodology version follows');
+select pg_temp.reset_actor();
+select is((select metadata_json ->> 'reason' from public.activity_log where action_type = 'dam_release_changed'),
+  'Adopting the Method Library', 'the move is logged with its reason');
+insert into public.engagements (client_organization_id, title, slug, engagement_type)
+select client_organization_id, 'New work', 'new-work-under-dam', engagement_type
+from public.engagements where id = 'e0000000-0000-4000-8000-000000000001';
+select is((select methodology_version from public.engagements where slug = 'new-work-under-dam'), 'DAM 1.1',
+  'a new engagement starts on the current published release');
+select pg_temp.act_as('principal@tplco.test');
+select throws_ok($$ select public.retire_dam_release((select id from public.dam_releases where version_label = '1.0'), 'Old') $$,
+  '23514', null, 'a release cannot be retired while engagements in progress use it');
+
+-- =============================================================================
+-- Development Context (D15, D16)
+-- =============================================================================
+select pg_temp.act_as('architect@tplco.test');
+select throws_ok($$ select public.create_development_context('college', 'College', 'A college developing a capability') $$,
+  '42501', null, 'Development Contexts are governed by publish_methodology holders');
+select pg_temp.act_as('principal@tplco.test');
+insert into pg_temp.ids values ('college', public.create_development_context('college_capability',
+  'College developing an institutional capability', 'A college building a capability it does not yet have.'));
+insert into pg_temp.ids values ('region', public.create_development_context('regional_cluster',
+  'Region developing an industry cluster', 'A region growing an industry cluster.'));
+insert into pg_temp.ids values ('district', public.create_development_context('planned_district',
+  'District being planned', 'A real-estate district being planned.'));
+select throws_ok($$ select public.revise_development_context(pg_temp.id('college'), 'College', 'Redefined', ' ') $$,
+  '23514', null, 'a redefinition needs a reason');
+select public.revise_development_context(pg_temp.id('college'), 'College building a capability',
+  'A college building a capability.', 'Shorter label');
+select is((select prior_label from public.development_context_revisions where context_id = pg_temp.id('college')),
+  'College developing an institutional capability', 'the prior definition is kept');
+select public.retire_development_context(pg_temp.id('district'), 'Folded into another context');
+select throws_ok($$ select public.revise_development_context(pg_temp.id('district'), 'x', 'y', 'z') $$, '23514', null,
+  'a retired context stays as it was');
+select pg_temp.reset_actor();
+select private.begin_methodology_operation();
+select throws_ok($$ update public.development_contexts set key = 'renamed' where id = pg_temp.id('college') $$, '23514', null,
+  'context keys are permanent');
+select throws_ok($$ delete from public.development_contexts where id = pg_temp.id('district') $$, '23514', null,
+  'contexts are never deleted');
+select private.end_methodology_operation();
+
+select pg_temp.act_as('architect@tplco.test');
+select throws_ok($$ select public.set_engagement_development_contexts('e0000000-0000-4000-8000-000000000001',
+  array[pg_temp.id('college'), pg_temp.id('region')], null) $$, '23514', null, 'one context is primary');
+select throws_ok($$ select public.set_engagement_development_contexts('e0000000-0000-4000-8000-000000000001',
+  array[pg_temp.id('district')], pg_temp.id('district')) $$, '23514', null, 'a retired context cannot be added');
+select lives_ok($$ select public.set_engagement_development_contexts('e0000000-0000-4000-8000-000000000001',
+  array[pg_temp.id('region'), pg_temp.id('college')], pg_temp.id('region')) $$,
+  'an edit_architecture holder declares the engagement''s contexts');
+select is((select string_agg(c.key || ':' || x.is_primary, ',' order by c.key) from public.engagement_development_contexts x
+  join public.development_contexts c on c.id = x.context_id where x.engagement_id = 'e0000000-0000-4000-8000-000000000001'),
+  'college_capability:false,regional_cluster:true', 'with one primary');
+select pg_temp.act_as('sponsor@meridian.test');
+select is((select count(*)::int from public.engagement_development_contexts) + (select count(*)::int from public.development_contexts),
+  0, 'contexts are internal classification: clients see none');
+select throws_ok($$ select public.set_engagement_development_contexts('e0000000-0000-4000-8000-000000000001', '{}', null) $$,
+  'P0002', null, 'and cannot set them');
+
+-- Declared applicability on versions.
+select pg_temp.act_as('architect@tplco.test');
+insert into pg_temp.ids values ('m3', public.create_method_asset_version(pg_temp.id('method')));
+select throws_ok($$ select public.set_method_version_contexts(pg_temp.id('m3'), array[pg_temp.id('district')]) $$,
+  '23514', null, 'a version declares only active contexts');
+select lives_ok($$ select public.set_method_version_contexts(pg_temp.id('m3'), array[pg_temp.id('college')]) $$,
+  'a draft declares where it applies');
+select throws_ok($$ select public.set_method_version_contexts(pg_temp.id('sdraft'), array[pg_temp.id('college')]) $$,
+  '23514', null, 'a published version''s contexts are frozen');
 
 -- Clients never reach the new content, files included.
 select pg_temp.act_as('sponsor@meridian.test');
