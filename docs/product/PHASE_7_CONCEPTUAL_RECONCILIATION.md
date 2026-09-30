@@ -2,11 +2,11 @@
 
 ## Architecture Intelligence, the Living Development Model and the Development Edge
 
-**Status:** Conceptual reconciliation for Kerrick's review. This is **not** `PHASE_7_PROPOSAL.md`.
+**Status:** Revision 2. Approved in principle by Kerrick on 2026-09-30, with the clarifications recorded in §0, plus the empirical rule review (§11.8) and the impact-direction matrix (§13.4). This is **not** `PHASE_7_PROPOSAL.md`.
 **Inspected:** `main` at `90ee72e` (Phase 6 complete and merged, PR #7 and PR #8).
 **Date:** 2026-09-30
 
-This document reconciles the product direction in Kerrick's Phase 7 brief with the system that actually exists after Phases 1–6. It creates no migration, schema, enum, ADR, code, UI, AI service, provider SDK, embedding or vector store, and it changes no Phase 1–6 behavior. Where a question is difficult, it is surfaced in §37 (Q1–Q28) rather than settled.
+This document reconciles the product direction in Kerrick's Phase 7 brief with the system that actually exists after Phases 1–6. It creates no migration, schema, enum, ADR, code, UI, AI service, provider SDK, embedding or vector store, and it changes no Phase 1–6 behavior. Where a question is difficult, it is surfaced in §37 (Q1–Q30) rather than settled.
 
 ### How to read the evidence in this document
 
@@ -17,6 +17,42 @@ Claims about the current system cite the file that establishes them. Three kinds
 - **Inferred:** a judgment about product direction, labeled as such.
 
 Terms from the brief (DSA IDE, Living Development Model, Architecture Intelligence, Development Edge, Intelligence Contract, Edge lenses, intelligence levels) are used as **working terms** for this reconciliation only. Q1 asks whether they enter repository terminology.
+
+## 0. Revision 2: decisions recorded and empirical review
+
+Kerrick approved Revision 1 of this reconciliation in principle on 2026-09-30, with clarifications to Q1, Q3, Q19, Q20 and Q23. All other recommendations in Q1–Q28 are approved as written. Each question in §37 now carries its decision. Kerrick also set the phase boundary and asked for two investigations before any proposal. Revision 2 records the outcome.
+
+### 0.1 Phase boundary (decided)
+
+- **Phase 7A: Deterministic Development Edge.** Covers deterministic awareness and derived intelligence, and a common Edge envelope over the existing Signals and the new deterministic conditions. Also: impact analysis, change awareness, Since You Were Away, the contextual Edge, deterministic-first prioritization, durable human judgment where appropriate, and narrow, structured Practice Intelligence.
+- **Phase 7B: Bounded AI Architecture Intelligence.** Starts only after 7A is designed and accepted. It may include:
+  - persisted AI inference under the approved rules;
+  - AI explanation and interpretation;
+  - engagement-scoped conversational access;
+  - provider abstraction, prompt governance and AI provenance;
+  - human promotion of AI observations into governed records.
+
+  7B schema is not designed here, beyond what 7A must avoid preventing.
+
+- **Later:** cross-engagement architectural recurrence, Pattern publication, generalized Development Intelligence, certification, Portfolio Intelligence and broad client-facing AI.
+
+### 0.2 Clarified decisions
+
+| Q   | Decision                                                                                                                                                                                                                                                                                                                                                                    |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Q1  | The five concepts are approved product and documentation concepts. DSA IDE is the product paradigm and the direction users see. Repository and system references to "DSA OS" are **not** renamed yet. Living Development Model stays conceptual only: never a table, type or schema object                                                                                  |
+| Q3  | AI inference is **ephemeral by default**. It is persisted only when it has ongoing developmental significance, is surfaced proactively, is intentionally saved, or enters a governed judgment or follow-up lifecycle. Ordinary one-off explanatory AI responses are not persisted automatically                                                                             |
+| Q19 | There are two separate governed **permitted-use / data-processing settings**, both defaulting to **No**: (a) authorization for external AI processing of engagement content; (b) authorization for appropriately abstracted, promoted learning to contribute to cross-development TPLCo Development Intelligence. They are framed as governed settings, not generic consent |
+| Q20 | Adds the principle of **purpose-limited, context-minimized provider access**: only the governed records needed for the requested inference are sent. The existing recommendations stand: no provider-hosted memory, no training on client content, no payload logging, no Method IP by default, audit metadata only                                                         |
+| Q23 | The Pattern Library is explicitly **not** Phase 7. It is not yet permanently placed after Portfolio Intelligence. It is a separately governed later phase or workstream, placed once the Phase 7 promotion and confidentiality architecture has proven itself                                                                                                               |
+
+### 0.3 What Revision 2 adds
+
+1. **Empirical review of the deterministic inventory (§11.8).** All 44 candidates were run read-only against the local seed dataset, together with behavioral probes inside rolled-back transactions. Each candidate now has a disposition.
+2. **Relationship-impact direction matrix (§13.4).** Covers all 39 relationship types and every off-spine element reference, with the direction and propagation for each.
+3. **Rules narrowed, merged, deferred or dropped (§11.8.3).**
+4. **Findings the evidence forced (§11.8.4).** Three semantic problems in the Revision 1 inventory, and two new questions (Q29, Q30). Q26 is refined, not reversed. No approved decision is contradicted.
+5. **Readiness assessment for a Phase 7A proposal (§38).**
 
 ---
 
@@ -34,7 +70,7 @@ Terms from the brief (DSA IDE, Living Development Model, Architecture Intelligen
 
 6. **One ADR needs reconciliation before any AI design**: ADR-0032 (and Phase 4 proposal §11) pre-commits that "future AI findings will be stored, not computed, with `ai_analysis` provenance and the Phase 3 review gate". That was written before the distinctions in this brief (ephemeral assistance versus durable inference; intelligence observation versus architecture content). §35 recommends an amendment note, not a reversal (Q16).
 
-7. **Recommended conceptual shape of Phase 7** (inferred, for decision): an internal-only, deterministic-first Development Edge for Engagement Intelligence (conditions, impact, change awareness, contextual panels, judgment lifecycle), with AI inference admitted only as a bounded, explicitly labeled, persisted-on-election layer after the deterministic layer exists. Clients receive nothing new automatically. Cross-engagement learning, Pattern Library, Portfolio Intelligence and scenario simulation wait. Whether AI enters Phase 7 at all, or a later sub-phase, is Q17.
+7. **Recommended conceptual shape of Phase 7** (inferred, for decision): an internal-only, deterministic-first Development Edge for Engagement Intelligence (conditions, impact, change awareness, contextual panels, judgment lifecycle), with AI inference admitted only as a bounded, explicitly labeled, persisted-on-election layer after the deterministic layer exists. Clients receive nothing new automatically. Cross-engagement learning, Pattern Library, Portfolio Intelligence and scenario simulation wait. Whether AI enters Phase 7 at all, or a later sub-phase, is Q17. _(Revision 2: decided. Phase 7A is the Deterministic Development Edge, and Phase 7B is Bounded AI Architecture Intelligence, after 7A is accepted; see §0.1.)_
 
 ---
 
@@ -450,6 +486,94 @@ Column key: **Surfaces** — E engagement briefing, A architecture element, I im
 - **Several conditions are structural coherence** (D-05, D-06, D-09, D-10, D-11), i.e., a deterministic subset of spec §19's Structural Coherence Engine. Q27 asks whether that subset belongs in Phase 7.
 - **False positives are dominated by incompleteness during active drafting.** The mitigation is scope (published elements only, domain/type restrictions) and ordering (§15), not suppression.
 
+### 11.8 Empirical review against current DSA data (Revision 2)
+
+#### 11.8.1 Method
+
+- **Dataset:** the local Supabase stack built from `main` (all 23 migrations and `supabase/seed.sql`), started with the same command CI uses. It holds three engagements:
+  - _Regional Innovation District_ (Meridian, `meridian-innovation-district`): 37 elements, 40 relationships, 2 frozen baselines, 1 in-progress Method Application;
+  - _Community Expansion Architecture_ (Harbor, `harbor-community-expansion`): 7 elements, 8 relationships, 1 held Review with no baseline, 1 Deliverable, 3 Implementation Initiatives, 2 agreed Acceptance Criteria, 1 completed Method Application;
+  - _Workforce Capability Program_ (Meridian, proposed): no elements.
+- **Coverage:** the seed uses 34 of the 39 relationship types, 6 statement–evidence links (one `contradicts`) and one element-level evidence link.
+- **Execution:** each candidate is a SQL query over the existing tables, run as the database owner inside a transaction that is rolled back. Nothing was written or migrated. The queries bypass RLS, so they measure rule behavior, not access. The existing rules were also run through `intelligence_signals` and `implementation_signals`, as a Principal Architect, for comparison. The queries live in the session scratchpad and are not committed.
+- **Probes:** the seed has almost no revision history (one element, CAP-001, has a second version). Change rules would therefore return nothing whether or not they are correct. To test their behavior, one probe transaction revised and republished four elements through the real `publish_element_version` operation as the seeded Principal Architect: Harbor KNW-001 and APP-001, and Meridian CAP-004 and STR-001. It then re-ran every rule and rolled back. Probe results are reported separately and are not counted as dataset results.
+- **Reading the results:** as instructed, how often a rule fires in the seed is not treated as evidence of its importance. The seed is small and was written to demonstrate features, not to be representative. The test was used to find behavior, overlap, noise and semantic defects. A rule that correctly returns nothing on this data remains valid.
+
+#### 11.8.2 Results per candidate
+
+"Fired" counts distinct subjects on the seed dataset. "Probe" gives the result after the revision probe, where that differs.
+
+| #          | Fired                                  | Where / what                                                                                                                                                                                                                                                           | Consequential?                                                                                                                                                                                                    | Duplicates existing?                                                 | Noise risk                            | Disposition                                                                                                                                                                                                   |
+| ---------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D-01       | 0                                      | No invalidated assumption in seed                                                                                                                                                                                                                                      | n/a (correct empty)                                                                                                                                                                                               | Is `assumption_invalidated_still_underpins`                          | Low                                   | **Remain** (existing)                                                                                                                                                                                         |
+| D-02       | 1                                      | Meridian ASM-001 (`validating`) underpins OPP-001, STR-002                                                                                                                                                                                                             | Yes                                                                                                                                                                                                               | Is `assumption_unvalidated_underpins_published`; the function agrees | Medium early in engagements           | **Remain** (existing)                                                                                                                                                                                         |
+| D-03       | 0                                      | No `contradicts` evidence on an assumption. The one `contradicts` link in the seed is on a Meridian KNW-001 finding that also has a `supports` link                                                                                                                    | Rule scope too narrow                                                                                                                                                                                             | No                                                                   | Low                                   | **Narrow and generalize:** "a statement on a published element has contradicting evidence". Shown on the element; raised to the engagement list only when the element is an assumption or underpins something |
+| D-04       | 2                                      | Harbor ACR-001, ACR-002 on IMP-001                                                                                                                                                                                                                                     | **No: false positives.** IMP-001's v2 is the publication of an `operational` status, not a design revision. The comparison also mixed a business date (`agreed_on` 2026-09-23, backdated) with a system timestamp | No                                                                   | High as written                       | **Narrow:** only a _substantive_ revision (§11.8.4 F2) of the governed element, compared on system time                                                                                                       |
+| D-05       | 0                                      | One relationship with a superseded end exists but is itself retired                                                                                                                                                                                                    | n/a                                                                                                                                                                                                               | No                                                                   | Low                                   | **Remain**                                                                                                                                                                                                    |
+| D-06       | 1                                      | Meridian APP-003 `conflicts_with` APP-004, where APP-003 also `holds` APP-004                                                                                                                                                                                          | Yes: the body holding a decision right is in recorded tension with it                                                                                                                                             | No                                                                   | Low                                   | **Remain** (Integrity; ambient on the element, listed at engagement level)                                                                                                                                    |
+| D-07       | 0 · probe 1                            | Probe: CAP-004 revised, so CAP-001 `requires` CAP-004 fires                                                                                                                                                                                                            | Yes                                                                                                                                                                                                               | Overlaps change-triggered impact                                     | Medium                                | **Merge** into change-triggered impact over `requires` and `part_of` (§13.4)                                                                                                                                  |
+| D-08       | 0                                      | Anchor-led Model lineage is in place                                                                                                                                                                                                                                   | n/a                                                                                                                                                                                                               | No                                                                   | None                                  | **Remain** (governance fact)                                                                                                                                                                                  |
+| D-09       | 1                                      | Meridian STR-001 (Intended Outcome) has no `measured_by`. The rule table allows `intended_outcome measured_by metric`                                                                                                                                                  | Yes (spec §19 measurement gap)                                                                                                                                                                                    | No                                                                   | Medium in early architecture          | **Remain**, published outcomes only, Integrity/ambient                                                                                                                                                        |
+| D-10       | 1                                      | Meridian CAP-002 serves no outcome; it `mitigates` RSK-001                                                                                                                                                                                                             | Plausibly. A mitigating capability still usually serves an outcome                                                                                                                                                | No                                                                   | Medium                                | **Remain**, published only, with the reason shown ("mitigates RSK-001; serves no outcome")                                                                                                                    |
+| D-11       | 1                                      | Harbor APP-001 (Governance Body) governs nothing, but Harbor's architecture has only two objects and APP-001 is implemented, examined and documented                                                                                                                   | Weak: sparse architecture                                                                                                                                                                                         | No                                                                   | High in sparse or early architecture  | **Narrow:** element panel only (ambient), never on the engagement list. D-11a (decision right without holder) remains                                                                                         |
+| D-12       | 0 (approved form) · 3 (broadened test) | Approved form: CAP-001 is approved and has `implemented_through`, so correctly empty. Broadened test hit APP-005 (an Operating Model whose parts carry the pathway), APP-003 (Governance Body) and CAP-002                                                             | Approved form yes; two of three broadened hits were semantic false positives                                                                                                                                      | No                                                                   | High if broadened                     | **Narrow:** Capabilities and Application Formats only; count pathways through `part_of` descendants; require an approved or published version                                                                 |
+| D-13       | 1                                      | Harbor IMP-001 `operational`, not validated                                                                                                                                                                                                                            | Yes                                                                                                                                                                                                               | No                                                                   | Low (state fact, no elapsed time)     | **Remain**                                                                                                                                                                                                    |
+| D-14       | 0                                      | —                                                                                                                                                                                                                                                                      | n/a                                                                                                                                                                                                               | No                                                                   | Low                                   | **Remain**                                                                                                                                                                                                    |
+| D-15       | 0 · probe 2                            | Probe: APP-001 revised, so IMP-001 and IMP-003 fire                                                                                                                                                                                                                    | Yes                                                                                                                                                                                                               | No                                                                   | Medium: one revision fans out         | **Remain**, substantive revisions only, grouped by trigger (F3)                                                                                                                                               |
+| D-16       | 0 · probe 1                            | Probe: KNW-001 revised after IMP-002 was validated                                                                                                                                                                                                                     | **Yes: the strongest Claude-Test item observed**                                                                                                                                                                  | No                                                                   | Low                                   | **Remain**                                                                                                                                                                                                    |
+| D-17       | 2                                      | Harbor IMP-001 (`operational`) and IMP-002 (`validated`) cite no evidence                                                                                                                                                                                              | Yes. A validation with no evidence cited is notable                                                                                                                                                               | No                                                                   | Low                                   | **Remain**. Validated-without-evidence ranks above operational-without-evidence                                                                                                                               |
+| D-18       | 0                                      | IMP-002's target has passed but it is validated; other targets are future                                                                                                                                                                                              | n/a                                                                                                                                                                                                               | Is `implementation_past_target`                                      | Low                                   | **Remain** (existing)                                                                                                                                                                                         |
+| D-19       | 0                                      | No checkpoint past target                                                                                                                                                                                                                                              | n/a                                                                                                                                                                                                               | No                                                                   | Low                                   | **Remain**                                                                                                                                                                                                    |
+| D-20       | 0                                      | IMP-001 has criteria and REV-001 examines APP-001, which IMP-001 implements, so correctly empty                                                                                                                                                                        | n/a                                                                                                                                                                                                               | No                                                                   | Low                                   | **Remain**                                                                                                                                                                                                    |
+| D-21       | 2                                      | Harbor REV-001 (no baseline) against APP-001 and IMP-002                                                                                                                                                                                                               | **No: both false positives.** `held_at` is a business timestamp (backdated to 2026-09-21) compared with a system `published_at`. IMP-002's v2 is the `validated` status that REV-001's own validation produced    | Overlaps `compare_baselines`                                         | High as written                       | **Narrow:** version-exact for Reviews with a baseline (`compare_baselines`). For Reviews without one, needs Q29                                                                                               |
+| D-22       | 0                                      | No evidence after hold                                                                                                                                                                                                                                                 | n/a                                                                                                                                                                                                               | No                                                                   | Same business-time issue as D-21      | **Narrow** as D-21                                                                                                                                                                                            |
+| D-23       | 0                                      | —                                                                                                                                                                                                                                                                      | n/a                                                                                                                                                                                                               | No                                                                   | Medium (editorial)                    | **Remain**, substantive revisions only                                                                                                                                                                        |
+| D-24       | 0 · probe 2                            | Probe: DLV-001 (approved) documents APP-001 and KNW-001, both revised                                                                                                                                                                                                  | Yes                                                                                                                                                                                                               | No                                                                   | Medium                                | **Remain**, substantive revisions only, grouped by trigger                                                                                                                                                    |
+| D-25       | 0                                      | —                                                                                                                                                                                                                                                                      | n/a                                                                                                                                                                                                               | No                                                                   | Low                                   | **Remain**                                                                                                                                                                                                    |
+| D-26       | 0                                      | —                                                                                                                                                                                                                                                                      | n/a                                                                                                                                                                                                               | No                                                                   | Low                                   | **Remain** (internal practice)                                                                                                                                                                                |
+| D-27       | 3                                      | Meridian MUS-001 started under DAM 1.0; both Meridian engagements are on 1.0 while 1.1 is published                                                                                                                                                                    | Yes (practice awareness), ambient                                                                                                                                                                                 | No                                                                   | Low                                   | **Merge** the application and engagement variants into one engagement-level item listing affected applications                                                                                                |
+| D-28       | 0                                      | CAP-001's approved v2 is still its latest version                                                                                                                                                                                                                      | n/a                                                                                                                                                                                                               | Partly shown per element already                                     | Low                                   | **Remain**                                                                                                                                                                                                    |
+| D-29, D-30 | 0, 1                                   | `dependency_blocking_unsatisfied` on Meridian DEP-001 fires and is dismissed                                                                                                                                                                                           | Existing                                                                                                                                                                                                          | Existing                                                             | Existing                              | **Remain** (existing)                                                                                                                                                                                         |
+| D-31       | 0                                      | One dependency in seed                                                                                                                                                                                                                                                 | n/a                                                                                                                                                                                                               | No                                                                   | Low                                   | **Remain**                                                                                                                                                                                                    |
+| D-32       | 0                                      | Two open escalations (RSK-001 to Principal Architect, RSK-002 to client executive), but no scheduled Review                                                                                                                                                            | Correct empty                                                                                                                                                                                                     | No                                                                   | Low                                   | **Remain**                                                                                                                                                                                                    |
+| D-33       | 0                                      | —                                                                                                                                                                                                                                                                      | n/a                                                                                                                                                                                                               | No                                                                   | Low                                   | **Remain**                                                                                                                                                                                                    |
+| D-34       | 0                                      | CNS-001 constrains one decision                                                                                                                                                                                                                                        | n/a                                                                                                                                                                                                               | No                                                                   | Medium (broad constraints are normal) | **Merge** into prioritization as a factor (constraint reach), not a standalone item                                                                                                                           |
+| D-35       | 1                                      | Meridian ASM-001 (attention `high`, `validating`, no `supports` evidence)                                                                                                                                                                                              | Yes, but it is the **same subject and meaning as D-02**                                                                                                                                                           | Duplicates D-02 in effect                                            | Medium                                | **Merge:** human attention raises the D-02 item's tier; no separate rule                                                                                                                                      |
+| D-36       | 4                                      | `client_action_overdue` ACT-003; `opportunity_window_closing` OPP-001; `opportunity_window_closed` **OPP-002, a draft**; `review_overdue` DEP-001                                                                                                                      | Existing                                                                                                                                                                                                          | Existing                                                             | See F4 on draft scope                 | **Remain** (existing). Scope normalization is a 7A proposal item                                                                                                                                              |
+| D-37       | 0 (narrowed) · 1 (broad test)          | Broad test hit OPP-001 `advances` STR-001, an Intended Outcome. Outcomes are served, not implemented, so "no implementing initiative" is meaningless for them                                                                                                          | Broad form semantically wrong                                                                                                                                                                                     | No                                                                   | High if broad                         | **Narrow:** capability or application targets only                                                                                                                                                            |
+| D-38       | 0                                      | —                                                                                                                                                                                                                                                                      | Informational                                                                                                                                                                                                     | No                                                                   | Low                                   | **Drop as an Edge condition.** Keep as a fact in the element panel ("serves 3 outcomes"); leverage is not a condition needing judgment                                                                        |
+| D-39       | 0                                      | OPP-001 is pursued by CAP-001                                                                                                                                                                                                                                          | n/a                                                                                                                                                                                                               | No                                                                   | Medium                                | **Remain**                                                                                                                                                                                                    |
+| D-40       | 0 (threshold 2) · 1 at threshold 1     | Harbor APP-001: one stall (IMP-003)                                                                                                                                                                                                                                    | n/a at threshold                                                                                                                                                                                                  | No                                                                   | High at threshold 1                   | **Remain** at ≥ 2, worded as "worth examining" (§20 recurrence ≠ cause)                                                                                                                                       |
+| D-41       | 3                                      | Harbor MUS-001 (completed Capability Readiness Diagnostic 1.1) produced none of the three declared outputs (Capability Gap, Recommendation, Risk). It only examined APP-001 and KNW-001 and informed REV-001. Meridian's in-progress application is correctly excluded | Yes (practice)                                                                                                                                                                                                    | No                                                                   | Low; outputs are "normally" expected  | **Remain**                                                                                                                                                                                                    |
+| D-42       | 2                                      | Harbor MUS-001 (completed) and Meridian MUS-001 (in progress): the Instrument is declared but no gathered evidence cites it                                                                                                                                            | Harbor yes; Meridian premature                                                                                                                                                                                    | No                                                                   | Medium for open applications          | **Narrow** to completed or discontinued applications                                                                                                                                                          |
+| D-43       | 4 rows, n = 1                          | One stage "interview" adapted in the one closed application of Diagnostic 1.1                                                                                                                                                                                          | Not meaningful at n = 1                                                                                                                                                                                           | No (`method_usage` has counts only)                                  | High at small n                       | **Defer as an Edge item.** Keep as a count with n on the Method Asset page, shown only from a minimum n decided in the proposal                                                                               |
+| D-44       | 1                                      | One dismissal (Meridian `dependency_blocking_unsatisfied`)                                                                                                                                                                                                             | Needs volume                                                                                                                                                                                                      | No                                                                   | High at small n                       | **Defer** (internal rule tuning; not a user-facing Edge item)                                                                                                                                                 |
+
+#### 11.8.3 Disposition summary
+
+| Disposition                        | Candidates                                                                                                                               | Count             |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| Remain (existing rules, unchanged) | D-01, D-02, D-18, D-29, D-30, D-36                                                                                                       | 6 rows (11 rules) |
+| Remain (new)                       | D-05, D-06, D-08, D-09, D-10, D-13, D-14, D-15, D-16, D-17, D-19, D-20, D-23, D-24, D-25, D-26, D-28, D-31, D-32, D-33, D-39, D-40, D-41 | 23                |
+| Narrow                             | D-03 (generalized), D-04, D-11, D-12, D-21, D-22, D-37, D-42                                                                             | 8                 |
+| Merge                              | D-07 → change-triggered impact; D-27 variants into one; D-34 → prioritization factor; D-35 → D-02 tier                                   | 4                 |
+| Defer                              | D-43 (as Edge item), D-44                                                                                                                | 2                 |
+| Drop (as Edge condition)           | D-38                                                                                                                                     | 1                 |
+
+That leaves **31 new deterministic conditions** (23 remaining plus 8 narrowed) for a Phase 7A proposal, alongside the 11 existing rules and change-triggered impact.
+
+#### 11.8.4 Findings the evidence forced
+
+- **F1. Business dates are not system time.** `reviews.held_at`, `acceptance_criteria.agreed_on`, `decisions.external_decided_on` and checkpoint `achieved_on` are user-entered and can be backdated. The seed backdates them. Comparing them with `element_versions.published_at` (system time) produced every false positive in D-04 and D-21.
+  - **Principle for 7A:** change rules compare system-time facts only (version `published_at`, relationship `created_at`, operation times in `activity_log`), or compare exact versions. Business dates are used only for anticipation rules (due dates, windows, targets), which compare them with the business date.
+- **F2. A newer version is not necessarily a design revision.** Implementation Initiatives publish a new version when their status changes. The probe diff shows IMP-001 v1 → v2 changed only `details.implementation_status` and `actual_operational_on`. Resolving Project Intelligence records can publish too.
+  - **Principle for 7A:** Change rules act on **substantive revisions**, detected deterministically by comparing a version's snapshot with the previous one, with status fields excluded. Q30 asks whether that definition is acceptable.
+- **F3. One revision fans out.** In the probe, revising Harbor APP-001 produced two D-15 items, a D-21 item, a D-24 item and (through IMP-001) two Acceptance Criteria in force: at least five surfaced items from one act.
+  - **Principle for 7A:** the envelope groups items by their **triggering change**, e.g. "APP-001 was revised: 2 initiatives, 1 Review and 1 Deliverable may warrant examination". This refines Q5 and Q9; it does not contradict them.
+- **F4. Existing rules are inconsistent about drafts.** `opportunity_window_closed` fired on OPP-002, a draft opportunity. Some Phase 4 rules require a published element and others evaluate drafts. This is not a defect under ADR-0032 (signals are internal), but the Edge envelope needs one scope rule per rule. **Recommendation:** make scope an explicit rule-catalog attribute (Q28). Any change to Phase 4 behavior is a 7A proposal item, not made here.
+- **F5. Reviews without a baseline do not record which versions they examined.** D-21 could be made exact only by capturing versions at `hold_review`, the way `record_review_validation` captures criteria (ADR-0046). Q29 asks whether 7A should add that capture. This refines Q26: timestamps remain adequate for `implements` and `validates`, because their `created_at` is system time, but not for Reviews held on a backdated date.
+- **F6. Existing impact functions confirmed incomplete.** On Meridian CAP-001, `intelligence_impact` returned 8 elements, all outgoing (including the Operating Model it is `part_of`, by climbing the tree). It did not return RSK-001 (`threatens` CAP-001) or CAP-005 (`gap_in` CAP-001). On Harbor APP-001, `implementation_impact` returned IMP-001 and IMP-003, but not REV-001 (`examines`), DLV-001 (`documents`), the criteria on IMP-001, or Method Application MUS-001 (`examined`). §13.4 sets the corrected semantics.
+
 ---
 
 ## 12. Phase 4 Signals reconciliation
@@ -530,6 +654,128 @@ Both are `security invoker` recursive CTEs with cycle protection, filtered to li
 - **Change-triggered vs on-demand.** On-demand impact ("what would be affected if X changed") is a read. Change-triggered impact ("X changed; these may warrant examination") combines the traversal with the change stream (§14) and conditions like D-15/D-16/D-21/D-24.
 
 **Recommendation:** impact analysis over known relationships belongs in Phase 7 (Q8). It is the capability most clearly outside the reach of an export-and-prompt workflow.
+
+### 13.4 Relationship-impact direction matrix (Revision 2)
+
+This is a review of methodological semantics. For each link it asks two questions. If the **source** changes substantively (§11.8.4 F2), may the **target** warrant examination (S→T)? If the **target** changes, may the **source** (T→S)?
+
+**Propagation values:**
+
+- **Direct:** surface the neighbor only.
+- **Recursive:** continue along the same relationship type, depth-capped.
+- **Terminal:** reached at the end of a recursive walk, but not walked further.
+- **Never:** the link records history or provenance and does not carry impact.
+
+**Assessment values:** Yes, Weak (surface only in on-demand traces, never in the Edge list) or No.
+
+No relationship is treated as symmetric impact by default. Only `conflicts_with`, which is stored once per pair, is symmetric.
+
+#### 13.4.1 Structure (5)
+
+| Relationship   | Source → Target                                       | S→T     | T→S     | Why                                                                                                              | Propagation                                                                            | Noise risk                                   |
+| -------------- | ----------------------------------------------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `part_of`      | component → whole                                     | Weak    | **Yes** | A changed whole changes the frame its parts were designed for. A changed part rarely invalidates the whole       | T→S **recursive downward** (whole → parts → sub-parts), depth ≤ 2. S→T direct and weak | High for large wholes: group under the whole |
+| `specializes`  | specific → general                                    | No      | **Yes** | A specialization inherits the definition of its general concept                                                  | T→S recursive downward, depth ≤ 2                                                      | Low (concept hierarchies are shallow)        |
+| `precedes`     | earlier → later stage                                 | **Yes** | No      | A later stage assumes the earlier one                                                                            | Direct                                                                                 | Low                                          |
+| `gap_in`       | gap → capability / knowledge area                     | Yes     | **Yes** | A revised capability may close or change the gap; a reassessed gap may change the capability                     | Direct                                                                                 | Low                                          |
+| `investigates` | research question → gap / area / concept / assumption | **Yes** | Yes     | An answered question tests its target (above all an assumption); a changed target may make the question obsolete | Direct                                                                                 | Low                                          |
+
+#### 13.4.2 Design flow (18)
+
+| Relationship          | Source → Target                                          | S→T     | T→S     | Why                                                                                                                                    | Propagation                                                                                | Noise risk                                              |
+| --------------------- | -------------------------------------------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| `informs`             | knowledge → strategy / capability / application / record | **Yes** | No      | The target's design or justification drew on the source                                                                                | Direct                                                                                     | Medium: knowledge areas inform many elements            |
+| `serves`              | element → Intended Outcome                               | Yes     | **Yes** | A changed outcome may remove the purpose of whatever serves it; a changed server may change how the outcome is achieved                | Direct both ways, never recursive                                                          | **High:** outcomes are hubs; group under the outcome    |
+| `shapes`              | strategic logic → capability / application               | **Yes** | No      | "Materially influences the design"; strongest design-flow link                                                                         | Direct, with the target's own `implements` as Terminal                                     | Medium                                                  |
+| `implies`             | strategy → strategic implication                         | **Yes** | No      | The implication is a consequence of the source                                                                                         | Direct                                                                                     | Low                                                     |
+| `exploits`            | source → structural leverage                             | No      | **Yes** | A changed lever changes what exploits it                                                                                               | Direct                                                                                     | Low                                                     |
+| `positioned_against`  | source → competitive factor                              | No      | **Yes** | A changed competitive factor changes the positioning                                                                                   | Direct                                                                                     | Low                                                     |
+| `requires`            | requirer → required                                      | Weak    | **Yes** | Architectural necessity: a changed prerequisite affects everything that requires it                                                    | T→S **recursive upward** along `requires`, depth ≤ 2, `implements` Terminal. Replaces D-07 | Medium                                                  |
+| `implemented_through` | capability → operating form                              | **Yes** | **Yes** | The capability and the way it operates must stay aligned                                                                               | Direct, with initiatives implementing either end as Terminal                               | Medium                                                  |
+| `delivered_through`   | operating model / format → delivery mechanism            | Weak    | **Yes** | A changed channel changes how value reaches beneficiaries                                                                              | Direct                                                                                     | Low                                                     |
+| `measured_by`         | outcome / capability / application → metric              | **Yes** | Weak    | The measure may no longer fit a changed source; a changed metric changes how performance is observed (and any criteria referencing it) | Direct                                                                                     | Low                                                     |
+| `governed_by`         | element → governance body / decision right               | Weak    | **Yes** | Changed authority changes what it governs                                                                                              | Direct                                                                                     | Medium (bodies govern many elements)                    |
+| `holds`               | body / role → decision right                             | Yes     | Yes     | Allocation of authority; either change matters                                                                                         | Direct                                                                                     | Low                                                     |
+| `accountable_for`     | role / body → element                                    | Yes     | **Yes** | What someone answers for changed, or who answers changed                                                                               | Direct                                                                                     | Low                                                     |
+| `introduces`          | stage → role / capability / format / mechanism           | **Yes** | No      | A changed stage changes when targets enter                                                                                             | Direct                                                                                     | Low                                                     |
+| `bounded_by`          | element → system boundary                                | No      | **Yes** | A moved boundary may place elements outside it                                                                                         | Direct                                                                                     | **High:** boundaries are hubs; group and show on demand |
+| `subject_to`          | element / record → regulatory factor                     | No      | **Yes** | A changed regulation applies to its subjects                                                                                           | Direct                                                                                     | Medium (hub)                                            |
+| `documented_by`       | element → documentation protocol                         | No      | Weak    | Documentation practice, not design                                                                                                     | Never in the Edge; on-demand only                                                          | Low                                                     |
+| `has_stake_in`        | stakeholder → element                                    | Yes     | **Yes** | A changed stakeholder alters interests; a changed element alters the stake                                                             | Direct                                                                                     | Medium                                                  |
+
+#### 13.4.3 Project Intelligence (8)
+
+| Relationship | Source → Target                                   | S→T     | T→S     | Why                                                                                                            | Propagation                                                                                                                        | Noise risk                 |
+| ------------ | ------------------------------------------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| `underpins`  | assumption → element                              | **Yes** | Weak    | "The target holds only if the assumption is true." Validation changes matter most                              | Direct. For `invalidated` only, continue **recursively** through the target's `requires` (T→S) and `part_of` (downward), depth ≤ 2 | Medium                     |
+| `threatens`  | risk → element                                    | **Yes** | Yes     | Changed severity or `materialized` status bears on the target; a changed target may change the risk assessment | Direct                                                                                                                             | Medium                     |
+| `constrains` | constraint → element                              | **Yes** | Yes     | A lifted or relaxed constraint frees the target; a changed target needs a compliance check                     | Direct                                                                                                                             | Medium (broad constraints) |
+| `mitigates`  | mitigation → risk                                 | **Yes** | Yes     | A changed mitigation changes the exposure; a changed risk changes whether the mitigation suffices              | Direct                                                                                                                             | Low                        |
+| `affects`    | record → element                                  | **Yes** | Weak    | A decision's outcome changes its targets (D-23)                                                                | Direct                                                                                                                             | Low                        |
+| `addresses`  | recommendation → element                          | Yes     | **Yes** | A changed target may make the recommendation obsolete                                                          | Direct                                                                                                                             | Low                        |
+| `advances`   | opportunity → element                             | **Yes** | Weak    | A changed window or status bears on what it would advance                                                      | Direct                                                                                                                             | Low                        |
+| `pursues`    | element / decision / recommendation → opportunity | Yes     | **Yes** | The pursuer and the opportunity must stay aligned                                                              | Direct                                                                                                                             | Low                        |
+
+#### 13.4.4 Lineage and tension (2)
+
+| Relationship     | Source → Target                    | S→T     | T→S     | Why                                                                                                                           | Propagation                        | Noise risk |
+| ---------------- | ---------------------------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ---------- |
+| `supersedes`     | replacement → replaced             | Special | Special | Not impact. Supersession is itself an event: every live link into the replaced element needs re-pointing or retirement (D-05) | **Never** traversed                | Low        |
+| `conflicts_with` | element ↔ element (canonical pair) | Yes     | Yes     | A recognized tension may be resolved or worsened by either side                                                               | Direct, symmetric, never recursive | Low        |
+
+#### 13.4.5 Reviews, Deliverables, Implementation (6)
+
+| Relationship | Source → Target                        | S→T               | T→S     | Why                                                                                                                                           | Propagation                                              | Noise risk                  |
+| ------------ | -------------------------------------- | ----------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | --------------------------- |
+| `examines`   | Review → element                       | No                | **Yes** | An examined element revised after the Review makes the judgment dated (D-21, needs Q29 for exactness)                                         | Terminal                                                 | Medium (grouped by trigger) |
+| `raises`     | Review → record / initiative           | No                | No      | Provenance of where a record came from                                                                                                        | **Never**                                                | None                        |
+| `documents`  | Deliverable → element                  | No                | **Yes** | A documented element revised after the Deliverable's baseline or approval (D-24)                                                              | Terminal; excludes superseded Deliverables               | Medium                      |
+| `implements` | initiative → core object               | Yes (Realization) | **Yes** | A revised design may leave reality tracking an older one (D-15, D-16); an abandoned or validated initiative changes the element's realization | Terminal at the end of any architecture walk; S→T direct | Medium                      |
+| `initiates`  | decision / recommendation → initiative | **Yes**           | Weak    | A superseded decision questions the initiative it started; an abandoned initiative leaves the decision unrealized                             | Direct                                                   | Low                         |
+| `validates`  | Review → initiative                    | No                | Special | Validation is a dated judgment. Its staleness is reached through `implements` (D-16), never by traversing `validates`                         | **Never** traversed                                      | None                        |
+
+#### 13.4.6 Off-spine references
+
+| Link                                                                                 | Source → Target                                   | S→T                                                       | T→S                                                      | Why                                                                                                                                                                         | Propagation                                                       | Noise risk         |
+| ------------------------------------------------------------------------------------ | ------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------ |
+| Dependency record ends (`from_element_id` → `to_element_id`)                         | dependent → depended-on, via a record with status | Weak                                                      | **Yes**                                                  | A changed depended-on element or dependency status bears on the dependent                                                                                                   | Direct; the record's status changes are the primary trigger       | Low                |
+| `statement_evidence_links` (stance)                                                  | statement → evidence source                       | No                                                        | **Yes**                                                  | New or changed evidence bears on the claim; `contradicts` weighs most                                                                                                       | Direct to the statement's element                                 | Low                |
+| `element_evidence_links`                                                             | element → evidence source                         | No                                                        | **Yes**                                                  | As above, whole-element                                                                                                                                                     | Direct                                                            | Low                |
+| Checkpoint `achieved_evidence_source_id`, `related_review_id`, `related_approval_id` | checkpoint → evidence / Review / approval         | No                                                        | Yes                                                      | The support for an achieved checkpoint changed                                                                                                                              | Direct to the initiative                                          | Low                |
+| `acceptance_criteria.governed_element_id`                                            | criterion → core object / initiative              | No                                                        | **Yes**                                                  | A substantive revision of the governed element may leave agreed criteria out of step (D-04 narrowed); criteria in force reach initiatives through `implements`              | Terminal (element → criteria), and initiative → criteria in force | Low                |
+| `validation_criteria`                                                                | validation → criterion                            | No                                                        | No                                                       | Frozen capture of what was in force                                                                                                                                         | **Never**                                                         | None               |
+| `reviews.baseline_id`, `deliverables.baseline_id`, `architecture_baseline_items`     | Review / Deliverable → frozen versions            | No                                                        | No                                                       | Frozen reference points. They are the **comparison basis** for D-21 and D-24, not impact paths                                                                              | **Never** traversed                                               | None               |
+| `architecture_approvals.element_version_id`                                          | approval → exact version                          | No                                                        | Yes                                                      | A later substantive version leaves the approval behind (D-28)                                                                                                               | Direct                                                            | Low                |
+| `client_action_subjects`                                                             | open client action → element                      | No                                                        | **Yes**                                                  | A client may be answering about content that has since changed                                                                                                              | Direct, open actions only                                         | Low                |
+| `client_contributions.element_version_id`                                            | contribution → exact version                      | No                                                        | Yes                                                      | Unhandled input on an older version (D-25)                                                                                                                                  | Direct                                                            | Low                |
+| `method_application_elements` (`examined`, `produced`, `revised`, `informed`)        | application → element                             | No (method work never changes architecture, ADR-0043 D31) | Open applications: Yes for `examined`. Closed: **Never** | An in-progress application examining a changed element may need to re-examine it. Closed applications are frozen history; `observed_version_id` serves learning, not impact | Direct (open only)                                                | Low                |
+| `method_application_evidence`                                                        | application → evidence                            | No                                                        | Weak                                                     | Practice record; not engagement impact                                                                                                                                      | Never in the Edge                                                 | None               |
+| `element_method_lineage` (`instantiates`, `produced_from`, `judged_against`)         | element → Method version                          | No                                                        | Weak (internal)                                          | A Model, Template or Standard superseded after use is practice awareness, never architecture impact. `legacy_derived_from` is never propagated                              | Direct, internal practice panel only                              | Low                |
+| `engagements.dam_release_id` / application `dam_release_id`                          | engagement / application → release                | No                                                        | Yes (internal)                                           | A superseded release is practice awareness (D-27 merged)                                                                                                                    | Direct                                                            | Low                |
+| `intelligence_record_domains`                                                        | record → domain                                   | No                                                        | No                                                       | Domain-level scope is too broad to carry impact                                                                                                                             | **Never**                                                         | Would be very high |
+| `engagement_member_areas`                                                            | client member → domain / subtree                  | No                                                        | No                                                       | Access scope, not impact                                                                                                                                                    | **Never**                                                         | n/a                |
+| `domain_assessments`                                                                 | domain judgment (append-only)                     | No                                                        | Weak                                                     | Substantive revisions in a domain after its latest judgment may warrant a new judgment. This is ambient only; judgment is never computed (ADR-0019)                         | Ambient count on the domain page                                  | Low                |
+
+#### 13.4.7 Findings from the matrix
+
+1. **Recursion is the exception.** Only four walks recurse: `part_of` downward, `specializes` downward, `requires` upward, and `underpins` for invalidated assumptions. Every walk is capped at depth 2 and ends at Terminal hops (`implements`, `examines`, `documents`, criteria, open client actions). Everything else is direct.
+2. **The existing functions disagree with these semantics.**
+   - `intelligence_impact` recurses **up** `part_of` (part → whole). The matrix sends impact **down** (whole → parts).
+   - `intelligence_impact` recurses along `serves`, `shapes` and `informs`. The matrix keeps those direct.
+   - `intelligence_impact` ignores incoming Project Intelligence.
+   - `implementation_impact` walks every non-lineage relationship in both directions beyond depth 0. That is the maximal-noise pattern the matrix rejects.
+
+   A 7A proposal should replace both walks' semantics with this matrix, expressed as a governed, tested table mirrored in code, like the vocabulary. The current Impact panels are read-only aids and nothing depends on their exact output.
+
+3. **Hubs need grouping, not suppression.** Intended Outcomes, system boundaries, regulatory factors, governance bodies and knowledge areas are hubs. A change to a hub is legitimately wide, so the Edge shows it once, under the hub, with the count.
+4. **Three kinds of link carry no impact:**
+   - provenance (`raises`, `supersedes`, lineage roles on closed work);
+   - frozen captures (baselines, validation criteria, closed Method Applications);
+   - scope (`intelligence_record_domains`, contributor areas).
+
+   Treating them as impact paths would create the noisy chains the brief warns against.
+
+5. **On-demand trace and Edge are different consumers.** "Weak" edges appear in an on-demand "what would be affected if X changed" trace. They never generate Edge items.
 
 ---
 
@@ -812,7 +1058,7 @@ The conceptual flow (engagement observation → candidate learning → human rev
 
 **Master Build Spec:** §16 defines the Pattern Library (internal architects convert non-confidential structural learning into reusable patterns); §31 assigned "pattern library" to Phase 6. **Phase 6** deliberately did not build it and fixed the boundary (ADR-0050): patterns are not Method Assets; a Model is not a Pattern; nothing anticipates patterns; the Pattern Library is "a later phase".
 
-**Finding:** no phase currently owns the Pattern Library. Phase 7's spec description does not include it; Phase 8 is "cross-engagement intelligence". This is an unassigned deliverable (Q23).
+**Finding:** no phase currently owns the Pattern Library. Phase 7's spec description does not include it; Phase 8 is "cross-engagement intelligence". _(Revision 2, Q23 decided: it is not Phase 7. It is a separately governed later phase or workstream, placed once the Phase 7 promotion and confidentiality architecture has proven itself.)_
 
 | Possible Phase 7 responsibility                                                       | Recommendation                                        |
 | ------------------------------------------------------------------------------------- | ----------------------------------------------------- |
@@ -1055,6 +1301,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q1. Do the five product concepts enter repository terminology?** (DSA IDE, Living Development Model, Architecture Intelligence, Development Edge, Intelligence Contract)
 
+- **Decision (2026-09-30):** approved with clarification. The five concepts are approved product and documentation concepts. DSA IDE is the product paradigm and the direction users see. Repository and system references to "DSA OS" are not renamed yet. Living Development Model stays conceptual only, never a table, type or schema object.
 - **Recommendation:** Adopt all five as **product and documentation terms** in a Phase 7 glossary. Keep "Architecture Intelligence" as the phase name (spec §18, §31). Use "Development Edge" and "Intelligence Contract" in UI copy and docs. Use "Living Development Model" as a concept only, never a table or type name. Treat "DSA IDE" as the product paradigm; decide separately whether the product name changes from "DSA OS" (README, CLAUDE.md, spec title), because that is a brand decision.
 - **Alternatives:** adopt only in docs; adopt as code names (tables, modules); defer.
 - **Consequences:** code names would harden concepts into schema before their meaning settles; docs-only keeps them flexible.
@@ -1063,6 +1310,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q2. Is Architecture Intelligence internal-only initially?**
 
+- **Decision (2026-09-30):** approved as recommended.
 - **Recommendation:** Yes, for all of Phase 7.
 - **Alternatives:** client-safe deterministic context in Phase 7; client AI summaries after review.
 - **Consequences:** clients keep the authored portal; no risk of internal timing or method exposure.
@@ -1071,6 +1319,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q3. May AI inferences be persisted?**
 
+- **Decision (2026-09-30):** approved with clarification. AI inference is ephemeral by default. It is persisted only when it has ongoing developmental significance, is surfaced proactively, is intentionally saved, or enters a governed judgment or follow-up lifecycle. Ordinary one-off explanatory responses are never persisted automatically. (7B scope.)
 - **Recommendation:** Yes, only when surfaced proactively in the Edge or elected by the user, with full provenance and basis versions (§17, §18), as a non-architecture artifact.
 - **Alternatives:** never persist (ephemeral only); persist everything generated.
 - **Consequences:** never-persist makes the Contract and learning impossible; persist-everything creates the graveyard and a confidential-content store.
@@ -1079,6 +1328,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q4. Should user judgments on intelligence be durable?**
 
+- **Decision (2026-09-30):** approved as recommended.
 - **Recommendation:** Yes, append-only, attributed, with reasons, extending the dismissal model (§16).
 - **Alternatives:** ephemeral (UI state only); durable but editable.
 - **Consequences:** durable judgments give suppression, audit and learning; they are attributed, so framing must avoid productivity readings (§14.5).
@@ -1087,6 +1337,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q5. Should deterministic intelligence extend Phase 4 Signals or sit above them?**
 
+- **Decision (2026-09-30):** approved as recommended.
 - **Recommendation:** Both, as Option D (§12.3): new rules are signals in their home namespace; a common envelope and one Edge read path sit above all of them.
 - **Alternatives:** extend only; supersede with a new abstraction.
 - **Consequences:** no duplication; ADR-0039 respected; one experience.
@@ -1095,6 +1346,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q6. Can intelligence be promoted into Project Intelligence?**
 
+- **Decision (2026-09-30):** approved as recommended.
 - **Recommendation:** Yes, only by a human completing the existing creation or governance operation (create Risk, record Decision, propose criterion, schedule Review), pre-filled, with a link to the originating item. Never automatic.
 - **Alternatives:** no promotion (users re-type); automatic record creation on thresholds.
 - **Consequences:** preserves human sovereignty; gives Practice Intelligence its "architects repeatedly promote" signal.
@@ -1103,6 +1355,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q7. Does "Since You Were Away" warrant user-state persistence?**
 
+- **Decision (2026-09-30):** approved as recommended.
 - **Recommendation:** Yes, minimally: one explicit, user-controlled "briefed through" timestamp per user and engagement, private to the user. Derive "new" intelligence from basis timestamps rather than storing first-observed times. No view tracking.
 - **Alternatives:** use sign-in time; track page views; fixed windows ("last 7 days") with no state.
 - **Consequences:** meaningful briefings without surveillance; fixed windows are stateless but miss or repeat.
@@ -1111,6 +1364,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q8. Does impact analysis belong in Phase 7?**
 
+- **Decision (2026-09-30):** approved as recommended.
 - **Recommendation:** Yes: unified traversal over known relationships and off-spine governance links, on demand and change-triggered, including hypothetical "what if X changed" (§13, §31).
 - **Alternatives:** keep the two existing traces; defer.
 - **Consequences:** the strongest Claude Test capability; modest engineering (recursive SQL).
@@ -1119,6 +1373,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q9. Is Development Edge prioritization deterministic-first?**
 
+- **Decision (2026-09-30):** approved as recommended.
 - **Recommendation:** Yes: explained lexicographic tiers from governed factors (§15.1). AI may explain an item, not rank it, in Phase 7.
 - **Alternatives:** weighted score; AI ranking.
 - **Consequences:** transparent, stable, testable ordering; less "clever".
@@ -1127,6 +1382,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q10. Does cross-engagement recurrence detection belong in Phase 7?**
 
+- **Decision (2026-09-30):** approved as recommended.
 - **Recommendation:** No, beyond structured internal practice counts on Method Assets (Q11). Architecture recurrence across engagements waits for the promotion flow and Pattern Library.
 - **Alternatives:** internal-only architecture recurrence (for example, "this dependency configuration appears in 3 engagements").
 - **Consequences:** avoids the most leakage-prone capability and the "recurrence is truth" trap.
@@ -1135,6 +1391,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q11. Does Practice Intelligence begin in Phase 7?**
 
+- **Decision (2026-09-30):** approved as recommended.
 - **Recommendation:** Yes, narrowly (§21): per-application conditions in the engagement, and structured counts with n on Method Asset pages; no free-text aggregation, no scoring, no automatic Method changes.
 - **Alternatives:** defer entirely to Phase 8; include AI summaries of stage notes.
 - **Consequences:** uses the data Phase 6 was designed to capture; keeps client content out of cross-engagement views.
@@ -1143,6 +1400,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q12. What client-safe intelligence, if any, should exist?**
 
+- **Decision (2026-09-30):** approved as recommended.
 - **Recommendation:** None new in Phase 7 (§28). Later candidate: a client briefing computed only from client-readable published content, approved separately.
 - **Alternatives:** client-visible derived conditions on published architecture; reviewed AI summaries.
 - **Consequences:** zero new exposure.
@@ -1151,6 +1409,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q13. Does conversational access belong in Phase 7?**
 
+- **Decision (2026-09-30):** approved as recommended.
 - **Recommendation:** Not as a general chatbot. Optionally, an engagement-scoped "ask about this" that answers from governed records with citations and epistemic labels, ephemeral by default, if AI is in Phase 7 at all (§19).
 - **Alternatives:** full conversational assistant; none.
 - **Consequences:** conversational AI is the most reproducible capability under the Claude Test; its value is only as an interface to the model.
@@ -1159,6 +1418,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q14. Is provider abstraction required now?**
 
+- **Decision (2026-09-30):** approved as recommended.
 - **Recommendation:** Only if AI is in Phase 7, and then minimal (§30): provider and model as data, governed prompt versions, no provider-hosted memory or retrieval. Prompt governance comes with it (ADR-0050).
 - **Alternatives:** direct single-provider integration; full multi-provider framework.
 - **Consequences:** cheap insurance; avoids lock-in without over-engineering.
@@ -1167,6 +1427,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q15. Are any new global knowledge structures justified before the Pattern Library?**
 
+- **Decision (2026-09-30):** approved as recommended.
 - **Recommendation:** No. Rule and prompt catalogs are practice/product configuration, not knowledge. Practice counts are read models over existing tables.
 - **Alternatives:** a "candidate learning" store in Phase 7.
 - **Consequences:** keeps the promotion principle intact until rights and abstraction exist.
@@ -1175,6 +1436,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q16. How should ADR-0032's AI sentence be reconciled?**
 
+- **Decision (2026-09-30):** approved as recommended.
 - **Recommendation:** Amendment note (with the Phase 7 ADRs, not now): `ai_analysis` + review gate governs AI-drafted content entering architecture; AI observations are a separate non-architecture artifact; durable inference is stored, ephemeral assistance is not.
 - **Alternatives:** follow ADR-0032 literally (AI findings as pending `ai_analysis` statements or elements); supersede ADR-0032.
 - **Consequences:** literal reading would fill working copies with pending AI content and blur architecture with intelligence.
@@ -1183,6 +1445,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q17. Should Phase 7 include AI at all, or be split?**
 
+- **Decision (2026-09-30):** approved. Phase 7A is the Deterministic Development Edge. Phase 7B is Bounded AI Architecture Intelligence, and comes only after 7A is designed and accepted (§0.1).
 - **Recommendation:** Split: **7A** deterministic Development Edge (inventory rules, envelope, impact, change awareness, briefing, contextual panels, judgment lifecycle, Practice Intelligence counts); **7B** bounded AI inference and optional conversational access, after 7A exists and after Q19/Q20 are decided. Each with its own proposal and acceptance.
 - **Alternatives:** one Phase 7 with both; AI first.
 - **Consequences:** 7A passes the Claude Test without any provider; 7B then interprets a model that already works.
@@ -1191,6 +1454,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q18. What provenance does a promoted record carry?**
 
+- **Decision (2026-09-30):** approved as recommended.
 - **Recommendation:** Provenance follows whose authority the claim rests on. If the architect adopts and states it, `architect_judgment` with a link to the originating item; if AI-drafted text is kept, `ai_analysis` with `pending` review under the existing gate. Deterministic-condition promotions are `architect_judgment` (the rule prompted; the architect judged).
 - **Alternatives:** always `ai_analysis` for anything AI touched; a new provenance value (requires an ADR per ADR-0009).
 - **Consequences:** keeps the eight-value list; keeps the review gate meaningful.
@@ -1199,6 +1463,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q19. Is a per-engagement data-use classification required before any AI or learning?**
 
+- **Decision (2026-09-30):** approved with clarification. There are two separate governed **permitted-use / data-processing settings**: (a) external AI processing of engagement content; (b) contribution of appropriately abstracted, promoted learning to cross-development TPLCo Development Intelligence. Both default to No. They are governed settings, not generic consent.
 - **Recommendation:** Yes: a governed engagement setting (who may set it, with contract basis) stating whether engagement content may be processed by an AI provider, and separately whether it may contribute to cross-engagement learning after promotion. Default: neither.
 - **Alternatives:** blanket policy in contracts only; per-record flags only (`ip_classification`).
 - **Consequences:** makes consent explicit and enforceable in the database.
@@ -1207,6 +1472,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q20. What may be sent to a model provider, and what is logged?**
 
+- **Decision (2026-09-30):** approved with clarification. Adds **purpose-limited, context-minimized provider access**: only the governed records needed for the requested inference are sent. The rest of the recommendation stands.
 - **Recommendation:** Minimum basis only; published or working content per a stated policy; no TPLCo Method content by default; zero-retention and no-training terms; no prompts or client content in application logs or third-party observability; audit log records request metadata and basis ids, not payloads.
 - **Alternatives:** full context; include Method content; payload logging.
 - **Consequences:** limits irreversible exposure.
@@ -1215,6 +1481,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q21. Should Phase 5 D16 (no elapsed-time inference) govern Phase 7 Foresight?**
 
+- **Decision (2026-09-30):** approved as recommended.
 - **Recommendation:** Yes. Foresight uses recorded dates and governance proximity only.
 - **Alternatives:** allow elapsed-time heuristics as Suggested items.
 - **Consequences:** keeps "calm" and avoids manufactured urgency.
@@ -1223,6 +1490,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q22. What is the top interruption tier, and what is it called?**
 
+- **Decision (2026-09-30):** approved as recommended.
 - **Recommendation:** Define it as exactly the human-set states (attention `critical`, open escalation), and name it so it does not read as a new AI or rule output.
 - **Alternatives:** a rule-defined critical tier.
 - **Consequences:** AI and rules never declare criticality.
@@ -1231,6 +1499,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q23. Which phase owns the Pattern Library?**
 
+- **Decision (2026-09-30):** changed. The Pattern Library is explicitly not Phase 7 and is **not** yet placed after Portfolio Intelligence. It is a separately governed later phase or workstream, placed once the Phase 7 promotion and confidentiality architecture has proven itself.
 - **Recommendation:** Assign it explicitly as its own phase after Portfolio Intelligence, or as the first part of Phase 8, preceded by the data-use classification (Q19). Not Phase 7.
 - **Alternatives:** Phase 7; leave unassigned.
 - **Consequences:** removes an ambiguity carried since Phase 6.
@@ -1239,6 +1508,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q24. Does the Edge send any notification in Phase 7?**
 
+- **Decision (2026-09-30):** approved as recommended.
 - **Recommendation:** No. In-product only. Notification delivery (email) remains the separate pre-production requirement already recorded.
 - **Alternatives:** email for Elevated/Critical.
 - **Consequences:** calm; no notification-volume failure mode.
@@ -1247,6 +1517,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q25. Is deliverable generation (spec §12) in Phase 7?**
 
+- **Decision (2026-09-30):** approved as recommended.
 - **Recommendation:** Not in 7A. If ever, generate only from published versions with `produced_from` Template lineage, as a Deliverable working copy with `ai_analysis` review where AI drafts text.
 - **Alternatives:** include in Phase 7; separate phase.
 - **Consequences:** generation is high Claude-Test reproducibility unless structurally grounded.
@@ -1255,6 +1526,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q26. Should `implements` and `validates` correspondence be version-pinned later?**
 
+- **Decision (2026-09-30):** approved as recommended. _Revision 2 refinement:_ the empirical review confirms that timestamps are adequate for `implements` and `validates`, whose `created_at` is system time. They are not adequate for Reviews held on a user-entered (backdatable) date. See Q29.
 - **Recommendation:** Not in Phase 7; derive from timestamps (D-15, D-16) and revisit if false positives are material.
 - **Alternatives:** pin versions on these relationships now.
 - **Consequences:** pinning would change Phase 5 semantics and require a migration; timestamps are adequate for surfacing.
@@ -1263,6 +1535,7 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q27. Does the deterministic subset of the Structural Coherence Engine belong in Phase 7?**
 
+- **Decision (2026-09-30):** approved as recommended.
 - **Recommendation:** Yes, as Integrity-lens rules (D-05, D-06, D-09–D-11) without a "Structural Coherence Report" product.
 - **Alternatives:** defer all of spec §19.
 - **Consequences:** coherence becomes continuous rather than a report.
@@ -1271,23 +1544,61 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q28. Should rule definitions be a governed, tested catalog?**
 
+- **Decision (2026-09-30):** approved as recommended.
 - **Recommendation:** Yes: a rule catalog in code (key, lens, definition, why it matters, resolving governance act, basis) mirrored against the SQL and tested, like the vocabulary mirrors.
 - **Alternatives:** definitions only in SQL comments.
 - **Consequences:** satisfies the Contract's "why"; supports §27 escalation later.
 - **Informing structures:** `vocabulary.test.ts`, `catalog.test.ts` mirror tests.
 - **Reversibility:** easy.
 
+**Q29. Should holding a Review capture the versions it examined?**
+
+- **Recommendation:** Yes, as a small 7A capture. When `hold_review` runs, record the latest published version of each element the Review examines, in the same pattern as `validation_criteria` (captured by the operation, immutable). Change-since-Review (D-21, D-22) then becomes version-exact for every Review, with or without a baseline.
+- **Alternatives:** require a frozen baseline for every Review; use the `hold_review` operation time from `activity_log` (system time, but the log is restricted and holds full row JSON); accept that Reviews without a baseline get no change-since-Review item.
+- **Consequences:** fixes the D-21 false positives found in §11.8 without changing Phase 5 semantics. It adds one capture table and one step inside an existing operation.
+- **Informing structures:** `reviews.held_at` (a business timestamp), ADR-0046's capture pattern, `compare_baselines`.
+- **Reversibility:** captured history is permanent; the capture itself is easy to stop.
+
+**Q30. What counts as a substantive revision for Change rules?**
+
+- **Recommendation:** Compare a published version's snapshot with the previous version, deterministically, excluding status fields (implementation status and operational dates, record status fields written by resolution). A version that differs only in those fields is a status publication and does not trigger Change rules. The `change_summary` is shown to the reader but not parsed.
+- **Alternatives:** treat every new version as a revision (the Revision 1 assumption, which produced false positives); let architects mark a publication as editorial (a new judgment field); parse `change_summary` (unreliable).
+- **Consequences:** removes the status-publication false positives (D-04, D-21) and keeps the rule deterministic and explainable.
+- **Informing structures:** `element_versions.snapshot`, the probe diff in §11.8.4 F2, ADR-0020 (separate status axes).
+- **Reversibility:** easy (read-time definition).
+
 ---
 
 ## 38. Recommendations before the formal Phase 7 proposal
 
-1. **Answer Q1–Q28**, at minimum Q2, Q5, Q7, Q8, Q16, Q17, Q19, which shape everything else.
-2. **Execute the inventory read-only** against seed data (Meridian and Harbor) in a local database, without migrations, to measure which candidates fire, how often, and with what false positives. Drop or rescope noisy candidates before the proposal. This turns "Derivable" into "Verified".
-3. **Define impact direction per relationship type** (§13.3) as a short table for review; it is the core of impact analysis and a methodological, not technical, decision.
-4. **Draft the Edge's user-facing language** (epistemic labels, tier names, judgment actions) for review in the same voice as existing copy.
-5. **Decide the data-use and provider policy** (Q19, Q20) with legal and contract input before any AI design, since it is the only genuinely irreversible choice.
-6. **Assign the Pattern Library** (Q23) so Phase 7 scope is bounded by a named neighbor.
-7. **Then write `PHASE_7_PROPOSAL.md`** (or 7A), with the amendment to ADR-0032 and the new ADRs proposed there, not before.
+### 38.1 Status of the Revision 1 recommendations
+
+| #   | Recommendation                                    | Status                                                                                       |
+| --- | ------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| 1   | Answer Q1–Q28                                     | **Done** (§0.2, and a decision line on each question in §37)                                 |
+| 2   | Execute the inventory read-only against seed data | **Done** (§11.8)                                                                             |
+| 3   | Define impact direction per relationship type     | **Done** (§13.4)                                                                             |
+| 4   | Draft the Edge's user-facing language             | Open. It belongs in the 7A proposal, reviewed in the voice of existing copy                  |
+| 5   | Decide data-use and provider policy (Q19, Q20)    | Decided in principle. The settings and legal/contract basis are **7B** prerequisites, not 7A |
+| 6   | Place the Pattern Library                         | Decided: a separately governed later workstream, not Phase 7 (Q23)                           |
+| 7   | Then write the proposal                           | See §38.2                                                                                    |
+
+### 38.2 Is Phase 7A ready for a formal proposal?
+
+**Yes, once Q29 and Q30 are answered.** Both come from the empirical review. They decide whether the Change rules (D-04, D-15, D-16, D-21, D-22, D-23, D-24, D-28), which carry most of 7A's Claude-Test value, are exact or noisy. Everything else can be settled inside the proposal's own decision list:
+
+- the 31 new conditions and 11 existing rules;
+- the envelope, grouped by triggering change;
+- the impact matrix as a governed table;
+- the curated change read model across Phases 3–6;
+- the user-private briefing watermark;
+- the ADR-0032 amendment note;
+- scope normalization for the existing rules (F4);
+- Practice Intelligence counts with a minimum n.
+
+No approved decision needed reopening. The evidence refined Q5, Q9 (grouping by trigger), Q26 (with Q29) and Q28 (rule scope as a catalog attribute).
+
+Remaining discipline for the proposal: design no 7B schema beyond what 7A must avoid preventing. Concretely, 7A's envelope should leave room for a model producer, a stored basis with versions, and an ephemeral-by-default lifecycle, without building any of them.
 
 ---
 
@@ -1298,5 +1609,6 @@ Each question lists the recommendation, alternatives, consequences, informing st
 - ADR-0009, 0013, 0014, 0015, 0017, 0019, 0020, 0022, 0023, 0027, 0028, 0030, 0032, 0043, 0045, 0046, 0047, 0050
 - `docs/database/schema.md`, `architecture.md`, `intelligence.md`, `reviews-deliverables-implementation.md`, `method-library.md`
 - Phase 3–6 proposals (AI, Phase 7 and learning sections) and reports
+- Empirical review (Revision 2): local Supabase stack from `main` with `supabase/seed.sql`; read-only candidate queries and rolled-back revision probes (not committed)
 - Migrations: `20260929230000_phase1_foundation.sql` (activity log and policy), `20261002000100_project_intelligence.sql` (`intelligence_impact`, `intelligence_signals`, `architecture_activity`), `20261003000100_reviews_deliverables_implementation.sql` (`implementation_impact`, `implementation_signals`)
 - `src/domain/architecture/vocabulary.ts` (39 relationship types and rules), `src/types/database.ts` (columns and enums), `src/app` (internal and client pages), `src/components/intelligence/element-panels.tsx`, `package.json`
