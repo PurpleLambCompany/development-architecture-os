@@ -3963,17 +3963,14 @@ export type Database = {
       };
       method_assets: {
         Row: {
-          category: string | null;
-          category_key: string | null;
+          category_key: string;
           created_at: string;
           created_by: string | null;
           current_version_id: string | null;
-          description: string;
           form: Database["public"]["Enums"]["method_asset_form"] | null;
           id: string;
           ip_classification: Database["public"]["Enums"]["ip_classification"];
-          key: string | null;
-          methodology_domain: Database["public"]["Enums"]["architecture_domain"] | null;
+          key: string;
           origin: Database["public"]["Enums"]["method_asset_origin"];
           retired_at: string | null;
           retired_reason: string | null;
@@ -3982,20 +3979,16 @@ export type Database = {
           title: string;
           updated_at: string;
           usage_restriction: string | null;
-          version: string;
         };
         Insert: {
-          category?: string | null;
-          category_key?: string | null;
+          category_key: string;
           created_at?: string;
           created_by?: string | null;
           current_version_id?: string | null;
-          description?: string;
           form?: Database["public"]["Enums"]["method_asset_form"] | null;
           id?: string;
           ip_classification?: Database["public"]["Enums"]["ip_classification"];
-          key?: string | null;
-          methodology_domain?: Database["public"]["Enums"]["architecture_domain"] | null;
+          key: string;
           origin?: Database["public"]["Enums"]["method_asset_origin"];
           retired_at?: string | null;
           retired_reason?: string | null;
@@ -4004,20 +3997,16 @@ export type Database = {
           title: string;
           updated_at?: string;
           usage_restriction?: string | null;
-          version?: string;
         };
         Update: {
-          category?: string | null;
-          category_key?: string | null;
+          category_key?: string;
           created_at?: string;
           created_by?: string | null;
           current_version_id?: string | null;
-          description?: string;
           form?: Database["public"]["Enums"]["method_asset_form"] | null;
           id?: string;
           ip_classification?: Database["public"]["Enums"]["ip_classification"];
-          key?: string | null;
-          methodology_domain?: Database["public"]["Enums"]["architecture_domain"] | null;
+          key?: string;
           origin?: Database["public"]["Enums"]["method_asset_origin"];
           retired_at?: string | null;
           retired_reason?: string | null;
@@ -4026,7 +4015,6 @@ export type Database = {
           title?: string;
           updated_at?: string;
           usage_restriction?: string | null;
-          version?: string;
         };
         Relationships: [
           {
@@ -5316,6 +5304,14 @@ export type Database = {
           p_engagement_member_id: string;
           p_review_element_id: string;
           p_role?: Database["public"]["Enums"]["review_participant_role"];
+        };
+        Returns: string;
+      };
+      adopt_legacy_method_asset: {
+        Args: {
+          p_asset_id: string;
+          p_category_key?: string;
+          p_form: Database["public"]["Enums"]["method_asset_form"];
         };
         Returns: string;
       };

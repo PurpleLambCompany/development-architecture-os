@@ -204,27 +204,19 @@ where em.engagement_id = 'e0000000-0000-4000-8000-000000000001'
 -- -----------------------------------------------------------------------------
 -- Method/IP (internal only; exists to prove client isolation)
 -- -----------------------------------------------------------------------------
-select private.begin_methodology_operation();
-insert into public.method_assets (title, category, methodology_domain, version, status, description, steward_user_id) values
-  (
-    'Capability Readiness Diagnostic',
-    'diagnostic_framework',
-    'capability',
-    'DAM 1.0',
-    'active',
-    'Structured diagnostic for assessing capability readiness across leadership, talent and operating infrastructure.',
-    '10000000-0000-4000-8000-000000000002'
-  ),
-  (
-    'Strategic Model Library Index',
-    'strategic_model',
-    'strategic_model',
-    'DAM 1.0',
-    'draft',
-    'Index of strategic models with applicability conditions and known failure modes.',
-    '10000000-0000-4000-8000-000000000002'
-  );
-select private.end_methodology_operation();
+-- Described as they existed before Phase 6, through the same conversion the
+-- Phase 6 backfill uses: legacy assets, no inferred form, the original
+-- version text kept as the legacy version's label (D28).
+select private.insert_legacy_method_asset(
+  'Capability Readiness Diagnostic', 'diagnostic_framework', 'capability', 'DAM 1.0', 'active',
+  'Structured diagnostic for assessing capability readiness across leadership, talent and operating infrastructure.',
+  '10000000-0000-4000-8000-000000000002'
+);
+select private.insert_legacy_method_asset(
+  'Strategic Model Library Index', 'strategic_model', 'strategic_model', 'DAM 1.0', 'draft',
+  'Index of strategic models with applicability conditions and known failure modes.',
+  '10000000-0000-4000-8000-000000000002'
+);
 
 -- -----------------------------------------------------------------------------
 -- Phase 2: commercial engagement
