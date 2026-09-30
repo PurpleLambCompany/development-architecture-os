@@ -1,22 +1,39 @@
 # Phase 5 — Reviews, Deliverables and Implementation: Proposal
 
-**Status:** Proposal only. No migrations or application code have been written for this phase. Do not build until Kerrick approves the decisions in §26.
+**Status:** Proposal only, revised. No migrations or application code have been written for this phase. Do not build until Kerrick gives final approval on §22.
 
 **Governing question:** once Development Architecture has been designed and approved, how does the system govern making that architecture real?
 
 **Conceptual flow:** Architecture → Implementation → Evidence → Review → Architectural Learning.
+
+## Revision note (round 2)
+
+Kerrick reviewed the first draft and approved D1, D3, D4, D6, D7, D10 and D12 as proposed. He amended four decisions, all incorporated below:
+
+- **D2 — amended.** Implementation does **not** share Phase 4's `intelligence_stewardship`, `intelligence_status_changes` or `intelligence_escalations` tables. It gets its own parallel tables, reusing the _pattern_ (attention/triage, append-only field history, two-level escalation) but never the tables themselves. §7.3, §10, §11, §13, §17.
+- **D5 — amended.** A new relationship, `validates` (Review → Implementation Initiative), is added and precisely defined, gated behind a dedicated operation rather than free insertion. §4.2, §7.5.
+- **D8 — amended.** Each implementation status is now precisely defined; `validated` cannot be reached by a bare status edit — it requires a `validates` relationship from a qualifying review, enforced by the database. §7.2, §7.5.
+- **D9 — amended.** Not every milestone becomes a sub-initiative. A new, deliberately lightweight **Implementation Checkpoint** concept covers architecturally meaningful conditions/events inside one initiative; genuinely separable realization efforts still decompose via `part_of`. §7.6.
+
+Four new decisions this introduces are added to §22 as D13–D16.
 
 ---
 
 ## 1. Principles
 
 1. **Reference, don't duplicate.** Phase 5 introduces governance and realization _structure_ around the architecture; it does not re-describe the architecture. Wherever an existing Phase 3/4 primitive (a core object, a Project Intelligence record, a relationship, evidence, an approval) already represents a fact, Phase 5 points at it instead of copying it.
-2. **The element spine keeps doing the work.** ADR-0013's pattern — one spine row, a subtype table, versions, publication, client snapshots, evidence links, statements, relationships, reference codes — is proven across nine kinds already (six Phase 3 records plus core objects plus Opportunity). Phase 5's three new concerns (Review, Deliverable, Implementation Initiative) reuse it rather than inventing a parallel content model.
-3. **Implementation is not a task tracker.** An Implementation Initiative represents the organized effort to make one or more approved architecture elements real — not a checklist, not an assignee queue, not a percent-complete bar. Sequencing exists only where it reflects genuine methodological dependency (via the existing `precedes`/`part_of` relationship machinery), never as generic subtasks.
-4. **Five distinct states stay distinct** (extends ADR-0020): Architecture state (designed, approved) is the element's own lifecycle and approval axis, unchanged. Implementation state (being established) is new. Operating state (now exists/functions) is a claim an initiative makes about itself, never inferred. Evidence (what supports that claim) is the existing evidence system. Review/judgment (does reality conform, should the architecture change) is new, and it closes the loop by writing back to existing primitives — a returned element, a new Decision, a new Risk — never by silently updating implementation state.
+2. **The element spine keeps doing the work.** ADR-0013's pattern — one spine row, a subtype table, versions, publication, client snapshots, evidence links, statements, relationships, reference codes — is proven across nine kinds already. Phase 5's three new element kinds (Review, Deliverable, Implementation Initiative) reuse it rather than inventing a parallel content model.
+3. **Implementation is not a task tracker.** An Implementation Initiative represents the organized effort to make one or more approved architecture elements real — not a checklist, not an assignee queue, not a percent-complete bar. Sequencing and checkpoints exist only where they reflect genuine methodological meaning, never as generic subtasks.
+4. **Five distinct states stay distinct** (extends ADR-0020), precisely as Kerrick restated them:
+   - **Architecture state** — what has been designed and approved. The element's own lifecycle and approval axis, unchanged.
+   - **Implementation state** — whether realization has begun and where it stands. New: `implementation_status`.
+   - **Operating state** — whether the designed capability/system/model/application actually exists and functions in reality. A claim an initiative makes about itself (`operational`), never inferred from implementation state alone.
+   - **Evidence** — what supports claims about that reality. The existing evidence system, unchanged.
+   - **Review/judgment** — whether observed reality sufficiently conforms to architectural intent. New, and it is the _only_ thing that can move an initiative to `validated` — validation is a judgment, never an unsupported status edit.
 5. **Project Intelligence stays the intelligence layer.** No Phase 5 table duplicates an assumption, risk, constraint, dependency, decision, recommendation or opportunity. Implementation risks are risks. Implementation decisions are decisions. Phase 5 relates to them; it does not re-invent them.
-6. **Clients see less than TPLCo, structurally.** Everything a client sees in Reviews, Deliverables and Implementation is a published, client-visible snapshot or an existing approval/action primitive — never a working copy, never internal stewardship, never an internal capability's-worth of detail.
-7. **Stable foundations are not renegotiated.** Nothing in this phase changes the element spine, the lifecycle/approval/maturity/record-status separation, the publication boundary, the relationship-vocabulary enforcement model, capability-based authorization, RLS as the security authority, or any Phase 1–4 table's meaning. Extensions are additive.
+6. **Implementation's judgment apparatus is real but structurally separate.** Realization work needs triage, history and escalation exactly the way Project Intelligence does — but in Implementation's own tables, never inside Phase 4's. Intelligence about the architecture and governance of realizing it are different concerns and stay in different tables, even though they follow the same proven pattern.
+7. **Clients see less than TPLCo, structurally.** Everything a client sees in Reviews, Deliverables and Implementation is a published, client-visible snapshot or an existing approval/action primitive — never a working copy, never internal stewardship, never an internal capability's-worth of detail.
+8. **Stable foundations are not renegotiated.** Nothing in this phase changes the element spine, the lifecycle/approval/maturity/record-status separation, the publication boundary, the relationship-vocabulary enforcement model, capability-based authorization, RLS as the security authority, or any Phase 1–4 table's meaning. Extensions are additive.
 
 ---
 
@@ -24,54 +41,57 @@
 
 ### 2.1 Proposed for Phase 5
 
-- **Reviews.** A `review` element kind representing a convened session (Executive Review or Architecture Review): participants, an agenda of existing elements and Project Intelligence records, findings recorded as statements, and outcomes that are relationships to existing or newly-created Decision/Recommendation/Risk/Assumption records — never a parallel decision mechanism.
-- **Deliverables.** A `deliverable` element kind representing a formal TPLCo output (blueprint, deck, map, framework, summary): versioned and published exactly like any element, using the existing approval flow for "client review" and "approved," files stored through the Phase 4 engagement-file infrastructure, and traceable to the architecture and evidence it was produced from.
-- **Implementation.** An `implementation_initiative` element kind representing the effort to realize one or more approved core objects in operating reality: an implementation status distinct from architecture lifecycle, evidence of operation, and full reuse of Project Intelligence's stewardship, history and escalation apparatus (extended, not duplicated) rather than a new implementation-specific judgment system.
-- **Four to five new relationship types** connecting these kinds to the existing vocabulary (§7).
+- **Reviews.** A `review` element kind representing a convened session (Executive Review or Architecture Review): participants, an agenda of existing elements and Project Intelligence records, findings recorded as statements, and outcomes that are relationships to existing or newly-created Decision/Recommendation/Risk/Assumption records, or — specifically for implementation verification — a `validates` relationship to an Implementation Initiative.
+- **Deliverables.** A `deliverable` element kind representing a formal TPLCo output (blueprint, deck, map, framework, summary): versioned and published exactly like any element, using the existing approval flow for "client review" and "approved," files stored through the Phase 4 engagement-file infrastructure.
+- **Implementation.** An `implementation_initiative` element kind representing the effort to realize one or more approved core objects in operating reality, with its own — structurally parallel, physically separate — stewardship, history and escalation apparatus; a `validates`-gated path to a genuinely judged `validated` status; and a new, deliberately lightweight **Implementation Checkpoint** concept for meaningful conditions/events inside one initiative.
+- **Six new relationship types** connecting these kinds to the existing vocabulary (§4.2).
 - **Internal UX**: review scheduling and conduct, a deliverables workspace, an implementation register per engagement and across engagements, and what appears on an architecture element's own page once a review, deliverable or initiative concerns it.
-- **Client UX**: a Reviews tab, deliverables surfaced wherever they already belong (Overview, Architecture, a lightweight Documents view), and an Implementation tab — all read-only, all published-snapshot-only.
-- **Two or three new internal capabilities** giving Project Administrators (spec §4: "manage... meetings... deliverables and status updates") a scoped role in Reviews, Deliverables and Implementation without extending them `edit_architecture` or `publish_architecture` (ADR-0024's tight guarding of drafting and publishing authority is preserved).
+- **Client UX**: a Reviews tab, deliverables surfaced wherever they already belong, and an Implementation tab — all read-only, all published-snapshot-only.
+- **Three new internal capabilities** giving Project Administrators (spec §4: "manage... meetings... deliverables and status updates") a scoped role in Reviews, Deliverables and Implementation without extending them `edit_architecture` or `publish_architecture`.
 
 ### 2.2 Not in Phase 5
 
-- **AI/Architecture Intelligence** (Phase 7): no auto-generated findings, no auto-drafted deliverables, no coherence analysis. Phase 5 captures the structured relationships (`examines`, `documents`, `raises`, `implements`) that a future AI phase will read, but computes nothing itself beyond the same kind of deterministic signal Phase 4 already established.
-- **Method Library** (Phase 6): review agendas and deliverable content may cite the Method the way any element already can (`element_method_lineage`), but no method-asset UI is built.
-- **Portfolio Intelligence** (Phase 8): no cross-engagement implementation dashboard. `implementation_register` is engagement-scoped and cross-engagement like `intelligence_register` already is for internal readers, but no aggregate metrics are computed.
-- **Certification/licensing** (Phase 9): untouched.
-- **Finance integration.** ADR-0023 (architecture never depends on finance) is unchanged. A deliverable or an implementation initiative may be _discussed_ alongside a payment milestone in conversation, but no Phase 5 table references `payment_milestones`, `contracts` or any finance table. The reserved `payment_milestone_architecture_links` table from ADR-0023 remains unbuilt and remains finance-owned when it is eventually built.
-- **Generic task/subtask management, kanban boards, percent-complete dashboards, employee productivity tracking** — excluded by principle, not merely by omission (§1.3, master spec §13 and §23).
+- **AI/Architecture Intelligence** (Phase 7): no auto-generated findings, no auto-drafted deliverables, no coherence analysis.
+- **Method Library** (Phase 6), **Portfolio Intelligence** (Phase 8), **Certification/licensing** (Phase 9): untouched.
+- **Finance integration.** ADR-0023 unchanged; no Phase 5 table references any finance table.
+- **Generic task/subtask management, kanban boards, percent-complete dashboards, employee productivity tracking** — excluded by principle (§1.3).
 - **A new "implementation risk," "implementation decision" or similar duplicate judgment table** — excluded by principle (§1.5).
-- **Milestone-as-a-table.** "Milestones or checkpoints where methodologically justified" (Kerrick's brief) are represented as sub-initiatives via `part_of`, not a new table (§9.3).
+- **Checkpoints as full elements, checkpoint lifecycle/versioning/publication, checkpoint-level evidence libraries** — deliberately excluded; see the tradeoff discussion in §7.6.
+- **Inferring "stalled" from silence.** Per D11, the one implementation signal built now is `implementation_past_target` (a stated target date has passed). A signal that infers stalling purely from "no status change in N days" is not built until the methodology itself establishes that rule.
 
 ### 2.3 Conflicts and ambiguities with the specification
 
-Surfaced per `CLAUDE.md`'s instruction to raise conflicts before an expensive change, and per the master spec's own §31 phase sequence, which the current proposal reconciles rather than following literally:
+Unchanged from round 1 (renumbered items 1–5 below remain accurate); nothing in Kerrick's amendments introduces a new spec conflict, only refinements of this proposal's own design.
 
-1. **Spec §31 names this "Phase 5 — Client Experience"** (reviews, approvals, deliverables, implementation visibility, polished client dashboard); Kerrick's brief names it "Reviews, Deliverables, and Implementation" and gives it a governance framing broader than "client experience polish." This proposal follows Kerrick's brief as the authoritative statement of Phase 5's intent (`CLAUDE.md` names the master spec authoritative, but Kerrick's own direct instruction on phase content controls when the two are in tension, consistent with how Phase 3 and 4 each substantially exceeded their one-line spec §31 description).
-2. **Spec §13 ("Implementation Tracking")** proposes a flat `implementation_status` on a generic "implementation item" (Designed → Accepted → Implementation Started → Operational → Validated) with a single `linked architecture object`, owner, target date, evidence, blockers and notes on one table. This proposal treats "Designed" and "Accepted" as architecture-side states (already covered by lifecycle and approval) rather than implementation states, uses `part_of` decomposition instead of a `blockers` free-text field, and represents "notes" as statements or Project Intelligence records rather than a text column — all changes that make the spec's minimal sketch consistent with ADR-0020's separation of axes and with Kerrick's explicit instruction to reuse Project Intelligence rather than add parallel fields. Flagged because it is a real, if modest, departure from §26's literal table sketch.
-3. **Spec §11 ("Executive Review Mode")** lists client actions during a review as "approve / approve with comments / request revision / defer / assign decision owner." The first four already exist as `architecture_approvals` responses and Decision assignment (§21 below); "defer" has no direct existing equivalent (the closest is `defer_decision`, which defers a _decision_, not a whole review). This proposal treats "defer" at the review level as simply not requesting approval yet — no new status is needed — and flags this as a minor simplification rather than a gap.
-4. **Spec §12 ("Deliverable System")** describes deliverables as "generated from structured project data where possible," listing an implicit auto-drafting capability. That capability is explicitly Phase 7 territory (spec §18: "draft deliverables from structured project data"). Phase 5 builds the traceable _structure_ (what a deliverable documents) that a future phase would read; it does not generate content.
-5. **The existing `view_confidential_deliverables` capability** was defined in Phase 1 (ADR-0008) and has sat unused ever since — no deliverable table existed to gate. This proposal is the first to give it meaning (§20). Worth flagging only because its Phase 1 default holders (System Administrator, Principal Architect, Architect, Researcher, Project Administrator, Executive Sponsor, Client Project Lead) were set four phases ago without a deliverable model in view; §26 asks Kerrick to confirm those defaults still make sense now that the capability does something.
+1. Spec §31 names this "Phase 5 — Client Experience"; Kerrick's brief and D12 confirm the broader governance framing controls.
+2. Spec §13's flat "implementation item" sketch (single status column, `blockers` free text) is superseded here by separate implementation status, evidence, and now Checkpoints for structured "notes"-equivalent — a real, if modest, departure from the literal sketch.
+3. Spec §11's "defer" review action has no direct database equivalent; treated as simply not requesting approval yet.
+4. Spec §12's "generated from structured project data" is explicitly Phase 7 territory; Phase 5 builds only the traceable structure.
+5. `view_confidential_deliverables` (dormant since Phase 1) gets its first real use here; D10 confirms its existing default holders stand.
 
 ---
 
 ## 3. Conceptual model
 
-Phase 5 adds three new element kinds to the existing `element_kind` enum (`assumption`, `risk`, `constraint`, `dependency`, `decision`, `recommendation`, `opportunity`, `object` — the eight established today): `review`, `deliverable`, `implementation_initiative`. Each is a full architecture element (ADR-0013): one `architecture_elements` spine row, one subtype table, a permanent reference code, lifecycle, client visibility, provenance, IP classification, versions, publication, client snapshots, statements, evidence links, method lineage and relationships — exactly the same infrastructure every existing kind already uses, extended additively.
+Phase 5 adds three new element kinds to the existing `element_kind` enum: `review`, `deliverable`, `implementation_initiative`. Each is a full architecture element (ADR-0013) — spine row, subtype table, reference code, lifecycle, client visibility, provenance, versions, publication, client snapshots, statements, evidence links, relationships — the same infrastructure every existing kind already uses.
 
-They do **not** join the seven kinds in `intelligence_register` — that register is specifically the intelligence layer (facts that inform judgment about the architecture: what might be wrong, what might happen, what was decided). Reviews, Deliverables and Implementation Initiatives are not intelligence about the architecture; a Review is an event, a Deliverable is an output, an Implementation Initiative is an operational fact-in-progress. Each gets its own read model (§13).
+They do **not** join the seven kinds in `intelligence_register`. Reviews, Deliverables and Implementation Initiatives are not intelligence about the architecture; each gets its own read model (§13).
 
-**Implementation Initiative is the one exception that reuses Project Intelligence's judgment apparatus** (stewardship, append-only history, escalation), because Kerrick's brief asks implementation to connect to exactly that apparatus, and because an initiative's status genuinely is the kind of thing that needs triage, a next-review date and escalation the way a risk does. It is described in `INTELLIGENCE_CATEGORIES`-adjacent terms in §9 without being a member of the register that filters by "is this a concern about the architecture."
+**Implementation Initiative reuses Project Intelligence's judgment _pattern_ — never its tables.** ADR-0027/0028/0032 established a proven shape (stewardship with attention/triage/next-review; append-only field-level history; two-level escalation; deterministic, dismissable signals). Implementation gets the identical shape in its own tables (`implementation_stewardship`, `implementation_status_changes`, `implementation_escalations`, `implementation_signals()`). This is the central structural decision of this revision: it keeps "what might be wrong with the architecture" (Project Intelligence) and "how is realizing the architecture going" (Implementation) as two conceptually distinct systems that happen to share a proven engineering pattern, rather than one system wearing two hats.
 
-### The five states, concretely
+**Implementation Checkpoints are not elements.** A checkpoint is a small, dated fact about one initiative's progress — not a thing with its own lifecycle, versions or evidence library. See §7.6 for the full tradeoff.
 
-| State                | Where it lives                                                                                                                                          | Who writes it                                                        |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Architecture state   | `architecture_elements.lifecycle` + `architecture_approvals` (unchanged)                                                                                | Architects, via existing Phase 3 operations                          |
-| Implementation state | `implementation_initiatives.implementation_status`                                                                                                      | Implementation-capable internal members, via new Phase 5 operations  |
-| Operating state      | The same `implementation_status` value `operational`/`validated`, asserted, not computed                                                                | Same, with a required rationale on the terminal transition           |
-| Evidence             | `element_evidence_links` → `evidence_sources` (unchanged, already generic)                                                                              | Whoever holds `edit_architecture` or the new `manage_implementation` |
-| Review/judgment      | A `review` element's statements, plus any Decision/Risk/Recommendation it `raises`, plus `return_element_to_draft` when architecture itself must change | Reviewers, via existing and new operations together                  |
+### The five states, concretely, with the validation gate
+
+| State                | Where it lives                                                                                         | Who writes it                               | How it becomes true                                                                                                |
+| -------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Architecture state   | `architecture_elements.lifecycle` + `architecture_approvals` (unchanged)                               | Architects, via existing Phase 3 operations | Publication and approval, unchanged                                                                                |
+| Implementation state | `implementation_initiatives.implementation_status`                                                     | `manage_implementation` holders             | Direct edit for `not_started`/`in_progress`/`operational`/`stalled`; a dedicated operation for the terminal states |
+| Operating state      | `implementation_status = 'operational'`, asserted                                                      | Same, evidenced but unreviewed              | An owner's evidenced claim — not yet judged                                                                        |
+| Evidence             | `element_evidence_links` → `evidence_sources`; optionally a checkpoint's `achieved_evidence_source_id` | `manage_implementation` holders             | Linking evidence, unchanged mechanism                                                                              |
+| Review/judgment      | A `review` element's statements, plus `validates` when the finding is affirmative conformance          | Reviewers, via `record_review_validation`   | Only a held review that has `examines`'d the initiative may `validates` it                                         |
+
+`implementation_status = 'validated'` is reachable **only** when a `validates` relationship exists from an eligible review — never from an owner's status edit alone. This is the database-enforced answer to D8.
 
 ---
 
@@ -79,104 +99,49 @@ They do **not** join the seven kinds in `intelligence_register` — that registe
 
 ### 4.1 New element kinds
 
-| Kind                        | Prefix | Subtype table                | Domain                                                                               | Notes              |
-| --------------------------- | ------ | ---------------------------- | ------------------------------------------------------------------------------------ | ------------------ |
-| `review`                    | `REV`  | `reviews`                    | none (spans domains, like Project Intelligence records — ADR-0017's pattern extends) | Convened session   |
-| `deliverable`               | `DLV`  | `deliverables`               | none                                                                                 | Formal output      |
-| `implementation_initiative` | `IMP`  | `implementation_initiatives` | none, but usually implements a single-domain core object                             | Realization effort |
+| Kind                        | Prefix | Subtype table                | Domain                                                   | Notes              |
+| --------------------------- | ------ | ---------------------------- | -------------------------------------------------------- | ------------------ |
+| `review`                    | `REV`  | `reviews`                    | none (spans domains, like Project Intelligence records)  | Convened session   |
+| `deliverable`               | `DLV`  | `deliverables`               | none                                                     | Formal output      |
+| `implementation_initiative` | `IMP`  | `implementation_initiatives` | none, but usually implements a single-domain core object | Realization effort |
 
-### 4.2 New relationship types (extends the 33 from ADR-0018/0026 to 37 or 38 — see D6)
+Implementation Checkpoints are **not** a fourth kind (§7.6) — they are rows in `implementation_checkpoints`, subordinate to an initiative, with no spine row, no reference code and no independent lifecycle.
 
-| Type         | Source → target                                                                                                            | Inverse label    | Notes                                                                                                                                                                      |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `examines`   | Review → any element or Project Intelligence record                                                                        | "examined in"    | The review's agenda                                                                                                                                                        |
-| `raises`     | Review → assumption / risk / constraint / dependency / decision / recommendation / opportunity / implementation_initiative | "raised in"      | A new judgment record produced by the review — never a duplicate, always a real Phase 3/4/5 record                                                                         |
-| `documents`  | Deliverable → any element                                                                                                  | "documented in"  | What the deliverable presents or summarizes                                                                                                                                |
-| `implements` | Implementation Initiative → core object                                                                                    | "implemented by" | The architecture the initiative is realizing. Restricted to core objects (§4.1's `object` kind), not Project Intelligence records — you implement a Capability, not a Risk |
-| `initiates`  | Decision or Recommendation → Implementation Initiative                                                                     | "initiated by"   | Why the initiative exists                                                                                                                                                  |
+### 4.2 New relationship types (33 existing → 39)
 
-Existing pairings extend to the three new kinds as follows (mirroring how Opportunity's pairings extended in ADR-0026):
+| Type            | Source → target                                                                                                            | Inverse label      | Notes                                                                                                                                                                |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `examines`      | Review → any element or Project Intelligence record                                                                        | "examined in"      | The review's agenda                                                                                                                                                  |
+| `raises`        | Review → assumption / risk / constraint / dependency / decision / recommendation / opportunity / implementation_initiative | "raised in"        | A new judgment record produced by the review                                                                                                                         |
+| `documents`     | Deliverable → any element                                                                                                  | "documented in"    | What the deliverable presents or summarizes                                                                                                                          |
+| `implements`    | Implementation Initiative → core object                                                                                    | "implemented by"   | The architecture the initiative is realizing                                                                                                                         |
+| `initiates`     | Decision or Recommendation → Implementation Initiative                                                                     | "initiated by"     | Why the initiative exists                                                                                                                                            |
+| **`validates`** | Review → Implementation Initiative                                                                                         | **"validated by"** | Formal judgment that operating reality sufficiently conforms to architectural intent — see §7.5 for its precise definition and the operation that alone may write it |
 
-- `part_of` — an Implementation Initiative may be `part_of` another Implementation Initiative (decomposition; already acyclic-checked). A Review or Deliverable is never decomposed this way.
-- `precedes` — any of the three kinds may precede another instance of the same or a different Phase 5 kind (sequencing reviews, deliverable versions conceptually, or initiative phases), already acyclic-checked.
-- `threatens` / `mitigates` — a Risk may threaten a Deliverable or an Implementation Initiative exactly as it threatens any element; a Recommendation or Decision may mitigate one.
-- `underpins` — an Assumption may underpin an Implementation Initiative.
-- `constrains` — a Constraint may constrain an Implementation Initiative or a Deliverable.
-- `affects` / `addresses` — unchanged, extended to the new kinds as targets.
-- `has_stake_in` / `subject_to` — a Stakeholder object may have a stake in a Review or an Implementation Initiative.
-- `conflicts_with` — two Implementation Initiatives may conflict (competing approaches to the same capability).
-- `supersedes` — a later Deliverable version conceptually supersedes an earlier one at the _element_ level already (via `element_versions`); `supersedes` as a relationship is reserved, as today, for `supersede_element`'s own use in retiring one element in favor of another (a superseding Deliverable that fully replaces an earlier, retired one).
+Existing pairings extend to the three new kinds exactly as in round 1 (§4.2 of the first draft, unchanged): `part_of`, `precedes`, `threatens`/`mitigates`, `underpins`, `constrains`, `affects`/`addresses`, `has_stake_in`/`subject_to`, `conflicts_with` all extend to include Reviews, Deliverables and Implementation Initiatives as appropriate. `advances`/`pursues` (Opportunity) are not extended.
 
-`advances`/`pursues` (Opportunity) are not extended to the new kinds — an Opportunity is pursued through a Decision or a Recommendation, which may then `initiate` an Implementation Initiative; no direct Opportunity → Initiative relationship is needed.
+### 4.3 Categories and controlled vocabularies
 
-### 4.3 Categories
-
-- Implementation Initiatives get a controlled category vocabulary the same way Assumptions/Risks/Decisions/Recommendations/Opportunities do (ADR-0027): `intelligence_categories` gains an `implementation_initiative` kind. Proposed categories, for review: `program`, `process`, `system`, `partnership`, `team_or_talent`, `governance`, `other`.
-- Reviews get a controlled `review_type`: `executive_review`, `architecture_review` (a fixed two-value enum on the subtype table, not a categories-table entry, since master spec §11 names exactly these two and the set is not expected to grow the way Opportunity categories did).
-- Deliverables get a controlled `deliverable_type` (a fixed enum, per spec §12): `full_architecture_blueprint`, `executive_strategy_deck`, `capability_map`, `implementation_framework`, `measurement_model`, `executive_summary`, `other`.
+- **Implementation categories** live in a **new, own table**, `implementation_categories` (not `intelligence_categories` — D2). Proposed: `program`, `process`, `system`, `partnership`, `team_or_talent`, `governance`, `other`.
+- **Review type**: fixed enum, `executive_review` / `architecture_review`.
+- **Deliverable type**: fixed enum, `full_architecture_blueprint` / `executive_strategy_deck` / `capability_map` / `implementation_framework` / `measurement_model` / `executive_summary` / `other`.
+- **Implementation Checkpoint type**: fixed enum (§7.6), `design_approved` / `agreement_executed` / `operational_entry` / `scheduled_review` / `other`.
 
 ---
 
 ## 5. Reviews model
 
-### 5.1 What a review is
+Unchanged in shape from round 1 (§5 of the first draft): `reviews` subtype table (review_type, scheduled_for, held_at, review_status, optional baseline_id, summary), `review_participants`, agenda via `examines`, findings as statements, outcomes via `raises` and/or approvals.
 
-A convened session — Executive Review or Architecture Review — that examines existing architecture and Project Intelligence, records findings, and produces (or reuses) judgment. It is not a meeting-notes feature: every substantive outcome is a relationship to a real record, not free text sitting outside the model.
+**One addition**: when a review's purpose includes judging whether an Implementation Initiative's operating reality conforms to architectural intent, its outcome is recorded through `record_review_validation` (§7.5), not a bare `raises` relationship — `raises` is for producing a _new_ judgment record (a risk, a decision); `validates` is for a specific, formal, positive conformance finding about an initiative already on the review's agenda.
 
-### 5.2 Structure
-
-- `reviews` (subtype): `review_type`, `scheduled_for` (timestamptz, nullable until scheduled), `held_at` (timestamptz, nullable until held), `review_status` (`scheduled`, `held`, `cancelled`), optional `baseline_id` (references a frozen `architecture_baselines` row — baselines are not elements, so this is a direct FK, mirroring how `architecture_approvals.baseline_id` already works), summary (short text, the client-visible headline once published).
-- `review_participants`: review element id, `engagement_member_id`, role (`convener`, `presenter`, `decision_maker`, `attendee`), `attended` (boolean, set after the fact). Genuinely new — no existing table captures session attendance.
-- Agenda: `examines` relationships from the review to whatever is on the agenda — elements, risks, decisions, an opportunity nearing its window, a signal-flagged record. The reviewer builds the agenda by relating, not by copying data into the review.
-- Findings: `architecture_statements` attached to the review element, exactly as any element already carries statements, with the existing provenance and `client_visible` flag per statement.
-- Outcomes: `raises` relationships from the review to new or existing Decision, Recommendation, Risk or Assumption records, and/or `architecture_approvals` requested against the baseline the review presented, and/or (rare) `return_element_to_draft` when the review concludes the architecture itself needs to change before anything else proceeds.
-- Publication: a review publishes like any element (`publish_element_version`), producing a client snapshot containing the summary, client-visible findings, and the client-visible portion of its agenda and outcomes (only elements/records the client can already see appear; nothing is exposed that publication doesn't already allow).
-
-### 5.3 Client actions during a review (spec §11)
-
-All four map to existing primitives — no new client-facing decision mechanism:
-
-| Spec action                     | Existing primitive                                                                                          |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Approve / approve with comments | `respond_to_architecture_approval` on the review's baseline or on individual element versions on its agenda |
-| Request revision                | `respond_to_architecture_approval` with `changes_requested`                                                 |
-| Defer                           | Simply not requesting approval on that item yet; no status is stored at the review level                    |
-| Assign decision owner           | The existing `decision_owner_user_id` on a Decision record the review `raises`                              |
-
-### 5.4 History
-
-A review's history is its `element_versions` (each publish is a version, exactly like any element) plus `architecture_activity`. No new append-only history table is needed — reviews change rarely and coarsely (scheduled → held → published), unlike a risk's status, which changes often enough to need field-level history (ADR-0028).
+Spec §11's client review actions (approve / approve with comments / request revision / defer / assign decision owner) map to existing primitives exactly as in round 1.
 
 ---
 
 ## 6. Deliverables model
 
-### 6.1 What a deliverable is
-
-A formal TPLCo output, traceable to the architecture and evidence it was produced from, versioned and approved exactly like any element.
-
-### 6.2 Structure
-
-- `deliverables` (subtype): `deliverable_type`, optional `baseline_id` (the frozen baseline this deliverable was produced from, when it was produced from one), `confidential` (boolean, gates `view_confidential_deliverables` — §20).
-- `documents` relationships to the specific elements it presents or summarizes (in addition to, or instead of, a `baseline_id`).
-- File/output: `engagement_files` gains a fourth purpose, `deliverable`, and a nullable `element_version_id` column (alongside its existing response/contribution/evidence-source columns) so a deliverable's rendered file attaches to the specific published version it belongs to. A new version means a new file; the old one stays attached to the old, immutable version (consistent with ADR-0033: files are never replaced).
-- Status: entirely derived from the existing lifecycle + approval axes (§6.3) — no new status field.
-
-### 6.3 Status mapping (spec's draft/internal review/client review/approved/superseded)
-
-| Spec status     | Derived from                                                      |
-| --------------- | ----------------------------------------------------------------- |
-| Draft           | `lifecycle = 'draft'`                                             |
-| Internal review | `lifecycle = 'in_review'`                                         |
-| Client review   | `lifecycle = 'published'`, an approval requested, no response yet |
-| Approved        | `lifecycle = 'published'`, latest approval = `approved`           |
-| Superseded      | `lifecycle = 'superseded'`                                        |
-
-This is the same derivation the Reviews queue page already performs for architecture elements generally (`src/app/(internal)/internal/engagements/[slug]/reviews/page.tsx`); a Deliverables page reuses the identical queries, filtered to `kind = 'deliverable'`.
-
-### 6.4 Client acknowledgement
-
-Spec asks for "client acknowledgement/acceptance where appropriate." This is the existing approval mechanism (`request_architecture_approval` / `respond_to_architecture_approval`) — "where appropriate" means TPLCo chooses whether to request approval on a given deliverable, not a new acceptance concept.
+Unchanged from round 1 — D7 confirmed the design as proposed: deliverable status is fully derived from the existing lifecycle + approval axes (no new status field), files reuse the Phase 4 engagement-file infrastructure with a new `deliverable` purpose, and `documents`/optional `baseline_id` provide traceability.
 
 ---
 
@@ -186,60 +151,108 @@ Spec asks for "client acknowledgement/acceptance where appropriate." This is the
 
 The organized effort to move one or more approved core objects from architecture state into operating reality. Not a task, not a subtask list, not a percent-complete bar.
 
-### 7.2 Structure
+### 7.2 Structure and precise status definitions (D8)
 
-- `implementation_initiatives` (subtype): `category` (§4.3), `implementation_status` (`not_started`, `in_progress`, `operational`, `validated`, `stalled`, `abandoned`), `target_operational_on` (date, optional), `actual_operational_on` (date, set only when status reaches `operational`), owner (`owner_member_id`, an `engagement_members` row — internal, since implementation is TPLCo's tracked work product, per spec's "owner" field and Project Administrator's charter).
-- `implements` relationships to the core object(s) it realizes (§4.2). An initiative implementing zero core objects is refused at submit, mirroring how a Project Intelligence record must state its scope before leaving draft (ADR-0017's pattern).
-- Decomposition/sequencing: `part_of` for genuine sub-initiatives ("Institutional Partnership Program" may decompose into "Partner identification," "Agreement negotiation," "Onboarding," each its own initiative with its own status and target date) and `precedes` where one sub-initiative must finish before another starts — both already acyclic-checked by the existing relationship machinery. This is how "milestones or checkpoints where methodologically justified" (Kerrick's brief) are represented: as real, individually-trackable initiatives, never as an unstructured checklist field.
-- Evidence of operation: `element_evidence_links` to `evidence_sources`, exactly as any element already links evidence — no new evidence table.
-- Risks, assumptions, dependencies, decisions concerning the initiative: existing relationships (`threatens`, `underpins`, and dependency ends already reference any element) to existing Project Intelligence records — no new "implementation risk" kind.
+- `implementation_initiatives` (subtype): `category` (§4.3), `implementation_status`, `target_operational_on` (date, optional), `actual_operational_on` (date, set only when status reaches `operational`), `owner_member_id` (an `engagement_members` row).
+- `implements` relationships to the core object(s) it realizes. An initiative implementing zero core objects is refused at submit (mirrors ADR-0017's "must state its scope" pattern).
+- Decomposition/sequencing for genuinely separable efforts: `part_of` and `precedes`, unchanged from round 1 (§7.2 of the first draft) — see §7.6 for how this now differs from Checkpoints.
 
-### 7.3 Stewardship, history, escalation, signals — reused, not duplicated
+**`implementation_status` values, precisely defined:**
 
-Per Kerrick's explicit instruction to connect implementation to Project Intelligence's own apparatus rather than rebuild it:
+| Value         | Meaning                                                                                                                                                                                                 | Reached by                                                                                                                         |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `not_started` | The initiative exists (its architecture is approved, the initiative is created) but no realization work has begun.                                                                                      | Default at creation                                                                                                                |
+| `in_progress` | Realization work is actively underway toward what the initiative `implements`.                                                                                                                          | Direct edit, `manage_implementation`                                                                                               |
+| `operational` | The owner asserts the capability/system/model/application now exists and functions in reality. **An evidenced but unreviewed claim** — operating state, not yet judged.                                 | Direct edit, `manage_implementation`, sets `actual_operational_on`                                                                 |
+| `validated`   | A qualifying Review has formally judged, via a `validates` relationship, that operating reality sufficiently conforms to architectural intent. **Not reachable by direct edit under any circumstance.** | `resolve_implementation_initiative`, `publish_architecture`, only when a qualifying `validates` relationship already exists (§7.5) |
+| `stalled`     | Realization work was underway but is not currently advancing. Requires a stated reason.                                                                                                                 | `manage_implementation`, rationale required                                                                                        |
+| `abandoned`   | Realization was discontinued before reaching operating state, or reality was judged not to conform and no further attempt is planned. Terminal.                                                         | `resolve_implementation_initiative`, `publish_architecture`, rationale required                                                    |
 
-- `intelligence_stewardship` gains `implementation_initiative` as an accepted kind (its check constraint widens; every column and rule stays the same — attention, triage state, next review date).
-- `intelligence_status_changes` gains `implementation_initiatives.implementation_status` (and `target_operational_on`, `owner_member_id`, category) as tracked fields, through the same trigger pattern already covering the seven Project Intelligence subtype tables.
-- `intelligence_escalations` gains `implementation_initiative` as an escalatable kind — a stalled, high-stakes initiative can be escalated to a Principal Architect or a client executive exactly like an overdue risk.
-- `intelligence_signals` gains one new rule: `implementation_stalled` (an initiative in `in_progress` with no status change in 30 days) or `implementation_past_target` (past `target_operational_on` and not yet `operational`) — deterministic, computed, no AI, following ADR-0032's pattern exactly. Proposed as one new rule for review, not a batch, to keep the addition legible.
-- Resolution: `validated` and `abandoned` are terminal (mirroring `intelligence_terminal_statuses`), reached only through a rationale-requiring operation, exactly like `resolve_intelligence_record`.
+Terminal: `validated`, `abandoned`. Active: `not_started`, `in_progress`, `operational`, `stalled`. This is Implementation's own, single-kind version of ADR-0028's terminal/active split — simpler than Phase 4's per-kind function since there is exactly one kind (constants, not a lookup function).
 
-These are all additive widenings of existing Phase 4 tables and functions — no new stewardship, history or escalation table.
+### 7.3 Stewardship, history and escalation — Implementation's own tables (D2)
 
-**`implementation_initiative` is deliberately excluded from `intelligence_register`.** That register answers "what do we need to worry about or decide," which is what the seven Project Intelligence kinds are for. An initiative answers "what is being built and where does it stand" — a different question, with its own register (§13).
+Structurally identical to ADR-0027/0028/0032's pattern, physically separate from Phase 4's tables:
 
-### 7.4 The architectural learning loop, concretely
+- **`implementation_stewardship`**: one row per initiative — attention (`critical`/`high`/`routine`/`watch`), triage state, triaged by/when, next review date. Internal only, never in a client snapshot. Same shape as `intelligence_stewardship`, own table.
+- **`implementation_status_changes`**: append-only, one row per changed tracked field (`implementation_status`, `target_operational_on`, `owner_member_id`, `category`, attention, triage state, next review), with actor, operation and rationale. Guarded by its own `guard_implementation_log` trigger (`BEFORE UPDATE OR DELETE`, raises 23514) — the same mechanism as `guard_intelligence_log`, a separate instance of it.
+- **`implementation_escalations`**: level (`principal_architect` / `client_executive`), reason, acknowledged/resolved, one open escalation per initiative per level. A client-executive escalation still delivers as an `executive_attention` **`client_actions`** row — Phase 4's client-action machinery is reused directly here (it is already kind-agnostic about its subject; this is not one of the three tables D2 asked to keep separate).
+- **`implementation_signals()`**: its own function, evaluated per engagement, separate from `intelligence_signals()`. One rule at launch (D11): `implementation_past_target` — an active initiative (`not_started`, `in_progress`, `operational`) whose `target_operational_on` has passed without reaching `validated`. No rule infers stalling from elapsed time alone.
 
-Kerrick's brief: Designed Architecture → Implementation → Observed Reality → Evidence → Review → Decision/Intelligence → Architecture revision when necessary.
+### 7.4 Evidence and the architectural learning loop
 
-1. An architecture element is approved (existing Phase 3 machinery).
-2. An Implementation Initiative `implements` it and its status moves toward `operational`.
-3. Evidence accumulates on the initiative (`element_evidence_links`), asserting operating reality.
-4. A Review `examines` the initiative (and, through it, transitively, the architecture element and its evidence).
-5. The review's finding (a statement) records whether reality conforms. If it doesn't:
-   - the review `raises` a Risk or a Decision naming the variance, and/or
-   - a Principal Architect/Architect calls `return_element_to_draft` on the architecture element, reopening it for revision — the loop closes back into ordinary Phase 3 editing.
-6. If it does conform, the initiative moves to `validated`, closing the loop with a positive result, still visible in its history.
+No new evidence system (unchanged from round 1): `element_evidence_links` → `evidence_sources` support an initiative's operating-reality claim exactly as they support any element. The loop:
 
-Nothing here is new machinery at step 5–6 beyond what Phase 3/4 already built; Phase 5's job was steps 2–4.
+1. An architecture element is approved (Phase 3).
+2. An Implementation Initiative `implements` it; status moves toward `operational`, evidence accumulates.
+3. A Review `examines` the initiative.
+4. The review's finding, if conformance holds, is recorded as a `validates` relationship via `record_review_validation` — the initiative may now reach `validated`.
+5. If conformance does not hold, the review instead `raises` a Risk or Decision, and/or a Principal Architect/Architect calls `return_element_to_draft` on the architecture element — the loop closes back into ordinary Phase 3 editing. No `validates` relationship is written, and the initiative cannot reach `validated` from this review.
+
+### 7.5 The `validates` relationship, precisely (D5)
+
+**Chosen: `validates`, not `verifies`.** In verification-and-validation terms, _verification_ asks "did we build it to spec," while _validation_ asks "does it fulfill the intent it was built for." Kerrick's own D8 language — "sufficient conformance between operating reality and approved **architectural intent**" — is a validation question, not a narrower spec-conformance check, and it names the target status `validated`. Naming the relationship `validates` makes the connection between the relationship and the status it unlocks self-evident in the schema, not just in documentation.
+
+**Definition:** `validates` (Review → Implementation Initiative) records that a specific, held review has formally judged that the initiative's asserted operating state sufficiently conforms to the architectural intent of the element(s) it implements. It is a judgment, not a checklist item — a review may examine an initiative extensively and choose not to validate it.
+
+**Written only by `record_review_validation(review, initiative)`** — never by a free-form relationship insert, unlike most relationship types:
+
+- Requires `publish_architecture` (the same weight as accepting a risk or publishing a baseline — this is a judgment-grade act, not routine editing).
+- Refuses (23514) unless the review's `review_status = 'held'`.
+- Refuses (23514) unless the review already `examines` this initiative (or a core object the initiative `implements`) — a review cannot validate something it never actually looked at.
+- Refuses (23514) if a `validates` relationship from this review to this initiative already exists (idempotent, not repeatable).
+- Writes the relationship; does **not** itself change `implementation_status` — `resolve_implementation_initiative(initiative, 'validated', rationale)` is a separate, subsequent call that checks the relationship exists. Keeping these two steps separate means the review records its judgment when it happens, and the initiative's owner (who may be a different person, e.g. a Project Administrator) formally closes the initiative afterward — matching how `decide_decision` and `resolve_intelligence_record` are already separate from the discussion that leads to them.
+
+### 7.6 Implementation Checkpoints (D9)
+
+**The distinction, stated precisely, as Kerrick asked:**
+
+- **Implementation Initiative** = something being made real — an effort with an owner, a status, evidence, and (optionally) sub-initiatives for genuinely separable pieces of that effort.
+- **Implementation Checkpoint** = a meaningful condition or event _inside_ one initiative, used to govern or verify its realization — not itself an effort with its own owner or status lifecycle.
+
+The test for which one applies: **could this reasonably be assigned its own owner, tracked to its own `operational`/`validated` status, and potentially outlive or be reused outside the parent initiative?** If yes, it is a sub-initiative (`part_of`). If it is simply a fact about _this_ initiative's progress — a condition reached, an event that occurred, a review that is planned — it is a Checkpoint.
+
+Kerrick's four examples, classified:
+
+| Example                                | Checkpoint type                                                                                                                                      |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| An operating model being approved      | `design_approved` — references the architecture approval that satisfied it (optional `related_approval_id`)                                          |
+| A first agreement being executed       | `agreement_executed` — evidence-backed (optional `achieved_evidence_source_id`)                                                                      |
+| A system entering operation            | `operational_entry` — often coincides with the initiative reaching `operational`, but can also mark one component of a larger initiative reaching it |
+| A scheduled post-implementation review | `scheduled_review` — references a `review` element once one is scheduled (optional `related_review_id`)                                              |
+
+**Structure — the minimum necessary:**
+
+`implementation_checkpoints`: `implementation_initiative_id` (the parent), `checkpoint_type` (fixed enum above, plus `other`), `title`, `target_on` (date, optional), `achieved_on` (date, nullable until reached), `achieved_evidence_source_id` (nullable FK to `evidence_sources`), `related_review_id` (nullable FK to a `review` element's id), `related_approval_id` (nullable FK to `architecture_approvals`), `client_visible` (boolean, defaulting false — mirrors how `architecture_statements` already carry their own visibility flag independent of their parent, applied here to checkpoints).
+
+That is the entire table. No status enum beyond "not yet achieved / achieved" (derived from `achieved_on is null`), no lifecycle, no versioning, no approval workflow, no dedicated history table, no reference code. A checkpoint is directly editable by whoever holds `manage_implementation` on the parent initiative — the same capability governing the initiative itself, not a separate authority.
+
+**Element vs. subordinate record — the tradeoff, as asked:**
+
+|                      | As an element (rejected)                                                                                                                                     | As a subordinate record (proposed)                                                                                                                                                       |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Consistency          | Maximum — free versioning, publication, evidence-library richness, relationships                                                                             | Lower — a genuinely different, smaller shape                                                                                                                                             |
+| Weight               | A 4th new element kind, a 4th reference-code prefix (`CHK-nnn`), full lifecycle ceremony for what is often a one-line fact                                   | Minimal — one table, no ceremony                                                                                                                                                         |
+| Risk of scope creep  | High — an element with its own lifecycle and relationships is one refactor away from becoming a de facto subtask system, which is exactly what §1.3 excludes | Low — a checkpoint structurally cannot accumulate its own sub-relationships or evidence library, so it cannot grow into a task tracker                                                   |
+| Future cost if wrong | None — nothing to undo                                                                                                                                       | If checkpoints later need real independence (their own owner, their own evidence library, cross-initiative reuse), promoting them to elements is a genuine migration, not a small change |
+
+**Recommendation: subordinate record.** The "lightweight," "minimum structure necessary" language in Kerrick's brief, combined with the explicit warning against task-list/kanban/subtask patterns, points at the smaller shape. The identified future cost (§21/D15) is real but modest, and promoting a well-used subordinate table to an element later is a normal, additive migration, not a redesign — Phase 4 already did exactly this shape of expansion when Opportunity was promoted from "a spec aspiration" to a full element kind.
+
+No new append-only history table for checkpoints — a checkpoint has essentially one meaningful transition (`achieved_on` being set), captured by the timestamp itself. If usage shows checkpoints need field-level history later, that is a small additive migration, not a design change.
 
 ---
 
 ## 8. Architecture ↔ Implementation relationships
 
-Covered structurally in §4.2 and §7.2. Summary: `implements` (Initiative → core object, the only relationship an initiative has to the thing it is realizing), `initiates` (Decision/Recommendation → Initiative, why it started), `part_of`/`precedes` (Initiative → Initiative, decomposition and sequencing), plus every existing Project-Intelligence-to-element relationship extended to also target initiatives (§4.2).
+`implements` (Initiative → core object), `initiates` (Decision/Recommendation → Initiative), `validates` (Review → Initiative, §7.5), `part_of`/`precedes` (Initiative → Initiative, for separable decomposition only — §7.6 distinguishes this from Checkpoints), plus every existing Project-Intelligence-to-element relationship extended to also target initiatives (§4.2).
 
 ---
 
 ## 9. Evidence and verification model
 
-No new evidence system. `evidence_sources` and `element_evidence_links` (Phase 3, already domain-general) are the single evidence library for architecture content, deliverable substantiation and implementation verification alike. What differs by context is only which element the link is attached to and what the evidence is asserting:
+No new evidence system for initiatives — `element_evidence_links`/`evidence_sources` remain the one evidence library, exactly as round 1 proposed. What is new in this revision is that "verification" now has a _formal, enforced_ mechanism rather than an informal one: `validates` plus `record_review_validation` (§7.5) is specifically the verification step Kerrick asked for — "formal verification that implemented reality sufficiently conforms to architectural intent" is not a phrase describing a feeling a reviewer has; it is a specific relationship, written by a specific operation, checked by a specific database rule before `validated` can ever be set.
 
-- On an architecture element, evidence supports a design claim ("the market analysis behind this Capability").
-- On a Deliverable, evidence supports what the deliverable presents (often the same evidence already linked to the elements it `documents`).
-- On an Implementation Initiative, evidence supports an operating-reality claim ("this partnership program is live" — a photo, a signed agreement, a report).
-
-"Verification that something actually exists or operates as designed" (Kerrick's brief) is this: an initiative's evidence, examined by a Review, and the review's own finding — there is no separate "verification" table or status. The claim is the `implementation_status`; the support is the evidence; the check is the review.
+Checkpoint evidence (`achieved_evidence_source_id`) is a lighter-weight companion: a single, optional citation for a single fact, not a library — consistent with §7.6's "minimum necessary" design.
 
 ---
 
@@ -248,182 +261,180 @@ No new evidence system. `evidence_sources` and `element_evidence_links` (Phase 3
 ### 10.1 New enum values (own migration, as in Phases 2–4)
 
 - `element_kind`: `+ 'review'`, `+ 'deliverable'`, `+ 'implementation_initiative'`.
-- New: `review_type` (`executive_review`, `architecture_review`), `review_status` (`scheduled`, `held`, `cancelled`), `review_participant_role` (`convener`, `presenter`, `decision_maker`, `attendee`), `deliverable_type` (`full_architecture_blueprint`, `executive_strategy_deck`, `capability_map`, `implementation_framework`, `measurement_model`, `executive_summary`, `other`), `implementation_status` (`not_started`, `in_progress`, `operational`, `validated`, `stalled`, `abandoned`).
+- New: `review_type`, `review_status`, `review_participant_role`, `deliverable_type`, `implementation_status` (with `validated`/`abandoned` terminal, enforced in application logic and the resolve operation, not by the enum itself), `implementation_checkpoint_type`.
 - `engagement_file_purpose`: `+ 'deliverable'`.
-- `relationship_types`: 4–5 new rows (§4.2).
+- `relationship_types`: 6 new rows (§4.2), including `validates`.
 
 ### 10.2 New tables
 
-| Table                        | Holds                                                                    | Client policy                                                   |
-| ---------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------- |
-| `reviews`                    | review_type, scheduled_for, held_at, review_status, baseline_id, summary | published snapshot only                                         |
-| `review_participants`        | review, member, role, attended                                           | internal only                                                   |
-| `deliverables`               | deliverable_type, baseline_id, confidential                              | published snapshot only (gated further by `confidential` — §20) |
-| `implementation_initiatives` | category, implementation_status, target/actual operational dates, owner  | published snapshot only                                         |
+| Table                           | Holds                                                                                                                                    | Client policy                                                                                                                                                  |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `reviews`                       | review_type, scheduled_for, held_at, review_status, baseline_id, summary                                                                 | published snapshot only                                                                                                                                        |
+| `review_participants`           | review, member, role, attended                                                                                                           | internal only                                                                                                                                                  |
+| `deliverables`                  | deliverable_type, baseline_id, confidential                                                                                              | published snapshot only                                                                                                                                        |
+| `implementation_initiatives`    | category, implementation_status, target/actual operational dates, owner                                                                  | published snapshot only                                                                                                                                        |
+| `implementation_stewardship`    | attention, triage state, next review — **own table, not `intelligence_stewardship`**                                                     | none                                                                                                                                                           |
+| `implementation_status_changes` | append-only field-level history — **own table, not `intelligence_status_changes`**                                                       | none                                                                                                                                                           |
+| `implementation_escalations`    | level, reason, acknowledged/resolved — **own table, not `intelligence_escalations`**                                                     | none directly (a client-executive escalation surfaces only through the `executive_attention` client action it raises, via the existing `client_actions` table) |
+| `implementation_categories`     | reference data, per §4.3 — **own table, not `intelligence_categories`**                                                                  | reference data, readable by all signed-in users                                                                                                                |
+| `implementation_checkpoints`    | checkpoint_type, target/achieved dates, evidence/review/approval references, client_visible — subordinate to an initiative, no spine row | inherits the parent initiative's visibility, gated additionally by its own `client_visible`                                                                    |
 
-### 10.3 Widened existing tables/functions
+### 10.3 Widened existing objects
 
-| Object                                                          | Change                                                                       |
-| --------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `intelligence_categories`                                       | + kind `implementation_initiative`                                           |
-| `intelligence_stewardship`                                      | kind check widened to accept `implementation_initiative`                     |
-| `intelligence_status_changes` triggers                          | widened to watch `implementation_initiatives`                                |
-| `intelligence_escalations`                                      | kind check widened                                                           |
-| `intelligence_signals()`                                        | + rule `implementation_stalled` (or similar — final rule set for §26 review) |
-| `intelligence_terminal_statuses`/`intelligence_active_statuses` | + `implementation_initiative` kind (`validated`, `abandoned` terminal)       |
-| `engagement_files`                                              | + purpose `deliverable`, + nullable `element_version_id`                     |
-| `relationship_rules`                                            | regenerated to include the new pairings (§4.2), exactly as every prior phase |
+Much smaller than round 1, now that D2 removed the Phase 4 table widening:
 
-No Phase 1–4 table's existing columns, constraints or meaning change. Every change above is an additive widening (new enum value, new nullable column, a check constraint's accepted set growing) of the kind Phases 2–4 each already made to earlier phases' tables without incident.
+| Object               | Change                                                   |
+| -------------------- | -------------------------------------------------------- |
+| `element_kind`       | + `review`, `deliverable`, `implementation_initiative`   |
+| `engagement_files`   | + purpose `deliverable`, + nullable `element_version_id` |
+| `relationship_rules` | regenerated to include the 6 new pairings                |
+
+**Nothing in Phase 4's tables changes.** `intelligence_stewardship`, `intelligence_status_changes`, `intelligence_escalations`, `intelligence_categories`, `intelligence_register` and `intelligence_signals()` are untouched by this phase — their kind-check constraints, columns and behavior are exactly what Phase 4 shipped.
 
 ---
 
 ## 11. Operations
 
-| Operation                                                                                                                                       | Capability                                                                                                     |
-| ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `create_review`, `add_review_participant`, `hold_review` (sets `held_at`, `review_status = 'held'`)                                             | `manage_reviews` (new — §12)                                                                                   |
-| `cancel_review`                                                                                                                                 | `manage_reviews`                                                                                               |
-| `submit_element_for_review`, `publish_element_version`, `return_element_to_draft` (unchanged, apply to `review` kind too)                       | `edit_architecture` / `publish_architecture` (unchanged)                                                       |
-| `create_deliverable`, `attach_deliverable_file`                                                                                                 | `manage_deliverables` (new)                                                                                    |
-| Publication/approval of a deliverable                                                                                                           | `edit_architecture` / `publish_architecture` / `approve_architecture` (unchanged, apply to `deliverable` kind) |
-| `create_implementation_initiative`, `set_implementation_status` (rationale required on `validated`/`abandoned`), `link_implementation_evidence` | `manage_implementation` (new)                                                                                  |
-| Triage/escalation/dismissal of an initiative                                                                                                    | `edit_architecture` (unchanged — same as every other Project-Intelligence-style operation today)               |
-| Publishing an initiative's version, or its terminal `validated` status                                                                          | `publish_architecture` (unchanged)                                                                             |
+| Operation                                                                                                                            | Capability                                                                                                                                       | Notes                                                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `create_review`, `add_review_participant`, `hold_review`, `cancel_review`                                                            | `manage_reviews`                                                                                                                                 | Unchanged from round 1                                                                                                                                       |
+| `record_review_validation(review, initiative)`                                                                                       | `publish_architecture`                                                                                                                           | New (§7.5) — the only way a `validates` relationship is written                                                                                              |
+| `create_deliverable`, `attach_deliverable_file`                                                                                      | `manage_deliverables`                                                                                                                            | Unchanged                                                                                                                                                    |
+| `create_implementation_initiative`                                                                                                   | `manage_implementation`                                                                                                                          |                                                                                                                                                              |
+| Direct edits to `implementation_status` among `not_started`/`in_progress`/`operational`/`stalled`, and to category/owner/target date | `manage_implementation`                                                                                                                          | Working-content edits, like Project Intelligence records today; written to `implementation_status_changes` by trigger                                        |
+| `resolve_implementation_initiative(initiative, status, rationale)` — `status` ∈ {`validated`, `abandoned`}                           | `publish_architecture`; `validated` additionally requires an existing qualifying `validates` relationship (23514 if absent)                      | One operation covering both terminal transitions — simpler than Phase 4's resolve/reopen split, since Implementation has one kind and a smaller status space |
+| `reopen_implementation_initiative(initiative, rationale)`                                                                            | `publish_architecture`                                                                                                                           | Back to `in_progress` from a terminal status                                                                                                                 |
+| Triage / escalate / acknowledge / dismiss-signal, for Implementation                                                                 | `edit_architecture` for triage/escalation to Principal Architect level (mirrors Phase 4); `publish_architecture` for client-executive escalation | Same permission shape as Phase 4, operating on Implementation's own tables                                                                                   |
+| `add_implementation_checkpoint`, edit a checkpoint, `record_checkpoint_achieved`                                                     | `manage_implementation`                                                                                                                          | Direct edits, no lifecycle ceremony (§7.6)                                                                                                                   |
 
-Every operation follows the existing pattern exactly: `SECURITY DEFINER`, locks the row, checks capability (42501), validates (23514), writes history where applicable.
+Publishing an initiative's version (making it client-visible) and every element-level operation on `review`/`deliverable`/`implementation_initiative` reuse Phase 3's unchanged `publish_element_version`/`return_element_to_draft` etc.
 
 ---
 
 ## 12. Capabilities and RLS
 
-### 12.1 New internal capabilities
+Unchanged from round 1 — D6 confirmed as proposed:
 
-| Capability              | Side     | Default holders                                                        | Grants                                                                     |
-| ----------------------- | -------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `manage_reviews`        | internal | Principal Architect, Architect, Researcher, Project Administrator      | Create/schedule/hold/cancel reviews, add participants, add agenda/findings |
-| `manage_deliverables`   | internal | Principal Architect, Architect, Researcher, Project Administrator      | Draft deliverables, attach files, request approval                         |
-| `manage_implementation` | internal | Principal Architect, Architect, Project Administrator (not Researcher) | Create/edit initiatives, update status, link evidence                      |
+| Capability              | Side     | Default holders                                                        | Grants                                                                               |
+| ----------------------- | -------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `manage_reviews`        | internal | Principal Architect, Architect, Researcher, Project Administrator      | Create/schedule/hold/cancel reviews, add participants, add agenda/findings           |
+| `manage_deliverables`   | internal | Principal Architect, Architect, Researcher, Project Administrator      | Draft deliverables, attach files, request approval                                   |
+| `manage_implementation` | internal | Principal Architect, Architect, Project Administrator (not Researcher) | Create/edit initiatives and checkpoints, update status (non-terminal), link evidence |
 
-Publishing (making any of the three client-visible, or reaching an initiative's terminal status) always requires `publish_architecture`, unchanged and still Principal-Architect/Architect-only, still granted only by Principal Architects (ADR-0024 amendment, untouched). These three new capabilities give Project Administrators real, spec-chartered (§4) work in Reviews, Deliverables and Implementation without ever letting them touch architecture content or publish anything — resolving the §2.3(5) tension without weakening ADR-0024.
+`publish_architecture` still governs `record_review_validation` and both terminal `resolve_implementation_initiative` transitions — scarce, Principal-Architect/Architect-only, granted only by Principal Architects (ADR-0024, untouched).
 
-No new client capability. Clients read published Reviews/Deliverables/Implementation exactly as they read any published, client-visible element, under `view_architecture` — except confidential deliverables (§20), which also need `view_confidential_deliverables` (Phase 1, finally used).
-
-### 12.2 RLS
-
-No new pattern. `reviews`, `deliverables`, `implementation_initiatives` and `review_participants` follow the identical internal/client split every subtype table already follows: internal readers via engagement access, clients via `element_version_snapshot`/`client_snapshot` and `view_architecture` only, with `review_participants` (internal scheduling detail) carrying no client policy at all — the same treatment `intelligence_stewardship` gets.
+**RLS**: `implementation_stewardship`, `implementation_status_changes` and `implementation_escalations` get the identical internal-only policy shape as their Phase 4 counterparts — same rule, separate table, separate policy statements. `implementation_checkpoints` is readable by whoever can read its parent initiative, with `client_visible` gating what a client additionally sees. No new pattern; more policy statements than round 1 (since nothing is shared), but no new kind of rule.
 
 ---
 
 ## 13. Read models
 
-| Function                                                         | Returns                                                                                                                                                                     | Access                                                                                         |
-| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `review_register(engagement?)`                                   | Every review the caller may read, with participant and agenda counts                                                                                                        | internal: one or all engagements                                                               |
-| `implementation_register(engagement?)`                           | Every initiative, with stewardship, escalation and evidence counts joined in — mirrors `intelligence_register`'s shape                                                      | internal: one or all engagements                                                               |
-| `deliverable_register(engagement?)`                              | Every deliverable with its derived status (§6.3)                                                                                                                            | internal: one or all engagements                                                               |
-| `client_reviews`, `client_deliverables`, `client_implementation` | Published, client-visible rows of each, in the same shape as `client_architecture` already returns for core elements                                                        | client, `view_architecture` (+ `view_confidential_deliverables` for confidential deliverables) |
-| `implementation_impact(element, depth)`                          | What implements a given architecture element and what that implementation, in turn, threatens/depends on — reuses `intelligence_impact`'s traversal, scoped to `implements` | internal                                                                                       |
+| Function                                                         | Returns                                                                                                    | Access                                                                                         |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `review_register(engagement?)`                                   | Every review the caller may read, with participant and agenda counts                                       | internal                                                                                       |
+| `implementation_register(engagement?)`                           | Every initiative, joined with **Implementation's own** stewardship/escalation tables and checkpoint counts | internal                                                                                       |
+| `implementation_signals(engagement, as_of?, include_dismissed?)` | `implementation_past_target`, evaluated against the live register                                          | internal — **own function**, separate from `intelligence_signals()`                            |
+| `deliverable_register(engagement?)`                              | Every deliverable with its derived status                                                                  | internal                                                                                       |
+| `client_reviews`, `client_deliverables`, `client_implementation` | Published, client-visible rows of each                                                                     | client, `view_architecture` (+ `view_confidential_deliverables` for confidential deliverables) |
+| `implementation_impact(element, depth)`                          | What implements a given architecture element and what that implementation, in turn, threatens/depends on   | internal                                                                                       |
 
 ---
 
 ## 14. Architecture-learning/feedback loop
 
-Covered in full in §7.4. Summarized for this section: the loop is not a new mechanism; it is the composition of Phase 5's new relationships (`implements`, `examines`, `raises`) with Phase 3/4's existing write path (`return_element_to_draft`, creating a Decision/Risk). Phase 5's contribution is making the loop _traceable_ — every step is a relationship or a version, never a note in someone's memory.
+Restated with the validation gate explicit (§7.4): the loop's closing step is no longer "the review's finding, informally" — it is specifically `record_review_validation` (positive case) or a `raises`/`return_element_to_draft` (negative case). Every step is a relationship, a status change with rationale, or a version — never a note in someone's memory, and the one step that finalizes success (`validated`) cannot happen without the judgment step actually being recorded.
 
 ---
 
 ## 15. Internal UX
 
-- **Engagement navigation** gains two items alongside the existing Architecture/Intelligence/Reviews structure: **Deliverables** and **Implementation**. The existing `/internal/engagements/[slug]/reviews` page is extended (not replaced) to also show scheduled/held sessions, keeping its current publish/approval queue content, which remains exactly correct for architecture generally.
-- **Reviews page**: a session list (scheduled, held, cancelled), a review detail page showing agenda (`examines`), participants, findings (statements), and outcomes (`raises` targets and any approvals requested), with the existing publish/approval controls reused for making it client-visible.
-- **Deliverables page**: a register (draft/internal review/client review/approved/superseded, derived per §6.3), filterable by type; a deliverable detail page showing its file, what it `documents`, and its approval state.
-- **Implementation page**: an engagement register mirroring the Intelligence register's shape (status, attention, escalation, next review), filterable by status/category/owner; a cross-engagement `/internal/implementation` page mirroring `/internal/intelligence`.
-- **On an architecture element's own page**: a new panel, "Implementation," listing any initiative that `implements` this element with its current status — the direct answer to Kerrick's question about what should appear on the element page once implementation exists. A "Reviewed in" panel lists reviews that `examine` this element. A "Documented in" panel lists deliverables that `document` it. All three follow the existing pattern already used for "Bearing on this element" (Phase 4).
+Unchanged from round 1 in shape (Deliverables and Implementation nav items, extended Reviews page, element-page panels), with one addition: an initiative's detail page shows its Checkpoints as a short, dated list (achieved/pending) beneath its status and evidence — not a separate tab, not a board, just a compact list consistent with how "Bearing on this element" already renders elsewhere.
 
 ---
 
 ## 16. Client UX
 
-- **Reviews tab** (new, spec §7): published reviews in date order, each showing its summary, client-visible findings, and any approval requested on its baseline — reusing the existing approval-response UI.
-- **Deliverables**: not necessarily a new top-level tab — spec's client nav already lists "Documents"; published deliverables appear there, alongside a deliverable-specific badge on the Overview ("2 deliverables pending your review"), reusing the existing Actions-tab pattern from Phase 4 for anything that needs a response.
-- **Implementation tab** (new, spec §7): published initiatives grouped by the architecture element they implement, each showing status, target date (if client-visible) and any client-visible evidence citations — never internal stewardship, owner assignments or sub-initiative scheduling detail.
-- Consistent with Phases 3–4's UX direction throughout: calm, typographic, no progress bars invented beyond the existing five-value maturity/status vocabularies, no graph visualization, contextual relationships shown as linked lists exactly as Phase 4 already renders "Bearing on this element."
+Unchanged from round 1. Published checkpoints (`client_visible = true`) appear as short milestones-reached notes on the client Implementation tab's initiative cards — e.g. "First agreement executed — Aug 2026" — never as a task list, never with internal ones shown.
 
 ---
 
 ## 17. Integration with Phase 4 Project Intelligence
 
-Detailed throughout (§7.3 especially). In one line: Implementation Initiatives are Project-Intelligence-adjacent (reuse stewardship/history/escalation/signals) without being Project Intelligence records (excluded from `intelligence_register`); Reviews and Deliverables are architecture-adjacent (reuse lifecycle/versioning/publication/approval) without being either. Nothing Phase 4 built changes shape; three of its tables and one of its functions widen their accepted-kind set.
+**Restated precisely, per D2:** Implementation shares Project Intelligence's _pattern_ — attention/triage stewardship, append-only field history, two-level escalation, deterministic dismissable signals — implemented as Implementation's own tables and functions. It shares Phase 4's _tables_ in exactly one place: `client_actions`, for delivering a client-executive escalation, because that table is already generic about its subject and reusing it is not the kind of table-widening D2 excluded. Every other Phase 4 table is untouched by this phase.
 
 ---
 
 ## 18. Testing strategy
 
-Following the Phase 3/4 pattern exactly:
-
-- **New pgTAP suites**: `16_reviews.test.sql`, `17_deliverables.test.sql`, `18_implementation.test.sql` — capability matrix, lifecycle/publication reuse, relationship-rule enforcement for the new types, the widened stewardship/history/escalation/signal behavior for initiatives, client visibility (including `confidential` deliverables), and a concurrency suite (`99_implementation_concurrency.test.sql`, mirroring `99_intelligence_concurrency.test.sql`) for simultaneous status changes and escalations.
-- **TypeScript**: a `catalog.test.ts`-style dynamic mirror check for the new categories/enums, `register.test.ts`-equivalent unit tests for `implementation_register` filtering/ordering.
-- **`vocabulary.test.ts`** extended to check the new relationship types and pairings against the migration, exactly as it already does for all 33.
-- No Playwright suite planned, consistent with the known limitation already accepted for Phases 1–4.
+- **New pgTAP suites**: `16_reviews.test.sql`, `17_deliverables.test.sql`, `18_implementation.test.sql` (capability matrix, lifecycle/publication reuse, relationship-rule enforcement for the six new types, Implementation's own stewardship/history/escalation/signal behavior, checkpoint CRUD and visibility), `19_implementation_validation.test.sql` (specifically: `record_review_validation`'s three refusal cases — review not held, review doesn't examine the initiative, relationship already exists — and `resolve_implementation_initiative` refusing `validated` without a qualifying relationship), and a concurrency suite (`99_implementation_concurrency.test.sql`).
+- **TypeScript**: dynamic mirror checks for the new categories/enums (mirroring `catalog.test.ts`'s pattern, but against Implementation's own reference tables), unit tests for `implementation_register` filtering/ordering.
+- **`vocabulary.test.ts`** extended to check all six new relationship types and pairings, including `validates`'s restricted-write behavior at the domain-layer level (the UI never offers a free-form `validates` insert).
+- No Playwright suite planned, consistent with the accepted limitation from Phases 1–4.
 
 ---
 
 ## 19. Seed changes
 
-Extend `supabase/seed.sql` with: one held, published Executive Review on the seeded engagement (with participants and a finding); one approved Deliverable (Executive Summary) documenting a couple of seeded elements; two or three Implementation Initiatives against seeded Capability/Application objects at different statuses (`in_progress`, `operational`), one with a sub-initiative via `part_of`, one escalated, to exercise every new UI state in local development.
+Extend `supabase/seed.sql` with: one held, published Executive Review with participants and a finding; one approved Deliverable documenting seeded elements; two or three Implementation Initiatives at different statuses, including one `operational` initiative with a `design_approved` and an `agreement_executed` checkpoint, one `validated` initiative with a `validates` relationship from a held review that also `examines` it (to exercise the full gate end-to-end locally), and one escalated, stalled initiative.
 
 ---
 
 ## 20. Relationship to Phases 6–9
 
-Unchanged from Phase 4's own framing, restated for this phase: Phase 5 captures structure (relationships, evidence, findings) that Phase 6 (Method Library) will draw templates from, Phase 7 (Architecture Intelligence) will analyze, and Phase 8 (Portfolio Intelligence) will aggregate across engagements. None of that analysis, templating or aggregation is built now. The `confidential` flag on deliverables and the IP-classification field every element already carries (ADR-0016) are the seams Phase 6's pattern library will eventually use to decide what may leave an engagement — already sufficient, so nothing new is added for that purpose now.
+Unchanged from round 1.
 
 ---
 
-## 21. Difficult-to-reverse decisions
+## 21. Difficult-to-reverse decisions (updated)
 
-1. **Adding `review`, `deliverable`, `implementation_initiative` as permanent `element_kind` values.** Like every prior kind, this is permanent — Postgres enum values are never removed (ADR-0024's own reasoning).
-2. **Implementation Initiative reusing (not duplicating) Phase 4's stewardship/history/escalation/signal tables**, by widening their kind-check constraints rather than building parallel Phase-5-only tables. This is the single biggest structural bet in this proposal — it keeps the system smaller and more consistent, but it does mean Phase 4's tables now serve two conceptually different purposes (intelligence about the architecture, and status of realizing it) under one roof. The alternative (a fully parallel `implementation_stewardship`/`implementation_status_changes`/`implementation_escalations` set) was rejected as pure duplication contrary to Kerrick's brief, but is recorded here as the fallback if review finds the shared tables get confusing in practice.
-3. **New reference prefixes `REV`, `DLV`, `IMP`** — permanent and cited by clients and documents, per ADR-0025.
-4. **New relationship types are permanent** once elements exist that use them (ADR-0018).
-5. **Three new internal capabilities**, extending who can touch what without extending `edit_architecture`/`publish_architecture` themselves — a new, permanent authorization surface (enum values, ADR-0024's own reasoning).
-6. **`implementation_initiative`'s exclusion from `intelligence_register`.** Reversing this later (folding initiatives into the intelligence register) would change what every "how many open items" count on the existing Intelligence pages means.
+Carried over from round 1, still accurate: adding the three new `element_kind` values (1); new reference prefixes `REV`/`DLV`/`IMP` (3); new relationship types are permanent (4); three new capabilities are a permanent authorization surface (5); `implementation_initiative`'s exclusion from `intelligence_register` (6).
+
+New in this revision:
+
+- **Implementation's tables are a permanent, separate namespace from Phase 4's** (D2/D14) — the opposite bet from round 1's recommendation, now the approved direction. Reversing this later (merging the table sets) would be a larger migration than reversing the original bet would have been, precisely because the two are now developed independently from the start.
+- **`validates` is a restricted-write relationship type**, unlike every other relationship in the vocabulary, which are ordinary `edit_architecture` inserts (D5/D13). This is a new _kind_ of relationship-authorization rule, not just a new relationship — a precedent that a future phase might want to reuse or might find inconsistent with the general "relationships are direct inserts" pattern.
+- **Implementation Checkpoints are subordinate records, not elements** (D9/D15) — permanent shape; promoting them to elements later, if ever needed, is a genuine migration, not a small change (§7.6's tradeoff table).
+- **`validated` is hard-gated by a database rule requiring a prior `validates` relationship from a review that also `examines` the initiative** (D8/D16) — a permanent business rule embedded in `resolve_implementation_initiative`, not a UI convention.
 
 ---
 
-## 22. Explicit decisions requiring approval
+## 22. Explicit decisions requiring approval (round 2)
 
-| #   | Decision                                                                                                                                                                                                                                                                                                                                                       | Recommended                                                      |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| D1  | Adopt three new element kinds (`review`, `deliverable`, `implementation_initiative`) on the existing spine, rather than separate non-element tables?                                                                                                                                                                                                           | **Yes** — reuses proven infrastructure end to end (§3)           |
-| D2  | Implementation Initiative reuses/widens Phase 4's stewardship, history, escalation and signal tables rather than getting its own parallel set?                                                                                                                                                                                                                 | **Yes**, with the fallback in §21.2 noted if it proves confusing |
-| D3  | Implementation Initiative is excluded from `intelligence_register` (it gets its own `implementation_register`)?                                                                                                                                                                                                                                                | **Yes** — different question, different register (§3)            |
-| D4  | Reference prefixes: `REV` (review), `DLV` (deliverable), `IMP` (implementation initiative)?                                                                                                                                                                                                                                                                    | **Yes**, or specify alternatives                                 |
-| D5  | New relationship types: `examines`, `raises`, `documents`, `implements`, `initiates` — approve the set and the pairings in §4.2?                                                                                                                                                                                                                               | **Yes**, with any wording changes wanted                         |
-| D6  | Three new internal capabilities (`manage_reviews`, `manage_deliverables`, `manage_implementation`) with the default holders in §12.1, deliberately giving Project Administrators scoped access without `edit_architecture`/`publish_architecture`?                                                                                                             | **Yes** — resolves the §2.3(5) spec tension cleanly              |
-| D7  | Deliverable status is fully derived from existing lifecycle + approval (no new status field), per §6.3?                                                                                                                                                                                                                                                        | **Yes** — avoids a second, redundant status axis                 |
-| D8  | Implementation status values: `not_started`, `in_progress`, `operational`, `validated`, `stalled`, `abandoned`, with `validated`/`abandoned` terminal?                                                                                                                                                                                                         | **Yes**, or specify alternatives                                 |
-| D9  | Milestones/checkpoints represented only as `part_of`-decomposed sub-initiatives, never a dedicated milestone table?                                                                                                                                                                                                                                            | **Yes** — matches "not a task tracker" (§1.3)                    |
-| D10 | `view_confidential_deliverables` (dormant since Phase 1) gates a new `confidential` boolean on deliverables; confirm its existing default holders (System Administrator, Principal Architect, Architect, Researcher, Project Administrator internally; Executive Sponsor, Client Project Lead on the client side) still make sense now that it does something? | **Confirm as-is**, or adjust                                     |
-| D11 | One new deterministic signal, `implementation_stalled`/`implementation_past_target`, added to `intelligence_signals()`?                                                                                                                                                                                                                                        | **Yes**, or defer signal work entirely to a later pass           |
-| D12 | Confirm Phase 5 proceeds under this brief's framing (governance of realizing approved architecture) rather than master spec §31's narrower "Client Experience" framing, per §2.3(1)?                                                                                                                                                                           | **Confirm**                                                      |
+**Confirmed unchanged from round 1** (no further action needed): D1 (three new element kinds on the spine), D3 (Implementation excluded from `intelligence_register`), D4 (reference prefixes REV/DLV/IMP), D6 (three new capabilities as proposed), D7 (deliverable status fully derived), D10 (`view_confidential_deliverables` defaults as-is), D12 (Phase 5 framing per Kerrick's brief).
+
+**Amended and now finalized as follows — please confirm each:**
+
+| #   | Decision                                                   | Final shape in this revision                                                                                                                                                                                                                               |
+| --- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D2  | Implementation's stewardship/history/escalation            | **Own tables** (`implementation_stewardship`, `implementation_status_changes`, `implementation_escalations`), same pattern as Phase 4, never Phase 4's tables. Confirm this shape.                                                                         |
+| D5  | New Review → Implementation relationship                   | **`validates`** (not `verifies`), defined in §7.5, written only by `record_review_validation`. Confirm the name and the restricted-write design.                                                                                                           |
+| D8  | Implementation status definitions and the `validated` gate | Precise definitions in §7.2; `validated` unreachable without a prior `validates` relationship, per §7.5's three-check gate. Confirm.                                                                                                                       |
+| D9  | Milestones/checkpoints                                     | Sub-initiatives (`part_of`) for genuinely separable efforts; a new, subordinate-record **Implementation Checkpoint** (§7.6) for conditions/events inside one initiative. Confirm the checkpoint structure and the subordinate-record (not element) choice. |
+
+**New decisions introduced by these amendments:**
+
+| #   | Decision                                                                                                                                                                                                                                 | Recommended                                                                       |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| D13 | `validates` relationship is written only by `record_review_validation`, requiring `publish_architecture`, a held review, and that the review already `examines` the initiative — never a free-form relationship insert like other types? | **Yes** — the gate is only meaningful if it can't be bypassed by an ordinary edit |
+| D14 | Implementation's tables are a permanent, separate namespace from Phase 4's Project Intelligence tables, sharing pattern but not schema (§21)?                                                                                            | **Yes**, per D2                                                                   |
+| D15 | Implementation Checkpoints are subordinate records (own table, no spine row, no lifecycle), not a fourth element kind, accepting the future-promotion cost if that ever proves wrong (§7.6's tradeoff table)?                            | **Yes** — matches "lightweight" and "minimum structure necessary"                 |
+| D16 | `implementation_past_target` is the only implementation signal built now; no signal infers stalling from elapsed time without a status change?                                                                                           | **Yes**, per D11                                                                  |
 
 ---
 
 ## 23. Build order once approved
 
-Following the Phase 3/4 precedent (schema and domain layer first, then internal UI, then client UI, then docs):
+Unchanged in shape from round 1, with Implementation's schema now larger (its own stewardship/history/escalation/categories/signals, distinct from Phase 4's) and Checkpoints added as a lightweight subordinate table:
 
-1. Enum migration (`element_kind` additions, new enums, `engagement_file_purpose` addition).
-2. Main Phase 5 migration: `reviews`, `review_participants`, `deliverables`, `implementation_initiatives`; widened `intelligence_categories`, `intelligence_stewardship`, `intelligence_status_changes` triggers, `intelligence_escalations`, `intelligence_terminal_statuses`/`intelligence_active_statuses`, `intelligence_signals()`; new relationship types and regenerated `relationship_rules`; new capabilities and `role_capability_defaults`; operations; read models.
-3. `src/domain/reviews/`, `src/domain/deliverables/`, `src/domain/implementation/` domain layers (schemas, queries, actions), plus the `src/domain/architecture/vocabulary.ts` and `src/domain/intelligence/catalog.ts` mirror updates and their dynamic tests.
-4. pgTAP suites 16–18 and the concurrency suite.
-5. Internal UI: Reviews (extend existing page), Deliverables, Implementation (engagement + cross-engagement), element-page panels.
-6. Client UI: Reviews tab, Documents/Deliverables surfacing, Implementation tab.
-7. Seed data, `docs/database/reviews-deliverables-implementation.md` (or split per area), README/rls.md updates, `PHASE_5_REPORT.md`.
-8. Full verification: `pnpm check`, `pnpm build`, `npx supabase db reset`, `npx supabase test db`, `pnpm db:types` — same bar as every prior phase.
+1. Enum migration (`element_kind` additions, new enums including `implementation_checkpoint_type`, `engagement_file_purpose` addition).
+2. Main Phase 5 migration: `reviews`, `review_participants`, `deliverables`, `implementation_initiatives`, `implementation_stewardship`, `implementation_status_changes` (+ `guard_implementation_log`), `implementation_escalations`, `implementation_categories`, `implementation_checkpoints`; new relationship types (including `validates`) and regenerated `relationship_rules`; new capabilities and `role_capability_defaults`; operations (including `record_review_validation` and `resolve_implementation_initiative`'s gate check); read models (including standalone `implementation_signals()`).
+3. `src/domain/reviews/`, `src/domain/deliverables/`, `src/domain/implementation/` domain layers, plus `vocabulary.ts` mirror updates and their dynamic tests.
+4. pgTAP suites 16–19 and the concurrency suite.
+5. Internal UI: Reviews (extend existing page), Deliverables, Implementation (engagement + cross-engagement, with checkpoints on the initiative detail page), element-page panels.
+6. Client UI: Reviews tab, Documents/Deliverables surfacing, Implementation tab (with published checkpoints as short notes).
+7. Seed data, database docs, README/rls.md updates, `PHASE_5_REPORT.md`.
+8. Full verification: `pnpm check`, `pnpm build`, `npx supabase db reset`, `npx supabase test db`, `pnpm db:types`.
 
 ---
 
-**Next step:** Kerrick reviews §21–22 and responds with decisions (approve as recommended, or amend). No migration or code is written until that response arrives.
+**Next step:** Kerrick reviews §21–22 and gives final approval, or amends further. No migration or code is written until that approval arrives.
