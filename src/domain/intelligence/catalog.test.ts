@@ -122,4 +122,20 @@ describe("categoryLabel", () => {
     expect(categoryLabel("constraint", "temporal")).toBe("temporal");
     expect(categoryLabel("risk", null)).toBe("");
   });
+
+  it("includes the technology and capability categories added on final approval (D3)", () => {
+    expect(categoryLabel("opportunity", "technology")).toBe("Technology");
+    expect(categoryLabel("opportunity", "capability")).toBe("Capability");
+    expect(INTELLIGENCE_CATEGORIES.opportunity.map((c) => c.key)).toEqual([
+      "partnership",
+      "funding",
+      "market",
+      "technology",
+      "land_and_asset",
+      "talent",
+      "capability",
+      "policy",
+      "other",
+    ]);
+  });
 });

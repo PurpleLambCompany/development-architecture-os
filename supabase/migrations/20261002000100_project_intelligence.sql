@@ -281,9 +281,11 @@ insert into public.intelligence_categories (record_kind, key, label, definition,
   ('opportunity', 'partnership', 'Partnership', 'A partner or alliance that becomes available.', 1),
   ('opportunity', 'funding', 'Funding', 'Capital, grants or financing that becomes available.', 2),
   ('opportunity', 'market', 'Market', 'Demand or a market position that opens up.', 3),
-  ('opportunity', 'land_and_asset', 'Land and asset', 'Sites, buildings or other assets that become available.', 4),
-  ('opportunity', 'talent', 'Talent', 'People or expertise that become available.', 5),
-  ('opportunity', 'policy', 'Policy', 'A change in policy or regulation that opens a path.', 6),
+  ('opportunity', 'technology', 'Technology', 'A technology or platform that becomes available or newly viable.', 4),
+  ('opportunity', 'land_and_asset', 'Land and asset', 'Sites, buildings or other assets that become available.', 5),
+  ('opportunity', 'talent', 'Talent', 'People or expertise that become available.', 6),
+  ('opportunity', 'capability', 'Capability', 'A capability the organization could build or acquire.', 7),
+  ('opportunity', 'policy', 'Policy', 'A change in policy or regulation that opens a path.', 8),
   ('opportunity', 'other', 'Other', 'Anything the categories above do not describe.', 99);
 
 -- Existing free-text categories are mapped to keys (by key or label, case

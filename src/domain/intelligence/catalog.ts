@@ -177,11 +177,21 @@ export const INTELLIGENCE_CATEGORIES: Record<CategorizedKind, readonly Category[
     },
     { key: "market", label: "Market", definition: "Demand or a market position that opens up." },
     {
+      key: "technology",
+      label: "Technology",
+      definition: "A technology or platform that becomes available or newly viable.",
+    },
+    {
       key: "land_and_asset",
       label: "Land and asset",
       definition: "Sites, buildings or other assets that become available.",
     },
     { key: "talent", label: "Talent", definition: "People or expertise that become available." },
+    {
+      key: "capability",
+      label: "Capability",
+      definition: "A capability the organization could build or acquire.",
+    },
     {
       key: "policy",
       label: "Policy",
