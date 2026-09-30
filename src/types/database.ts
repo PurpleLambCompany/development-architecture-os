@@ -4111,6 +4111,69 @@ export type Database = {
           },
         ];
       };
+      practice_member_capability_overrides: {
+        Row: {
+          capability: Database["public"]["Enums"]["practice_capability"];
+          created_at: string;
+          created_by: string | null;
+          granted: boolean;
+          id: string;
+          organization_member_id: string;
+          reason: string;
+          updated_at: string;
+        };
+        Insert: {
+          capability: Database["public"]["Enums"]["practice_capability"];
+          created_at?: string;
+          created_by?: string | null;
+          granted: boolean;
+          id?: string;
+          organization_member_id: string;
+          reason: string;
+          updated_at?: string;
+        };
+        Update: {
+          capability?: Database["public"]["Enums"]["practice_capability"];
+          created_at?: string;
+          created_by?: string | null;
+          granted?: boolean;
+          id?: string;
+          organization_member_id?: string;
+          reason?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "practice_member_capability_override_organization_member_id_fkey";
+            columns: ["organization_member_id"];
+            isOneToOne: false;
+            referencedRelation: "organization_members";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "practice_member_capability_overrides_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      practice_role_capability_defaults: {
+        Row: {
+          capability: Database["public"]["Enums"]["practice_capability"];
+          role: Database["public"]["Enums"]["app_role"];
+        };
+        Insert: {
+          capability: Database["public"]["Enums"]["practice_capability"];
+          role: Database["public"]["Enums"]["app_role"];
+        };
+        Update: {
+          capability?: Database["public"]["Enums"]["practice_capability"];
+          role?: Database["public"]["Enums"]["app_role"];
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           created_at: string;
@@ -4673,6 +4736,13 @@ export type Database = {
         Args: { capability: Database["public"]["Enums"]["engagement_capability"] };
         Returns: Database["public"]["Enums"]["member_side"];
       };
+      clear_practice_capability_override: {
+        Args: {
+          p_capability: Database["public"]["Enums"]["practice_capability"];
+          p_membership_id: string;
+        };
+        Returns: undefined;
+      };
       client_architecture: {
         Args: { p_engagement_id: string };
         Returns: {
@@ -5193,6 +5263,10 @@ export type Database = {
         Args: { target_engagement_id: string };
         Returns: Database["public"]["Enums"]["engagement_capability"][];
       };
+      my_practice_capabilities: {
+        Args: Record<PropertyKey, never>;
+        Returns: Database["public"]["Enums"]["practice_capability"][];
+      };
       object_maturity_distribution: {
         Args: { p_engagement_id: string };
         Returns: {
@@ -5210,6 +5284,20 @@ export type Database = {
           engagement_slug: string;
           engagement_title: string;
           summary: Json;
+        }[];
+      };
+      practice_capability_matrix: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          capability: Database["public"]["Enums"]["practice_capability"];
+          effective: boolean;
+          organization_member_id: string;
+          override_granted: boolean;
+          override_reason: string;
+          role: Database["public"]["Enums"]["app_role"];
+          role_default: boolean;
+          status: Database["public"]["Enums"]["record_status"];
+          user_id: string;
         }[];
       };
       preview_client_snapshot: { Args: { p_element_id: string }; Returns: Json };
@@ -5459,6 +5547,15 @@ export type Database = {
         Args: { p_milestone_id: string; p_status: Database["public"]["Enums"]["milestone_status"] };
         Returns: undefined;
       };
+      set_practice_capability_override: {
+        Args: {
+          p_capability: Database["public"]["Enums"]["practice_capability"];
+          p_granted: boolean;
+          p_membership_id: string;
+          p_reason: string;
+        };
+        Returns: string;
+      };
       submit_change_order: { Args: { p_change_order_id: string }; Returns: number };
       submit_client_contribution: {
         Args: { p_body: string; p_element_id: string; p_file_ids?: string[]; p_link_url?: string };
@@ -5510,6 +5607,7 @@ export type Database = {
       withdraw_client_action: { Args: { p_action_id: string; p_note: string }; Returns: undefined };
     };
     Enums: {
+      acceptance_criterion_state: "proposed" | "agreed" | "superseded" | "withdrawn";
       ai_review_state: "not_applicable" | "pending" | "accepted" | "rejected";
       app_role:
         | "system_administrator"
@@ -5551,6 +5649,7 @@ export type Database = {
         "draft" | "executed" | "active" | "completed" | "terminated" | "superseded" | "void";
       contribution_status: "received" | "incorporated" | "acknowledged";
       credit_note_status: "draft" | "issued" | "void";
+      dam_release_status: "draft" | "published" | "superseded" | "retired";
       decision_status: "open" | "recommended" | "decided" | "deferred" | "superseded";
       deliverable_type:
         | "full_architecture_blueprint"
@@ -5636,6 +5735,18 @@ export type Database = {
         | "generated_analysis";
       maturity_state: "undefined" | "emerging" | "defined" | "structured" | "operationalized";
       member_side: "internal" | "client";
+      method_application_element_role: "examined" | "produced" | "revised" | "informed";
+      method_application_evidence_role: "drew_on" | "gathered";
+      method_application_state: "planned" | "in_progress" | "completed" | "discontinued";
+      method_asset_form: "method" | "model" | "standard" | "instrument" | "template";
+      method_asset_origin:
+        "tplco_developed" | "co_developed" | "client_owned" | "licensed_in" | "third_party";
+      method_asset_version_lifecycle: "draft" | "published" | "superseded" | "retired";
+      method_identity_disclosure: "internal_only" | "may_be_named";
+      method_lineage_role:
+        "instantiates" | "produced_from" | "judged_against" | "legacy_derived_from";
+      method_rights_role: "owner" | "co_owner" | "licensor" | "contributor";
+      method_stage_treatment: "followed" | "adapted" | "skipped";
       milestone_status: "planned" | "ready_to_invoice" | "invoiced" | "cancelled";
       milestone_trigger: "on_signing" | "on_date" | "on_event" | "manual";
       opportunity_status:
@@ -5644,6 +5755,7 @@ export type Database = {
       payment_method: "ach" | "wire" | "check" | "card_via_processor" | "other";
       payment_status: "recorded" | "reversed";
       payment_structure: "milestone" | "installments" | "percentage" | "retainer" | "custom";
+      practice_capability: "author_methodology" | "publish_methodology";
       provenance_type:
         | "client_source"
         | "public_source"
@@ -5662,7 +5774,13 @@ export type Database = {
       risk_status: "open" | "mitigating" | "accepted" | "closed" | "materialized";
       skill_proficiency: "foundational" | "proficient" | "expert";
       statement_kind:
-        "finding" | "observation" | "rationale" | "implication" | "definition" | "note";
+        | "finding"
+        | "observation"
+        | "rationale"
+        | "implication"
+        | "definition"
+        | "note"
+        | "approach";
       triage_state: "untriaged" | "triaged";
       validation_status: "unvalidated" | "validating" | "validated" | "invalidated";
     };
@@ -5779,6 +5897,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      acceptance_criterion_state: ["proposed", "agreed", "superseded", "withdrawn"],
       ai_review_state: ["not_applicable", "pending", "accepted", "rejected"],
       app_role: [
         "system_administrator",
@@ -5830,6 +5949,7 @@ export const Constants = {
       ],
       contribution_status: ["received", "incorporated", "acknowledged"],
       credit_note_status: ["draft", "issued", "void"],
+      dam_release_status: ["draft", "published", "superseded", "retired"],
       decision_status: ["open", "recommended", "decided", "deferred", "superseded"],
       deliverable_type: [
         "full_architecture_blueprint",
@@ -5932,6 +6052,27 @@ export const Constants = {
       ],
       maturity_state: ["undefined", "emerging", "defined", "structured", "operationalized"],
       member_side: ["internal", "client"],
+      method_application_element_role: ["examined", "produced", "revised", "informed"],
+      method_application_evidence_role: ["drew_on", "gathered"],
+      method_application_state: ["planned", "in_progress", "completed", "discontinued"],
+      method_asset_form: ["method", "model", "standard", "instrument", "template"],
+      method_asset_origin: [
+        "tplco_developed",
+        "co_developed",
+        "client_owned",
+        "licensed_in",
+        "third_party",
+      ],
+      method_asset_version_lifecycle: ["draft", "published", "superseded", "retired"],
+      method_identity_disclosure: ["internal_only", "may_be_named"],
+      method_lineage_role: [
+        "instantiates",
+        "produced_from",
+        "judged_against",
+        "legacy_derived_from",
+      ],
+      method_rights_role: ["owner", "co_owner", "licensor", "contributor"],
+      method_stage_treatment: ["followed", "adapted", "skipped"],
       milestone_status: ["planned", "ready_to_invoice", "invoiced", "cancelled"],
       milestone_trigger: ["on_signing", "on_date", "on_event", "manual"],
       opportunity_status: [
@@ -5946,6 +6087,7 @@ export const Constants = {
       payment_method: ["ach", "wire", "check", "card_via_processor", "other"],
       payment_status: ["recorded", "reversed"],
       payment_structure: ["milestone", "installments", "percentage", "retainer", "custom"],
+      practice_capability: ["author_methodology", "publish_methodology"],
       provenance_type: [
         "client_source",
         "public_source",
@@ -5964,7 +6106,15 @@ export const Constants = {
       review_type: ["executive_review", "architecture_review"],
       risk_status: ["open", "mitigating", "accepted", "closed", "materialized"],
       skill_proficiency: ["foundational", "proficient", "expert"],
-      statement_kind: ["finding", "observation", "rationale", "implication", "definition", "note"],
+      statement_kind: [
+        "finding",
+        "observation",
+        "rationale",
+        "implication",
+        "definition",
+        "note",
+        "approach",
+      ],
       triage_state: ["untriaged", "triaged"],
       validation_status: ["unvalidated", "validating", "validated", "invalidated"],
     },
