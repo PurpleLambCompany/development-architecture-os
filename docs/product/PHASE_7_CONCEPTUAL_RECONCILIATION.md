@@ -2,7 +2,7 @@
 
 ## Architecture Intelligence, the Living Development Model and the Development Edge
 
-**Status:** Revision 2. Approved in principle by Kerrick on 2026-09-30, with the clarifications recorded in §0, plus the empirical rule review (§11.8) and the impact-direction matrix (§13.4). This is **not** `PHASE_7_PROPOSAL.md`.
+**Status:** Revision 2. Approved in principle by Kerrick on 2026-09-30, with the clarifications recorded in §0, plus the empirical rule review (§11.8) and the impact-direction matrix (§13.4). Q29 and Q30 were decided on 2026-09-30 (§0.2), and the formal Phase 7A proposal now exists as `PHASE_7A_PROPOSAL.md`. This document is not a proposal.
 **Inspected:** `main` at `90ee72e` (Phase 6 complete and merged, PR #7 and PR #8).
 **Date:** 2026-09-30
 
@@ -38,13 +38,19 @@ Kerrick approved Revision 1 of this reconciliation in principle on 2026-09-30, w
 
 ### 0.2 Clarified decisions
 
-| Q   | Decision                                                                                                                                                                                                                                                                                                                                                                    |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Q1  | The five concepts are approved product and documentation concepts. DSA IDE is the product paradigm and the direction users see. Repository and system references to "DSA OS" are **not** renamed yet. Living Development Model stays conceptual only: never a table, type or schema object                                                                                  |
-| Q3  | AI inference is **ephemeral by default**. It is persisted only when it has ongoing developmental significance, is surfaced proactively, is intentionally saved, or enters a governed judgment or follow-up lifecycle. Ordinary one-off explanatory AI responses are not persisted automatically                                                                             |
-| Q19 | There are two separate governed **permitted-use / data-processing settings**, both defaulting to **No**: (a) authorization for external AI processing of engagement content; (b) authorization for appropriately abstracted, promoted learning to contribute to cross-development TPLCo Development Intelligence. They are framed as governed settings, not generic consent |
-| Q20 | Adds the principle of **purpose-limited, context-minimized provider access**: only the governed records needed for the requested inference are sent. The existing recommendations stand: no provider-hosted memory, no training on client content, no payload logging, no Method IP by default, audit metadata only                                                         |
-| Q23 | The Pattern Library is explicitly **not** Phase 7. It is not yet permanently placed after Portfolio Intelligence. It is a separately governed later phase or workstream, placed once the Phase 7 promotion and confidentiality architecture has proven itself                                                                                                               |
+| Q   | Decision                                                                                                                                                                                                                                                                                                                                                                                                           |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Q1  | The five concepts are approved product and documentation concepts. DSA IDE is the product paradigm and the direction users see. Repository and system references to "DSA OS" are **not** renamed yet. Living Development Model stays conceptual only: never a table, type or schema object                                                                                                                         |
+| Q3  | AI inference is **ephemeral by default**. It is persisted only when it has ongoing developmental significance, is surfaced proactively, is intentionally saved, or enters a governed judgment or follow-up lifecycle. Ordinary one-off explanatory AI responses are not persisted automatically                                                                                                                    |
+| Q19 | There are two separate governed **permitted-use / data-processing settings**, both defaulting to **No**: (a) authorization for external AI processing of engagement content; (b) authorization for appropriately abstracted, promoted learning to contribute to cross-development TPLCo Development Intelligence. They are framed as governed settings, not generic consent                                        |
+| Q20 | Adds the principle of **purpose-limited, context-minimized provider access**: only the governed records needed for the requested inference are sent. The existing recommendations stand: no provider-hosted memory, no training on client content, no payload logging, no Method IP by default, audit metadata only                                                                                                |
+| Q29 | **Yes.** When a Review is held, capture the exact latest published version of every element it examines. The capture is produced by the governed hold-review operation, immutable after the hold, version-exact, used for exact "change since Review" intelligence, and distinct from an Architecture Baseline. Reviews are not redefined as having a formal baseline                                              |
+| Q30 | **Yes.** For 7A Change intelligence, a publication is a substantive revision only when the governed version snapshot changes outside lifecycle and status-only fields. The excluded-field set is explicit, type-aware, governed and documented, and mirrored in tests; it is not a generic "ignore status" rule. `change_summary` is never parsed to decide substance; it may be shown as explanatory context only |
+| Q23 | The Pattern Library is explicitly **not** Phase 7. It is not yet permanently placed after Portfolio Intelligence. It is a separately governed later phase or workstream, placed once the Phase 7 promotion and confidentiality architecture has proven itself                                                                                                                                                      |
+
+### 0.2a Principle added with the Q29 and Q30 decisions
+
+**One triggering change → one primary Edge event.** When one substantive change causes several derived consequences, the Development Edge groups them under the triggering change rather than surfacing a cluster of separate alerts. The envelope preserves each consequence and its basis; the experience makes the shared trigger clear. This generalizes finding F3 (§11.8.4) and is carried into `PHASE_7A_PROPOSAL.md` §7.
 
 ### 0.3 What Revision 2 adds
 
@@ -1553,6 +1559,8 @@ Each question lists the recommendation, alternatives, consequences, informing st
 
 **Q29. Should holding a Review capture the versions it examined?**
 
+- **Decision (2026-09-30):** yes. Capture the exact latest published version of every examined element when the Review is held: produced by the governed hold-review operation, immutable, version-exact, used for exact change-since-Review intelligence, and distinct from an Architecture Baseline. Reviews are not redefined as having a formal baseline.
+
 - **Recommendation:** Yes, as a small 7A capture. When `hold_review` runs, record the latest published version of each element the Review examines, in the same pattern as `validation_criteria` (captured by the operation, immutable). Change-since-Review (D-21, D-22) then becomes version-exact for every Review, with or without a baseline.
 - **Alternatives:** require a frozen baseline for every Review; use the `hold_review` operation time from `activity_log` (system time, but the log is restricted and holds full row JSON); accept that Reviews without a baseline get no change-since-Review item.
 - **Consequences:** fixes the D-21 false positives found in §11.8 without changing Phase 5 semantics. It adds one capture table and one step inside an existing operation.
@@ -1560,6 +1568,8 @@ Each question lists the recommendation, alternatives, consequences, informing st
 - **Reversibility:** captured history is permanent; the capture itself is easy to stop.
 
 **Q30. What counts as a substantive revision for Change rules?**
+
+- **Decision (2026-09-30):** yes. A publication is a substantive revision only when the governed snapshot changes outside lifecycle and status-only fields. The excluded-field set must be explicit, type-aware, governed, documented and mirrored in tests, never a vague "ignore status" rule. `change_summary` is not parsed; it may be shown as explanatory context only.
 
 - **Recommendation:** Compare a published version's snapshot with the previous version, deterministically, excluding status fields (implementation status and operational dates, record status fields written by resolution). A version that differs only in those fields is a status publication and does not trigger Change rules. The `change_summary` is shown to the reader but not parsed.
 - **Alternatives:** treat every new version as a revision (the Revision 1 assumption, which produced false positives); let architects mark a publication as editorial (a new judgment field); parse `change_summary` (unreliable).
@@ -1584,6 +1594,8 @@ Each question lists the recommendation, alternatives, consequences, informing st
 | 7   | Then write the proposal                           | See §38.2                                                                                    |
 
 ### 38.2 Is Phase 7A ready for a formal proposal?
+
+_(Update, 2026-09-30: Q29 and Q30 are decided, and Kerrick authorized the formal proposal. It is `PHASE_7A_PROPOSAL.md`.)_
 
 **Yes, once Q29 and Q30 are answered.** Both come from the empirical review. They decide whether the Change rules (D-04, D-15, D-16, D-21, D-22, D-23, D-24, D-28), which carry most of 7A's Claude-Test value, are exact or noisy. Everything else can be settled inside the proposal's own decision list:
 
