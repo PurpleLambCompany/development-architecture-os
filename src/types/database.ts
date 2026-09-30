@@ -81,6 +81,743 @@ export type Database = {
           },
         ];
       };
+      architecture_approvals: {
+        Row: {
+          approval_source: Database["public"]["Enums"]["approval_source"] | null;
+          baseline_id: string | null;
+          comment: string | null;
+          element_version_id: string | null;
+          engagement_id: string;
+          external_approval_method:
+            Database["public"]["Enums"]["architecture_approval_method"] | null;
+          external_approved_on: string | null;
+          external_approver_name: string | null;
+          external_approver_title: string | null;
+          external_evidence: string | null;
+          id: string;
+          recorded_at: string | null;
+          recorded_by: string | null;
+          request_note: string;
+          requested_at: string;
+          requested_by: string | null;
+          responded_at: string | null;
+          responded_by: string | null;
+          response: Database["public"]["Enums"]["approval_response"] | null;
+        };
+        Insert: {
+          approval_source?: Database["public"]["Enums"]["approval_source"] | null;
+          baseline_id?: string | null;
+          comment?: string | null;
+          element_version_id?: string | null;
+          engagement_id: string;
+          external_approval_method?:
+            Database["public"]["Enums"]["architecture_approval_method"] | null;
+          external_approved_on?: string | null;
+          external_approver_name?: string | null;
+          external_approver_title?: string | null;
+          external_evidence?: string | null;
+          id?: string;
+          recorded_at?: string | null;
+          recorded_by?: string | null;
+          request_note?: string;
+          requested_at?: string;
+          requested_by?: string | null;
+          responded_at?: string | null;
+          responded_by?: string | null;
+          response?: Database["public"]["Enums"]["approval_response"] | null;
+        };
+        Update: {
+          approval_source?: Database["public"]["Enums"]["approval_source"] | null;
+          baseline_id?: string | null;
+          comment?: string | null;
+          element_version_id?: string | null;
+          engagement_id?: string;
+          external_approval_method?:
+            Database["public"]["Enums"]["architecture_approval_method"] | null;
+          external_approved_on?: string | null;
+          external_approver_name?: string | null;
+          external_approver_title?: string | null;
+          external_evidence?: string | null;
+          id?: string;
+          recorded_at?: string | null;
+          recorded_by?: string | null;
+          request_note?: string;
+          requested_at?: string;
+          requested_by?: string | null;
+          responded_at?: string | null;
+          responded_by?: string | null;
+          response?: Database["public"]["Enums"]["approval_response"] | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "architecture_approvals_baseline_fk";
+            columns: ["baseline_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_baselines";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "architecture_approvals_engagement_id_fkey";
+            columns: ["engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "architecture_approvals_recorded_by_fkey";
+            columns: ["recorded_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "architecture_approvals_requested_by_fkey";
+            columns: ["requested_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "architecture_approvals_responded_by_fkey";
+            columns: ["responded_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "architecture_approvals_version_fk";
+            columns: ["element_version_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "element_versions";
+            referencedColumns: ["id", "engagement_id"];
+          },
+        ];
+      };
+      architecture_baseline_assessments: {
+        Row: {
+          baseline_id: string;
+          domain_assessment_id: string;
+          engagement_id: string;
+        };
+        Insert: {
+          baseline_id: string;
+          domain_assessment_id: string;
+          engagement_id: string;
+        };
+        Update: {
+          baseline_id?: string;
+          domain_assessment_id?: string;
+          engagement_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "architecture_baseline_assessments_assessment_fk";
+            columns: ["domain_assessment_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "domain_assessments";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "architecture_baseline_assessments_baseline_fk";
+            columns: ["baseline_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_baselines";
+            referencedColumns: ["id", "engagement_id"];
+          },
+        ];
+      };
+      architecture_baseline_items: {
+        Row: {
+          baseline_id: string;
+          element_id: string;
+          element_version_id: string;
+          engagement_id: string;
+        };
+        Insert: {
+          baseline_id: string;
+          element_id: string;
+          element_version_id: string;
+          engagement_id: string;
+        };
+        Update: {
+          baseline_id?: string;
+          element_id?: string;
+          element_version_id?: string;
+          engagement_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "architecture_baseline_items_baseline_fk";
+            columns: ["baseline_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_baselines";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "architecture_baseline_items_version_engagement_fk";
+            columns: ["element_version_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "element_versions";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "architecture_baseline_items_version_fk";
+            columns: ["element_version_id", "element_id"];
+            isOneToOne: false;
+            referencedRelation: "element_versions";
+            referencedColumns: ["id", "element_id"];
+          },
+        ];
+      };
+      architecture_baseline_relationships: {
+        Row: {
+          baseline_id: string;
+          engagement_id: string;
+          relationship_id: string;
+        };
+        Insert: {
+          baseline_id: string;
+          engagement_id: string;
+          relationship_id: string;
+        };
+        Update: {
+          baseline_id?: string;
+          engagement_id?: string;
+          relationship_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "architecture_baseline_relationships_baseline_fk";
+            columns: ["baseline_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_baselines";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "architecture_baseline_relationships_relationship_fk";
+            columns: ["relationship_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_relationships";
+            referencedColumns: ["id", "engagement_id"];
+          },
+        ];
+      };
+      architecture_baselines: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          description: string;
+          engagement_id: string;
+          frozen_at: string | null;
+          frozen_by: string | null;
+          id: string;
+          label: string;
+          status: Database["public"]["Enums"]["baseline_status"];
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          description?: string;
+          engagement_id: string;
+          frozen_at?: string | null;
+          frozen_by?: string | null;
+          id?: string;
+          label: string;
+          status?: Database["public"]["Enums"]["baseline_status"];
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          description?: string;
+          engagement_id?: string;
+          frozen_at?: string | null;
+          frozen_by?: string | null;
+          id?: string;
+          label?: string;
+          status?: Database["public"]["Enums"]["baseline_status"];
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "architecture_baselines_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "architecture_baselines_engagement_id_fkey";
+            columns: ["engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "architecture_baselines_frozen_by_fkey";
+            columns: ["frozen_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      architecture_elements: {
+        Row: {
+          ai_review_state: Database["public"]["Enums"]["ai_review_state"];
+          ai_reviewed_at: string | null;
+          ai_reviewed_by: string | null;
+          client_visibility: Database["public"]["Enums"]["client_visibility"];
+          created_at: string;
+          created_by: string | null;
+          engagement_id: string;
+          engagement_wide: boolean;
+          id: string;
+          ip_classification: Database["public"]["Enums"]["ip_classification"];
+          kind: Database["public"]["Enums"]["element_kind"];
+          latest_version_id: string | null;
+          lifecycle: Database["public"]["Enums"]["element_lifecycle"];
+          methodology_version: string;
+          owner_user_id: string | null;
+          provenance: Database["public"]["Enums"]["provenance_type"];
+          reference_code: string | null;
+          retired_at: string | null;
+          retirement_reason: string | null;
+          source_reference: string;
+          summary: string;
+          title: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          ai_review_state?: Database["public"]["Enums"]["ai_review_state"];
+          ai_reviewed_at?: string | null;
+          ai_reviewed_by?: string | null;
+          client_visibility?: Database["public"]["Enums"]["client_visibility"];
+          created_at?: string;
+          created_by?: string | null;
+          engagement_id: string;
+          engagement_wide?: boolean;
+          id?: string;
+          ip_classification?: Database["public"]["Enums"]["ip_classification"];
+          kind: Database["public"]["Enums"]["element_kind"];
+          latest_version_id?: string | null;
+          lifecycle?: Database["public"]["Enums"]["element_lifecycle"];
+          methodology_version?: string;
+          owner_user_id?: string | null;
+          provenance: Database["public"]["Enums"]["provenance_type"];
+          reference_code?: string | null;
+          retired_at?: string | null;
+          retirement_reason?: string | null;
+          source_reference?: string;
+          summary?: string;
+          title: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          ai_review_state?: Database["public"]["Enums"]["ai_review_state"];
+          ai_reviewed_at?: string | null;
+          ai_reviewed_by?: string | null;
+          client_visibility?: Database["public"]["Enums"]["client_visibility"];
+          created_at?: string;
+          created_by?: string | null;
+          engagement_id?: string;
+          engagement_wide?: boolean;
+          id?: string;
+          ip_classification?: Database["public"]["Enums"]["ip_classification"];
+          kind?: Database["public"]["Enums"]["element_kind"];
+          latest_version_id?: string | null;
+          lifecycle?: Database["public"]["Enums"]["element_lifecycle"];
+          methodology_version?: string;
+          owner_user_id?: string | null;
+          provenance?: Database["public"]["Enums"]["provenance_type"];
+          reference_code?: string | null;
+          retired_at?: string | null;
+          retirement_reason?: string | null;
+          source_reference?: string;
+          summary?: string;
+          title?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "architecture_elements_ai_reviewed_by_fkey";
+            columns: ["ai_reviewed_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "architecture_elements_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "architecture_elements_engagement_id_fkey";
+            columns: ["engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "architecture_elements_latest_version_fk";
+            columns: ["latest_version_id", "id"];
+            isOneToOne: false;
+            referencedRelation: "element_versions";
+            referencedColumns: ["id", "element_id"];
+          },
+          {
+            foreignKeyName: "architecture_elements_owner_user_id_fkey";
+            columns: ["owner_user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "architecture_elements_updated_by_fkey";
+            columns: ["updated_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      architecture_object_types: {
+        Row: {
+          attribute_schema_version: number;
+          definition: string;
+          domain: Database["public"]["Enums"]["architecture_domain"];
+          key: string;
+          label: string;
+          sort_order: number;
+        };
+        Insert: {
+          attribute_schema_version?: number;
+          definition: string;
+          domain: Database["public"]["Enums"]["architecture_domain"];
+          key: string;
+          label: string;
+          sort_order: number;
+        };
+        Update: {
+          attribute_schema_version?: number;
+          definition?: string;
+          domain?: Database["public"]["Enums"]["architecture_domain"];
+          key?: string;
+          label?: string;
+          sort_order?: number;
+        };
+        Relationships: [];
+      };
+      architecture_objects: {
+        Row: {
+          attributes: NonNullable<Json>;
+          domain: Database["public"]["Enums"]["architecture_domain"];
+          element_id: string;
+          engagement_id: string;
+          kind: Database["public"]["Enums"]["element_kind"];
+          maturity: Database["public"]["Enums"]["maturity_state"];
+          maturity_rationale: string;
+          object_type: string;
+        };
+        Insert: {
+          attributes?: NonNullable<Json>;
+          domain: Database["public"]["Enums"]["architecture_domain"];
+          element_id: string;
+          engagement_id: string;
+          kind?: Database["public"]["Enums"]["element_kind"];
+          maturity?: Database["public"]["Enums"]["maturity_state"];
+          maturity_rationale?: string;
+          object_type: string;
+        };
+        Update: {
+          attributes?: NonNullable<Json>;
+          domain?: Database["public"]["Enums"]["architecture_domain"];
+          element_id?: string;
+          engagement_id?: string;
+          kind?: Database["public"]["Enums"]["element_kind"];
+          maturity?: Database["public"]["Enums"]["maturity_state"];
+          maturity_rationale?: string;
+          object_type?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "architecture_objects_element_fk";
+            columns: ["element_id", "engagement_id", "kind"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id", "kind"];
+          },
+          {
+            foreignKeyName: "architecture_objects_type_fk";
+            columns: ["domain", "object_type"];
+            isOneToOne: false;
+            referencedRelation: "architecture_object_types";
+            referencedColumns: ["domain", "key"];
+          },
+        ];
+      };
+      architecture_reference_counters: {
+        Row: {
+          engagement_id: string;
+          last_value: number;
+          prefix: string;
+        };
+        Insert: {
+          engagement_id: string;
+          last_value: number;
+          prefix: string;
+        };
+        Update: {
+          engagement_id?: string;
+          last_value?: number;
+          prefix?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "architecture_reference_counters_engagement_id_fkey";
+            columns: ["engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagements";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      architecture_relationships: {
+        Row: {
+          client_visibility: Database["public"]["Enums"]["client_visibility"];
+          created_at: string;
+          created_by: string | null;
+          description: string;
+          engagement_id: string;
+          id: string;
+          provenance: Database["public"]["Enums"]["provenance_type"];
+          published_at: string | null;
+          published_by: string | null;
+          relationship_type: string;
+          required_proficiency: Database["public"]["Enums"]["skill_proficiency"] | null;
+          retired_at: string | null;
+          retired_by: string | null;
+          retirement_reason: string | null;
+          source_element_id: string;
+          source_reference: string;
+          target_element_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          client_visibility?: Database["public"]["Enums"]["client_visibility"];
+          created_at?: string;
+          created_by?: string | null;
+          description?: string;
+          engagement_id: string;
+          id?: string;
+          provenance: Database["public"]["Enums"]["provenance_type"];
+          published_at?: string | null;
+          published_by?: string | null;
+          relationship_type: string;
+          required_proficiency?: Database["public"]["Enums"]["skill_proficiency"] | null;
+          retired_at?: string | null;
+          retired_by?: string | null;
+          retirement_reason?: string | null;
+          source_element_id: string;
+          source_reference?: string;
+          target_element_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          client_visibility?: Database["public"]["Enums"]["client_visibility"];
+          created_at?: string;
+          created_by?: string | null;
+          description?: string;
+          engagement_id?: string;
+          id?: string;
+          provenance?: Database["public"]["Enums"]["provenance_type"];
+          published_at?: string | null;
+          published_by?: string | null;
+          relationship_type?: string;
+          required_proficiency?: Database["public"]["Enums"]["skill_proficiency"] | null;
+          retired_at?: string | null;
+          retired_by?: string | null;
+          retirement_reason?: string | null;
+          source_element_id?: string;
+          source_reference?: string;
+          target_element_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "architecture_relationships_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "architecture_relationships_engagement_id_fkey";
+            columns: ["engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "architecture_relationships_published_by_fkey";
+            columns: ["published_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "architecture_relationships_relationship_type_fkey";
+            columns: ["relationship_type"];
+            isOneToOne: false;
+            referencedRelation: "relationship_types";
+            referencedColumns: ["key"];
+          },
+          {
+            foreignKeyName: "architecture_relationships_retired_by_fkey";
+            columns: ["retired_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "architecture_relationships_source_fk";
+            columns: ["source_element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "architecture_relationships_target_fk";
+            columns: ["target_element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id"];
+          },
+        ];
+      };
+      architecture_statements: {
+        Row: {
+          ai_review_state: Database["public"]["Enums"]["ai_review_state"];
+          ai_reviewed_at: string | null;
+          ai_reviewed_by: string | null;
+          body: string;
+          client_visible: boolean;
+          created_at: string;
+          created_by: string | null;
+          element_id: string;
+          engagement_id: string;
+          id: string;
+          provenance: Database["public"]["Enums"]["provenance_type"];
+          sort_order: number;
+          source_reference: string;
+          statement_kind: Database["public"]["Enums"]["statement_kind"];
+          updated_at: string;
+        };
+        Insert: {
+          ai_review_state?: Database["public"]["Enums"]["ai_review_state"];
+          ai_reviewed_at?: string | null;
+          ai_reviewed_by?: string | null;
+          body: string;
+          client_visible?: boolean;
+          created_at?: string;
+          created_by?: string | null;
+          element_id: string;
+          engagement_id: string;
+          id?: string;
+          provenance: Database["public"]["Enums"]["provenance_type"];
+          sort_order?: number;
+          source_reference?: string;
+          statement_kind: Database["public"]["Enums"]["statement_kind"];
+          updated_at?: string;
+        };
+        Update: {
+          ai_review_state?: Database["public"]["Enums"]["ai_review_state"];
+          ai_reviewed_at?: string | null;
+          ai_reviewed_by?: string | null;
+          body?: string;
+          client_visible?: boolean;
+          created_at?: string;
+          created_by?: string | null;
+          element_id?: string;
+          engagement_id?: string;
+          id?: string;
+          provenance?: Database["public"]["Enums"]["provenance_type"];
+          sort_order?: number;
+          source_reference?: string;
+          statement_kind?: Database["public"]["Enums"]["statement_kind"];
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "architecture_statements_ai_reviewed_by_fkey";
+            columns: ["ai_reviewed_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "architecture_statements_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "architecture_statements_element_fk";
+            columns: ["element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id"];
+          },
+        ];
+      };
+      assumptions: {
+        Row: {
+          category: string;
+          confidence: Database["public"]["Enums"]["confidence_level"];
+          element_id: string;
+          engagement_id: string;
+          impact_if_false: string;
+          kind: Database["public"]["Enums"]["element_kind"];
+          validation_note: string;
+          validation_status: Database["public"]["Enums"]["validation_status"];
+        };
+        Insert: {
+          category?: string;
+          confidence?: Database["public"]["Enums"]["confidence_level"];
+          element_id: string;
+          engagement_id: string;
+          impact_if_false?: string;
+          kind?: Database["public"]["Enums"]["element_kind"];
+          validation_note?: string;
+          validation_status?: Database["public"]["Enums"]["validation_status"];
+        };
+        Update: {
+          category?: string;
+          confidence?: Database["public"]["Enums"]["confidence_level"];
+          element_id?: string;
+          engagement_id?: string;
+          impact_if_false?: string;
+          kind?: Database["public"]["Enums"]["element_kind"];
+          validation_note?: string;
+          validation_status?: Database["public"]["Enums"]["validation_status"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "assumptions_element_fk";
+            columns: ["element_id", "engagement_id", "kind"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id", "kind"];
+          },
+        ];
+      };
       change_order_events: {
         Row: {
           actor_id: string | null;
@@ -274,6 +1011,44 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
+          },
+        ];
+      };
+      constraints: {
+        Row: {
+          category: Database["public"]["Enums"]["constraint_category"];
+          constraint_status: Database["public"]["Enums"]["constraint_status"];
+          element_id: string;
+          engagement_id: string;
+          kind: Database["public"]["Enums"]["element_kind"];
+          negotiable: boolean;
+          source: string;
+        };
+        Insert: {
+          category?: Database["public"]["Enums"]["constraint_category"];
+          constraint_status?: Database["public"]["Enums"]["constraint_status"];
+          element_id: string;
+          engagement_id: string;
+          kind?: Database["public"]["Enums"]["element_kind"];
+          negotiable?: boolean;
+          source?: string;
+        };
+        Update: {
+          category?: Database["public"]["Enums"]["constraint_category"];
+          constraint_status?: Database["public"]["Enums"]["constraint_status"];
+          element_id?: string;
+          engagement_id?: string;
+          kind?: Database["public"]["Enums"]["element_kind"];
+          negotiable?: boolean;
+          source?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "constraints_element_fk";
+            columns: ["element_id", "engagement_id", "kind"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id", "kind"];
           },
         ];
       };
@@ -514,6 +1289,252 @@ export type Database = {
         };
         Relationships: [];
       };
+      decision_options: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          decision_element_id: string;
+          description: string;
+          engagement_id: string;
+          id: string;
+          sort_order: number;
+          title: string;
+          tradeoffs: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          decision_element_id: string;
+          description?: string;
+          engagement_id: string;
+          id?: string;
+          sort_order?: number;
+          title: string;
+          tradeoffs?: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          decision_element_id?: string;
+          description?: string;
+          engagement_id?: string;
+          id?: string;
+          sort_order?: number;
+          title?: string;
+          tradeoffs?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "decision_options_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "decision_options_decision_fk";
+            columns: ["decision_element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "decisions";
+            referencedColumns: ["element_id", "engagement_id"];
+          },
+        ];
+      };
+      decisions: {
+        Row: {
+          chosen_option_id: string | null;
+          context: string;
+          decided_at: string | null;
+          decided_by: string | null;
+          decision_note: string | null;
+          decision_owner_user_id: string | null;
+          decision_source: Database["public"]["Enums"]["approval_source"] | null;
+          decision_status: Database["public"]["Enums"]["decision_status"];
+          deferred_reason: string | null;
+          downstream_impact: string;
+          element_id: string;
+          engagement_id: string;
+          external_decided_on: string | null;
+          external_decider_name: string | null;
+          external_decision_method:
+            Database["public"]["Enums"]["architecture_approval_method"] | null;
+          external_evidence: string | null;
+          kind: Database["public"]["Enums"]["element_kind"];
+          needed_by: string | null;
+          outcome_provenance: Database["public"]["Enums"]["provenance_type"] | null;
+          recommendation_rationale: string | null;
+          recommended_at: string | null;
+          recommended_by: string | null;
+          recommended_option_id: string | null;
+          recorded_at: string | null;
+          recorded_by: string | null;
+        };
+        Insert: {
+          chosen_option_id?: string | null;
+          context?: string;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          decision_note?: string | null;
+          decision_owner_user_id?: string | null;
+          decision_source?: Database["public"]["Enums"]["approval_source"] | null;
+          decision_status?: Database["public"]["Enums"]["decision_status"];
+          deferred_reason?: string | null;
+          downstream_impact?: string;
+          element_id: string;
+          engagement_id: string;
+          external_decided_on?: string | null;
+          external_decider_name?: string | null;
+          external_decision_method?:
+            Database["public"]["Enums"]["architecture_approval_method"] | null;
+          external_evidence?: string | null;
+          kind?: Database["public"]["Enums"]["element_kind"];
+          needed_by?: string | null;
+          outcome_provenance?: Database["public"]["Enums"]["provenance_type"] | null;
+          recommendation_rationale?: string | null;
+          recommended_at?: string | null;
+          recommended_by?: string | null;
+          recommended_option_id?: string | null;
+          recorded_at?: string | null;
+          recorded_by?: string | null;
+        };
+        Update: {
+          chosen_option_id?: string | null;
+          context?: string;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          decision_note?: string | null;
+          decision_owner_user_id?: string | null;
+          decision_source?: Database["public"]["Enums"]["approval_source"] | null;
+          decision_status?: Database["public"]["Enums"]["decision_status"];
+          deferred_reason?: string | null;
+          downstream_impact?: string;
+          element_id?: string;
+          engagement_id?: string;
+          external_decided_on?: string | null;
+          external_decider_name?: string | null;
+          external_decision_method?:
+            Database["public"]["Enums"]["architecture_approval_method"] | null;
+          external_evidence?: string | null;
+          kind?: Database["public"]["Enums"]["element_kind"];
+          needed_by?: string | null;
+          outcome_provenance?: Database["public"]["Enums"]["provenance_type"] | null;
+          recommendation_rationale?: string | null;
+          recommended_at?: string | null;
+          recommended_by?: string | null;
+          recommended_option_id?: string | null;
+          recorded_at?: string | null;
+          recorded_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "decisions_chosen_option_fk";
+            columns: ["chosen_option_id", "element_id"];
+            isOneToOne: false;
+            referencedRelation: "decision_options";
+            referencedColumns: ["id", "decision_element_id"];
+          },
+          {
+            foreignKeyName: "decisions_decided_by_fkey";
+            columns: ["decided_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "decisions_decision_owner_user_id_fkey";
+            columns: ["decision_owner_user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "decisions_element_fk";
+            columns: ["element_id", "engagement_id", "kind"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id", "kind"];
+          },
+          {
+            foreignKeyName: "decisions_recommended_by_fkey";
+            columns: ["recommended_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "decisions_recommended_option_fk";
+            columns: ["recommended_option_id", "element_id"];
+            isOneToOne: false;
+            referencedRelation: "decision_options";
+            referencedColumns: ["id", "decision_element_id"];
+          },
+          {
+            foreignKeyName: "decisions_recorded_by_fkey";
+            columns: ["recorded_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      dependencies: {
+        Row: {
+          blocking: boolean;
+          dependency_status: Database["public"]["Enums"]["dependency_status"];
+          dependency_type: Database["public"]["Enums"]["dependency_type"];
+          element_id: string;
+          engagement_id: string;
+          from_element_id: string;
+          kind: Database["public"]["Enums"]["element_kind"];
+          to_element_id: string;
+        };
+        Insert: {
+          blocking?: boolean;
+          dependency_status?: Database["public"]["Enums"]["dependency_status"];
+          dependency_type?: Database["public"]["Enums"]["dependency_type"];
+          element_id: string;
+          engagement_id: string;
+          from_element_id: string;
+          kind?: Database["public"]["Enums"]["element_kind"];
+          to_element_id: string;
+        };
+        Update: {
+          blocking?: boolean;
+          dependency_status?: Database["public"]["Enums"]["dependency_status"];
+          dependency_type?: Database["public"]["Enums"]["dependency_type"];
+          element_id?: string;
+          engagement_id?: string;
+          from_element_id?: string;
+          kind?: Database["public"]["Enums"]["element_kind"];
+          to_element_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dependencies_element_fk";
+            columns: ["element_id", "engagement_id", "kind"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id", "kind"];
+          },
+          {
+            foreignKeyName: "dependencies_from_fk";
+            columns: ["from_element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "dependencies_to_fk";
+            columns: ["to_element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id"];
+          },
+        ];
+      };
       document_number_counters: {
         Row: {
           last_value: number;
@@ -531,6 +1552,227 @@ export type Database = {
           year?: number;
         };
         Relationships: [];
+      };
+      domain_assessments: {
+        Row: {
+          assessed_at: string;
+          assessed_by: string | null;
+          client_visible: boolean;
+          domain: Database["public"]["Enums"]["architecture_domain"];
+          engagement_id: string;
+          id: string;
+          maturity: Database["public"]["Enums"]["maturity_state"];
+          provenance: Database["public"]["Enums"]["provenance_type"];
+          rationale: string;
+        };
+        Insert: {
+          assessed_at?: string;
+          assessed_by?: string | null;
+          client_visible?: boolean;
+          domain: Database["public"]["Enums"]["architecture_domain"];
+          engagement_id: string;
+          id?: string;
+          maturity: Database["public"]["Enums"]["maturity_state"];
+          provenance?: Database["public"]["Enums"]["provenance_type"];
+          rationale: string;
+        };
+        Update: {
+          assessed_at?: string;
+          assessed_by?: string | null;
+          client_visible?: boolean;
+          domain?: Database["public"]["Enums"]["architecture_domain"];
+          engagement_id?: string;
+          id?: string;
+          maturity?: Database["public"]["Enums"]["maturity_state"];
+          provenance?: Database["public"]["Enums"]["provenance_type"];
+          rationale?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "domain_assessments_assessed_by_fkey";
+            columns: ["assessed_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "domain_assessments_engagement_id_fkey";
+            columns: ["engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagements";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      element_evidence_links: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          element_id: string;
+          engagement_id: string;
+          evidence_source_id: string;
+          id: string;
+          locator: string;
+          note: string;
+          stance: Database["public"]["Enums"]["evidence_stance"];
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          element_id: string;
+          engagement_id: string;
+          evidence_source_id: string;
+          id?: string;
+          locator?: string;
+          note?: string;
+          stance?: Database["public"]["Enums"]["evidence_stance"];
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          element_id?: string;
+          engagement_id?: string;
+          evidence_source_id?: string;
+          id?: string;
+          locator?: string;
+          note?: string;
+          stance?: Database["public"]["Enums"]["evidence_stance"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "element_evidence_links_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "element_evidence_links_element_fk";
+            columns: ["element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "element_evidence_links_source_fk";
+            columns: ["evidence_source_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "evidence_sources";
+            referencedColumns: ["id", "engagement_id"];
+          },
+        ];
+      };
+      element_method_lineage: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          element_id: string;
+          engagement_id: string;
+          id: string;
+          method_asset_id: string;
+          method_version: string;
+          note: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          element_id: string;
+          engagement_id: string;
+          id?: string;
+          method_asset_id: string;
+          method_version?: string;
+          note?: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          element_id?: string;
+          engagement_id?: string;
+          id?: string;
+          method_asset_id?: string;
+          method_version?: string;
+          note?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "element_method_lineage_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "element_method_lineage_element_fk";
+            columns: ["element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "element_method_lineage_method_asset_id_fkey";
+            columns: ["method_asset_id"];
+            isOneToOne: false;
+            referencedRelation: "method_assets";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      element_versions: {
+        Row: {
+          change_summary: string;
+          client_snapshot: NonNullable<Json>;
+          client_visible_at_publication: boolean;
+          element_id: string;
+          engagement_id: string;
+          id: string;
+          methodology_version: string;
+          published_at: string;
+          published_by: string | null;
+          snapshot: NonNullable<Json>;
+          version_no: number;
+        };
+        Insert: {
+          change_summary?: string;
+          client_snapshot: NonNullable<Json>;
+          client_visible_at_publication: boolean;
+          element_id: string;
+          engagement_id: string;
+          id?: string;
+          methodology_version?: string;
+          published_at?: string;
+          published_by?: string | null;
+          snapshot: NonNullable<Json>;
+          version_no: number;
+        };
+        Update: {
+          change_summary?: string;
+          client_snapshot?: NonNullable<Json>;
+          client_visible_at_publication?: boolean;
+          element_id?: string;
+          engagement_id?: string;
+          id?: string;
+          methodology_version?: string;
+          published_at?: string;
+          published_by?: string | null;
+          snapshot?: NonNullable<Json>;
+          version_no?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "element_versions_element_fk";
+            columns: ["element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "element_versions_published_by_fkey";
+            columns: ["published_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       engagement_member_capability_overrides: {
         Row: {
@@ -717,6 +1959,84 @@ export type Database = {
           },
         ];
       };
+      evidence_sources: {
+        Row: {
+          accessed_date: string | null;
+          client_visibility: Database["public"]["Enums"]["client_visibility"];
+          created_at: string;
+          created_by: string | null;
+          engagement_id: string;
+          external_reference: string;
+          id: string;
+          ip_classification: Database["public"]["Enums"]["ip_classification"];
+          notes: string;
+          provenance: Database["public"]["Enums"]["provenance_type"];
+          publisher_author: string;
+          reference: string;
+          source_date: string | null;
+          source_type: Database["public"]["Enums"]["evidence_source_type"];
+          summary: string;
+          title: string;
+          updated_at: string;
+          url: string | null;
+        };
+        Insert: {
+          accessed_date?: string | null;
+          client_visibility?: Database["public"]["Enums"]["client_visibility"];
+          created_at?: string;
+          created_by?: string | null;
+          engagement_id: string;
+          external_reference?: string;
+          id?: string;
+          ip_classification?: Database["public"]["Enums"]["ip_classification"];
+          notes?: string;
+          provenance: Database["public"]["Enums"]["provenance_type"];
+          publisher_author?: string;
+          reference?: string;
+          source_date?: string | null;
+          source_type: Database["public"]["Enums"]["evidence_source_type"];
+          summary?: string;
+          title: string;
+          updated_at?: string;
+          url?: string | null;
+        };
+        Update: {
+          accessed_date?: string | null;
+          client_visibility?: Database["public"]["Enums"]["client_visibility"];
+          created_at?: string;
+          created_by?: string | null;
+          engagement_id?: string;
+          external_reference?: string;
+          id?: string;
+          ip_classification?: Database["public"]["Enums"]["ip_classification"];
+          notes?: string;
+          provenance?: Database["public"]["Enums"]["provenance_type"];
+          publisher_author?: string;
+          reference?: string;
+          source_date?: string | null;
+          source_type?: Database["public"]["Enums"]["evidence_source_type"];
+          summary?: string;
+          title?: string;
+          updated_at?: string;
+          url?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "evidence_sources_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "evidence_sources_engagement_id_fkey";
+            columns: ["engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagements";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       finance_notes: {
         Row: {
           body: string;
@@ -826,6 +2146,48 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "engagements";
             referencedColumns: ["id"];
+          },
+        ];
+      };
+      intelligence_record_domains: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          domain: Database["public"]["Enums"]["architecture_domain"];
+          element_id: string;
+          engagement_id: string;
+          kind: Database["public"]["Enums"]["element_kind"];
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          domain: Database["public"]["Enums"]["architecture_domain"];
+          element_id: string;
+          engagement_id: string;
+          kind: Database["public"]["Enums"]["element_kind"];
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          domain?: Database["public"]["Enums"]["architecture_domain"];
+          element_id?: string;
+          engagement_id?: string;
+          kind?: Database["public"]["Enums"]["element_kind"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "intelligence_record_domains_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "intelligence_record_domains_element_fk";
+            columns: ["element_id", "engagement_id", "kind"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id", "kind"];
           },
         ];
       };
@@ -1460,6 +2822,38 @@ export type Database = {
         };
         Relationships: [];
       };
+      recommendations: {
+        Row: {
+          element_id: string;
+          engagement_id: string;
+          kind: Database["public"]["Enums"]["element_kind"];
+          priority: Database["public"]["Enums"]["recommendation_priority"];
+          rationale: string;
+        };
+        Insert: {
+          element_id: string;
+          engagement_id: string;
+          kind?: Database["public"]["Enums"]["element_kind"];
+          priority?: Database["public"]["Enums"]["recommendation_priority"];
+          rationale?: string;
+        };
+        Update: {
+          element_id?: string;
+          engagement_id?: string;
+          kind?: Database["public"]["Enums"]["element_kind"];
+          priority?: Database["public"]["Enums"]["recommendation_priority"];
+          rationale?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "recommendations_element_fk";
+            columns: ["element_id", "engagement_id", "kind"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id", "kind"];
+          },
+        ];
+      };
       refunds: {
         Row: {
           amount_minor: number;
@@ -1558,6 +2952,132 @@ export type Database = {
           },
         ];
       };
+      relationship_rules: {
+        Row: {
+          id: number;
+          relationship_type: string;
+          source_kind: Database["public"]["Enums"]["element_kind"];
+          source_object_type: string | null;
+          target_kind: Database["public"]["Enums"]["element_kind"];
+          target_object_type: string | null;
+        };
+        Insert: {
+          id?: never;
+          relationship_type: string;
+          source_kind: Database["public"]["Enums"]["element_kind"];
+          source_object_type?: string | null;
+          target_kind: Database["public"]["Enums"]["element_kind"];
+          target_object_type?: string | null;
+        };
+        Update: {
+          id?: never;
+          relationship_type?: string;
+          source_kind?: Database["public"]["Enums"]["element_kind"];
+          source_object_type?: string | null;
+          target_kind?: Database["public"]["Enums"]["element_kind"];
+          target_object_type?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "relationship_rules_relationship_type_fkey";
+            columns: ["relationship_type"];
+            isOneToOne: false;
+            referencedRelation: "relationship_types";
+            referencedColumns: ["key"];
+          },
+          {
+            foreignKeyName: "relationship_rules_source_object_type_fkey";
+            columns: ["source_object_type"];
+            isOneToOne: false;
+            referencedRelation: "architecture_object_types";
+            referencedColumns: ["key"];
+          },
+          {
+            foreignKeyName: "relationship_rules_target_object_type_fkey";
+            columns: ["target_object_type"];
+            isOneToOne: false;
+            referencedRelation: "architecture_object_types";
+            referencedColumns: ["key"];
+          },
+        ];
+      };
+      relationship_types: {
+        Row: {
+          category: string;
+          definition: string;
+          inverse_label: string;
+          is_acyclic: boolean;
+          is_symmetric: boolean;
+          key: string;
+          label: string;
+          sort_order: number;
+        };
+        Insert: {
+          category: string;
+          definition: string;
+          inverse_label: string;
+          is_acyclic?: boolean;
+          is_symmetric?: boolean;
+          key: string;
+          label: string;
+          sort_order: number;
+        };
+        Update: {
+          category?: string;
+          definition?: string;
+          inverse_label?: string;
+          is_acyclic?: boolean;
+          is_symmetric?: boolean;
+          key?: string;
+          label?: string;
+          sort_order?: number;
+        };
+        Relationships: [];
+      };
+      risks: {
+        Row: {
+          category: string;
+          element_id: string;
+          engagement_id: string;
+          impact: number;
+          kind: Database["public"]["Enums"]["element_kind"];
+          mitigation: string;
+          probability: number;
+          risk_status: Database["public"]["Enums"]["risk_status"];
+          severity: number | null;
+        };
+        Insert: {
+          category?: string;
+          element_id: string;
+          engagement_id: string;
+          impact?: number;
+          kind?: Database["public"]["Enums"]["element_kind"];
+          mitigation?: string;
+          probability?: number;
+          risk_status?: Database["public"]["Enums"]["risk_status"];
+          severity?: never;
+        };
+        Update: {
+          category?: string;
+          element_id?: string;
+          engagement_id?: string;
+          impact?: number;
+          kind?: Database["public"]["Enums"]["element_kind"];
+          mitigation?: string;
+          probability?: number;
+          risk_status?: Database["public"]["Enums"]["risk_status"];
+          severity?: never;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "risks_element_fk";
+            columns: ["element_id", "engagement_id", "kind"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id", "kind"];
+          },
+        ];
+      };
       role_capability_defaults: {
         Row: {
           capability: Database["public"]["Enums"]["engagement_capability"];
@@ -1573,6 +3093,64 @@ export type Database = {
         };
         Relationships: [];
       };
+      statement_evidence_links: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          engagement_id: string;
+          evidence_source_id: string;
+          id: string;
+          locator: string;
+          note: string;
+          stance: Database["public"]["Enums"]["evidence_stance"];
+          statement_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          engagement_id: string;
+          evidence_source_id: string;
+          id?: string;
+          locator?: string;
+          note?: string;
+          stance?: Database["public"]["Enums"]["evidence_stance"];
+          statement_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          engagement_id?: string;
+          evidence_source_id?: string;
+          id?: string;
+          locator?: string;
+          note?: string;
+          stance?: Database["public"]["Enums"]["evidence_stance"];
+          statement_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "statement_evidence_links_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "statement_evidence_links_source_fk";
+            columns: ["evidence_source_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "evidence_sources";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "statement_evidence_links_statement_fk";
+            columns: ["statement_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_statements";
+            referencedColumns: ["id", "engagement_id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -1584,9 +3162,107 @@ export type Database = {
         Returns: string;
       };
       approve_change_order: { Args: { p_change_order_id: string }; Returns: undefined };
+      architecture_domain_states: {
+        Args: { p_engagement_id: string };
+        Returns: {
+          assessed_at: string;
+          assessed_by: string;
+          assessment_id: string;
+          client_visible: boolean;
+          domain: Database["public"]["Enums"]["architecture_domain"];
+          maturity: Database["public"]["Enums"]["maturity_state"];
+          rationale: string;
+        }[];
+      };
       capability_side: {
         Args: { capability: Database["public"]["Enums"]["engagement_capability"] };
         Returns: Database["public"]["Enums"]["member_side"];
+      };
+      client_architecture: {
+        Args: { p_engagement_id: string };
+        Returns: {
+          approval_id: string;
+          approval_state: string;
+          change_summary: string;
+          client_snapshot: Json;
+          domain: Database["public"]["Enums"]["architecture_domain"];
+          element_id: string;
+          kind: Database["public"]["Enums"]["element_kind"];
+          latest_approved_version_no: number;
+          object_type: string;
+          published_at: string;
+          reference_code: string;
+          title: string;
+          version_id: string;
+          version_no: number;
+        }[];
+      };
+      client_architecture_relationships: {
+        Args: { p_engagement_id: string };
+        Returns: {
+          description: string;
+          id: string;
+          provenance: Database["public"]["Enums"]["provenance_type"];
+          published_at: string;
+          relationship_type: string;
+          required_proficiency: Database["public"]["Enums"]["skill_proficiency"];
+          source_element_id: string;
+          target_element_id: string;
+        }[];
+      };
+      client_decisions: {
+        Args: { p_engagement_id: string };
+        Returns: {
+          chosen_option_id: string;
+          context: string;
+          decided_at: string;
+          decided_by_name: string;
+          decision_note: string;
+          decision_source: Database["public"]["Enums"]["approval_source"];
+          decision_status: Database["public"]["Enums"]["decision_status"];
+          element_id: string;
+          needed_by: string;
+          options: Json;
+          recommendation_rationale: string;
+          recommended_option_id: string;
+          reference_code: string;
+          title: string;
+          version_id: string;
+        }[];
+      };
+      client_element_versions: {
+        Args: { p_element_id: string };
+        Returns: {
+          approval_id: string;
+          approval_source: Database["public"]["Enums"]["approval_source"];
+          approval_state: string;
+          change_summary: string;
+          client_snapshot: Json;
+          published_at: string;
+          responded_at: string;
+          response_comment: string;
+          version_id: string;
+          version_no: number;
+        }[];
+      };
+      compare_baselines: {
+        Args: { p_from_baseline_id: string; p_to_baseline_id?: string };
+        Returns: {
+          change: string;
+          domain: Database["public"]["Enums"]["architecture_domain"];
+          element_id: string;
+          from_maturity: Database["public"]["Enums"]["maturity_state"];
+          from_version_id: string;
+          from_version_no: number;
+          reference_code: string;
+          relationship_id: string;
+          relationship_type: string;
+          subject: string;
+          title: string;
+          to_maturity: Database["public"]["Enums"]["maturity_state"];
+          to_version_id: string;
+          to_version_no: number;
+        }[];
       };
       contract_financial_summary: {
         Args: { p_as_of: string; p_contract_id: string };
@@ -1623,6 +3299,29 @@ export type Database = {
           unscheduled_minor: number;
         }[];
       };
+      create_architecture_element: {
+        Args: {
+          p_details?: Json;
+          p_domains?: Database["public"]["Enums"]["architecture_domain"][];
+          p_element: Json;
+          p_engagement_id: string;
+          p_kind: Database["public"]["Enums"]["element_kind"];
+        };
+        Returns: string;
+      };
+      decide_decision: {
+        Args: { p_decision_id: string; p_note?: string; p_option_id: string };
+        Returns: undefined;
+      };
+      defer_decision: { Args: { p_decision_id: string; p_reason: string }; Returns: undefined };
+      element_reference_prefix: {
+        Args: {
+          p_domain: Database["public"]["Enums"]["architecture_domain"];
+          p_kind: Database["public"]["Enums"]["element_kind"];
+        };
+        Returns: string;
+      };
+      element_version_snapshot: { Args: { p_version_id: string }; Returns: Json };
       engagement_primary_contract_id: { Args: { p_engagement_id: string }; Returns: string };
       execute_contract: {
         Args: {
@@ -1645,6 +3344,7 @@ export type Database = {
           title: string;
         }[];
       };
+      freeze_baseline: { Args: { p_baseline_id: string }; Returns: undefined };
       invoice_balances: {
         Args: { p_as_of: string; p_engagement_id: string };
         Returns: {
@@ -1695,6 +3395,14 @@ export type Database = {
         Args: { target_engagement_id: string };
         Returns: Database["public"]["Enums"]["engagement_capability"][];
       };
+      object_maturity_distribution: {
+        Args: { p_engagement_id: string };
+        Returns: {
+          domain: Database["public"]["Enums"]["architecture_domain"];
+          maturity: Database["public"]["Enums"]["maturity_state"];
+          object_count: number;
+        }[];
+      };
       pending_change_order_count: { Args: { p_engagement_id: string }; Returns: number };
       portfolio_financial_summary: {
         Args: { p_as_of: string };
@@ -1706,6 +3414,35 @@ export type Database = {
           summary: Json;
         }[];
       };
+      preview_client_snapshot: { Args: { p_element_id: string }; Returns: Json };
+      publish_element_version: {
+        Args: { p_change_summary?: string; p_element_id: string };
+        Returns: string;
+      };
+      record_domain_assessment: {
+        Args: {
+          p_client_visible?: boolean;
+          p_domain: Database["public"]["Enums"]["architecture_domain"];
+          p_engagement_id: string;
+          p_maturity: Database["public"]["Enums"]["maturity_state"];
+          p_rationale: string;
+        };
+        Returns: string;
+      };
+      record_external_architecture_approval: {
+        Args: {
+          p_approved_on: string;
+          p_approver_name: string;
+          p_approver_title: string;
+          p_baseline_id: string;
+          p_comment?: string;
+          p_element_version_id: string;
+          p_evidence: string;
+          p_method: Database["public"]["Enums"]["architecture_approval_method"];
+          p_response: Database["public"]["Enums"]["approval_response"];
+        };
+        Returns: string;
+      };
       record_external_change_order_approval: {
         Args: {
           p_approved_on: string;
@@ -1715,6 +3452,18 @@ export type Database = {
           p_evidence_path: string;
           p_evidence_reference: string;
           p_method: Database["public"]["Enums"]["external_approval_method"];
+        };
+        Returns: undefined;
+      };
+      record_external_decision: {
+        Args: {
+          p_decided_on: string;
+          p_decider_name: string;
+          p_decision_id: string;
+          p_evidence: string;
+          p_method: Database["public"]["Enums"]["architecture_approval_method"];
+          p_note?: string;
+          p_option_id: string;
         };
         Returns: undefined;
       };
@@ -1751,11 +3500,36 @@ export type Database = {
         Args: { p_change_order_id: string; p_note: string };
         Returns: undefined;
       };
+      request_architecture_approval: {
+        Args: { p_baseline_id: string; p_element_version_id: string; p_note?: string };
+        Returns: string;
+      };
+      respond_to_architecture_approval: {
+        Args: {
+          p_approval_id: string;
+          p_comment?: string;
+          p_response: Database["public"]["Enums"]["approval_response"];
+        };
+        Returns: undefined;
+      };
+      retire_element: { Args: { p_element_id: string; p_reason: string }; Returns: undefined };
+      retire_relationship: {
+        Args: { p_reason: string; p_relationship_id: string };
+        Returns: undefined;
+      };
+      return_element_to_draft: {
+        Args: { p_element_id: string; p_note: string };
+        Returns: undefined;
+      };
       reverse_allocation: {
         Args: { p_allocation_id: string; p_reason: string };
         Returns: undefined;
       };
       reverse_payment: { Args: { p_payment_id: string; p_reason: string }; Returns: undefined };
+      review_ai_content: {
+        Args: { p_accept: boolean; p_element_id: string; p_statement_id: string };
+        Returns: undefined;
+      };
       role_side: {
         Args: { role: Database["public"]["Enums"]["app_role"] };
         Returns: Database["public"]["Enums"]["member_side"];
@@ -1768,11 +3542,20 @@ export type Database = {
         Args: { p_contract_id: string; p_status: Database["public"]["Enums"]["contract_status"] };
         Returns: undefined;
       };
+      set_decision_recommendation: {
+        Args: { p_decision_id: string; p_option_id: string; p_rationale: string };
+        Returns: undefined;
+      };
       set_milestone_status: {
         Args: { p_milestone_id: string; p_status: Database["public"]["Enums"]["milestone_status"] };
         Returns: undefined;
       };
       submit_change_order: { Args: { p_change_order_id: string }; Returns: number };
+      submit_element_for_review: { Args: { p_element_id: string }; Returns: undefined };
+      supersede_element: {
+        Args: { p_new_element_id: string; p_old_element_id: string; p_reason: string };
+        Returns: string;
+      };
       void_change_order: {
         Args: { p_change_order_id: string; p_note: string };
         Returns: undefined;
@@ -1785,6 +3568,7 @@ export type Database = {
       void_refund: { Args: { p_reason: string; p_refund_id: string }; Returns: undefined };
     };
     Enums: {
+      ai_review_state: "not_applicable" | "pending" | "accepted" | "rejected";
       app_role:
         | "system_administrator"
         | "principal_architect"
@@ -1797,12 +3581,38 @@ export type Database = {
         | "client_finance"
         | "client_contributor"
         | "client_viewer";
+      approval_response: "approved" | "changes_requested";
       approval_source: "client_portal" | "external_recorded_by_tplco";
+      architecture_approval_method: "meeting" | "email" | "signed_document" | "other";
       architecture_domain: "knowledge" | "capability" | "strategic_model" | "application";
+      baseline_status: "draft" | "frozen";
       change_order_status: "draft" | "submitted" | "approved" | "rejected" | "void";
+      client_visibility: "internal" | "client";
+      confidence_level: "low" | "medium" | "high";
+      constraint_category:
+        | "regulatory"
+        | "financial"
+        | "physical"
+        | "contractual"
+        | "political"
+        | "temporal"
+        | "other";
+      constraint_status: "in_force" | "relaxed" | "lifted";
       contract_status:
         "draft" | "executed" | "active" | "completed" | "terminated" | "superseded" | "void";
       credit_note_status: "draft" | "issued" | "void";
+      decision_status: "open" | "recommended" | "decided" | "deferred" | "superseded";
+      dependency_status: "open" | "satisfied" | "at_risk" | "broken";
+      dependency_type: "prerequisite" | "sequence" | "input" | "funding" | "external";
+      element_kind:
+        | "object"
+        | "assumption"
+        | "risk"
+        | "constraint"
+        | "dependency"
+        | "decision"
+        | "recommendation";
+      element_lifecycle: "draft" | "in_review" | "published" | "superseded" | "retired";
       engagement_capability:
         | "view_financials"
         | "approve_change_orders"
@@ -1810,7 +3620,10 @@ export type Database = {
         | "approve_architecture"
         | "manage_client_team"
         | "view_confidential_deliverables"
-        | "manage_financials";
+        | "manage_financials"
+        | "edit_architecture"
+        | "publish_architecture"
+        | "view_architecture";
       engagement_status: "proposed" | "active" | "paused" | "completed" | "archived";
       engagement_type:
         | "development_architecture_sprint"
@@ -1818,6 +3631,17 @@ export type Database = {
         | "embedded_development_partner"
         | "cohort"
         | "custom";
+      evidence_source_type:
+        | "document"
+        | "interview"
+        | "meeting_notes"
+        | "dataset"
+        | "publication"
+        | "regulation"
+        | "web"
+        | "internal_analysis"
+        | "other";
+      evidence_stance: "supports" | "contradicts" | "context";
       external_approval_method: "signed_document" | "email" | "letter" | "other";
       invoice_status: "draft" | "scheduled" | "issued" | "void";
       ip_classification:
@@ -1828,6 +3652,7 @@ export type Database = {
         | "public_source"
         | "licensed_third_party_source"
         | "generated_analysis";
+      maturity_state: "undefined" | "emerging" | "defined" | "structured" | "operationalized";
       member_side: "internal" | "client";
       milestone_status: "planned" | "ready_to_invoice" | "invoiced" | "cancelled";
       milestone_trigger: "on_signing" | "on_date" | "on_event" | "manual";
@@ -1835,8 +3660,23 @@ export type Database = {
       payment_method: "ach" | "wire" | "check" | "card_via_processor" | "other";
       payment_status: "recorded" | "reversed";
       payment_structure: "milestone" | "installments" | "percentage" | "retainer" | "custom";
+      provenance_type:
+        | "client_source"
+        | "public_source"
+        | "architect_observation"
+        | "architect_judgment"
+        | "client_decision"
+        | "ai_analysis"
+        | "methodology_derived"
+        | "system_derived";
+      recommendation_priority: "critical" | "important" | "advisable";
       record_status: "active" | "invited" | "suspended" | "archived";
       refund_status: "completed" | "void";
+      risk_status: "open" | "mitigating" | "accepted" | "closed";
+      skill_proficiency: "foundational" | "proficient" | "expert";
+      statement_kind:
+        "finding" | "observation" | "rationale" | "implication" | "definition" | "note";
+      validation_status: "unvalidated" | "validating" | "validated" | "invalidated";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -1951,6 +3791,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      ai_review_state: ["not_applicable", "pending", "accepted", "rejected"],
       app_role: [
         "system_administrator",
         "principal_architect",
@@ -1964,9 +3805,24 @@ export const Constants = {
         "client_contributor",
         "client_viewer",
       ],
+      approval_response: ["approved", "changes_requested"],
       approval_source: ["client_portal", "external_recorded_by_tplco"],
+      architecture_approval_method: ["meeting", "email", "signed_document", "other"],
       architecture_domain: ["knowledge", "capability", "strategic_model", "application"],
+      baseline_status: ["draft", "frozen"],
       change_order_status: ["draft", "submitted", "approved", "rejected", "void"],
+      client_visibility: ["internal", "client"],
+      confidence_level: ["low", "medium", "high"],
+      constraint_category: [
+        "regulatory",
+        "financial",
+        "physical",
+        "contractual",
+        "political",
+        "temporal",
+        "other",
+      ],
+      constraint_status: ["in_force", "relaxed", "lifted"],
       contract_status: [
         "draft",
         "executed",
@@ -1977,6 +3833,19 @@ export const Constants = {
         "void",
       ],
       credit_note_status: ["draft", "issued", "void"],
+      decision_status: ["open", "recommended", "decided", "deferred", "superseded"],
+      dependency_status: ["open", "satisfied", "at_risk", "broken"],
+      dependency_type: ["prerequisite", "sequence", "input", "funding", "external"],
+      element_kind: [
+        "object",
+        "assumption",
+        "risk",
+        "constraint",
+        "dependency",
+        "decision",
+        "recommendation",
+      ],
+      element_lifecycle: ["draft", "in_review", "published", "superseded", "retired"],
       engagement_capability: [
         "view_financials",
         "approve_change_orders",
@@ -1985,6 +3854,9 @@ export const Constants = {
         "manage_client_team",
         "view_confidential_deliverables",
         "manage_financials",
+        "edit_architecture",
+        "publish_architecture",
+        "view_architecture",
       ],
       engagement_status: ["proposed", "active", "paused", "completed", "archived"],
       engagement_type: [
@@ -1994,6 +3866,18 @@ export const Constants = {
         "cohort",
         "custom",
       ],
+      evidence_source_type: [
+        "document",
+        "interview",
+        "meeting_notes",
+        "dataset",
+        "publication",
+        "regulation",
+        "web",
+        "internal_analysis",
+        "other",
+      ],
+      evidence_stance: ["supports", "contradicts", "context"],
       external_approval_method: ["signed_document", "email", "letter", "other"],
       invoice_status: ["draft", "scheduled", "issued", "void"],
       ip_classification: [
@@ -2005,6 +3889,7 @@ export const Constants = {
         "licensed_third_party_source",
         "generated_analysis",
       ],
+      maturity_state: ["undefined", "emerging", "defined", "structured", "operationalized"],
       member_side: ["internal", "client"],
       milestone_status: ["planned", "ready_to_invoice", "invoiced", "cancelled"],
       milestone_trigger: ["on_signing", "on_date", "on_event", "manual"],
@@ -2012,8 +3897,23 @@ export const Constants = {
       payment_method: ["ach", "wire", "check", "card_via_processor", "other"],
       payment_status: ["recorded", "reversed"],
       payment_structure: ["milestone", "installments", "percentage", "retainer", "custom"],
+      provenance_type: [
+        "client_source",
+        "public_source",
+        "architect_observation",
+        "architect_judgment",
+        "client_decision",
+        "ai_analysis",
+        "methodology_derived",
+        "system_derived",
+      ],
+      recommendation_priority: ["critical", "important", "advisable"],
       record_status: ["active", "invited", "suspended", "archived"],
       refund_status: ["completed", "void"],
+      risk_status: ["open", "mitigating", "accepted", "closed"],
+      skill_proficiency: ["foundational", "proficient", "expert"],
+      statement_kind: ["finding", "observation", "rationale", "implication", "definition", "note"],
+      validation_status: ["unvalidated", "validating", "validated", "invalidated"],
     },
   },
 } as const;

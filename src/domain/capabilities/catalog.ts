@@ -17,6 +17,9 @@ export const ENGAGEMENT_CAPABILITIES = [
   "manage_client_team",
   "view_confidential_deliverables",
   "manage_financials",
+  "edit_architecture",
+  "publish_architecture",
+  "view_architecture",
 ] as const satisfies readonly EngagementCapability[];
 
 export const CAPABILITY_LABELS: Record<EngagementCapability, string> = {
@@ -27,6 +30,9 @@ export const CAPABILITY_LABELS: Record<EngagementCapability, string> = {
   manage_client_team: "Manage client team",
   view_confidential_deliverables: "View confidential deliverables",
   manage_financials: "Manage financials",
+  edit_architecture: "Edit architecture",
+  publish_architecture: "Publish architecture",
+  view_architecture: "View architecture",
 };
 
 export const FINANCIAL_CAPABILITIES = [
@@ -42,8 +48,18 @@ export function isFinancialCapability(capability: EngagementCapability): boolean
 
 /** The side a capability is restricted to, or null when either side may hold it. */
 export function capabilitySide(capability: EngagementCapability): MemberSide | null {
-  if (capability === "pay_invoices" || capability === "approve_change_orders") return "client";
-  if (capability === "manage_financials") return "internal";
+  if (
+    capability === "pay_invoices" ||
+    capability === "approve_change_orders" ||
+    capability === "view_architecture"
+  )
+    return "client";
+  if (
+    capability === "manage_financials" ||
+    capability === "edit_architecture" ||
+    capability === "publish_architecture"
+  )
+    return "internal";
   return null;
 }
 
@@ -62,9 +78,11 @@ export const ROLE_CAPABILITY_DEFAULTS: Record<AppRole, readonly EngagementCapabi
     "approve_architecture",
     "manage_client_team",
     "view_confidential_deliverables",
+    "edit_architecture",
+    "publish_architecture",
   ],
-  architect: ["view_confidential_deliverables"],
-  researcher: ["view_confidential_deliverables"],
+  architect: ["view_confidential_deliverables", "edit_architecture", "publish_architecture"],
+  researcher: ["view_confidential_deliverables", "edit_architecture"],
   project_administrator: ["manage_client_team", "view_confidential_deliverables"],
   finance_administrator: ["view_financials", "manage_financials"],
   executive_sponsor: [
@@ -74,15 +92,17 @@ export const ROLE_CAPABILITY_DEFAULTS: Record<AppRole, readonly EngagementCapabi
     "approve_architecture",
     "manage_client_team",
     "view_confidential_deliverables",
+    "view_architecture",
   ],
   client_project_lead: [
     "approve_architecture",
     "manage_client_team",
     "view_confidential_deliverables",
+    "view_architecture",
   ],
   client_finance: ["view_financials", "pay_invoices"],
-  client_contributor: [],
-  client_viewer: [],
+  client_contributor: ["view_architecture"],
+  client_viewer: ["view_architecture"],
 };
 
 export type CapabilityOverride = { capability: EngagementCapability; granted: boolean };

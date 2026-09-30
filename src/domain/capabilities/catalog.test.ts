@@ -53,10 +53,27 @@ describe("role capability defaults", () => {
   });
 });
 
+describe("architecture capabilities", () => {
+  it("keep drafting and publishing internal, and viewing on the client side", () => {
+    expect(capabilitySide("edit_architecture")).toBe("internal");
+    expect(capabilitySide("publish_architecture")).toBe("internal");
+    expect(capabilitySide("view_architecture")).toBe("client");
+  });
+
+  it("do not give System Administrators drafting or publishing authority by default", () => {
+    expect(ROLE_CAPABILITY_DEFAULTS.system_administrator).not.toContain("edit_architecture");
+    expect(ROLE_CAPABILITY_DEFAULTS.system_administrator).not.toContain("publish_architecture");
+  });
+
+  it("give Client Finance no architecture visibility by default", () => {
+    expect(ROLE_CAPABILITY_DEFAULTS.client_finance).not.toContain("view_architecture");
+  });
+});
+
 describe("effectiveCapabilities", () => {
   it("uses the role default when there is no override", () => {
     expect(effectiveCapabilities("client_finance")).toEqual(["view_financials", "pay_invoices"]);
-    expect(effectiveCapabilities("client_viewer")).toEqual([]);
+    expect(effectiveCapabilities("client_viewer")).toEqual(["view_architecture"]);
   });
 
   it("lets an override grant or revoke a single capability", () => {
@@ -74,7 +91,7 @@ describe("effectiveCapabilities", () => {
 
   it("does not mutate the role definition", () => {
     effectiveCapabilities("client_viewer", [{ capability: "view_financials", granted: true }]);
-    expect(ROLE_CAPABILITY_DEFAULTS.client_viewer).toEqual([]);
+    expect(ROLE_CAPABILITY_DEFAULTS.client_viewer).toEqual(["view_architecture"]);
   });
 });
 

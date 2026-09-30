@@ -10,7 +10,7 @@ import { PAYMENT_METHODS, PAYMENT_METHOD_LABELS } from "@/domain/finance/catalog
 import { formatMoney } from "@/domain/finance/money";
 import type { LoadedFinances } from "@/domain/finance/queries";
 import { formatDate } from "@/lib/format";
-import { ActionForm } from "@/components/finance/action-form";
+import { ActionForm } from "@/components/ui/action-form";
 import { PaymentForm } from "@/components/finance/payment-form";
 import { EmptyState, Panel } from "@/components/ui/panel";
 import { StatusTag } from "@/components/ui/status-tag";
