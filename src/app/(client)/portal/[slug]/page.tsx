@@ -20,6 +20,7 @@ import { EngagementStatusTag } from "@/components/engagements/engagement-status"
 import { formatMoney } from "@/domain/finance/money";
 import { getBusinessToday, getEngagementFinances } from "@/domain/finance/queries";
 import { getClientActions } from "@/domain/intelligence/queries";
+import { getClientEngagementMethodology } from "@/domain/methodology/queries";
 import { DELIVERABLE_TYPE_LABELS } from "@/domain/deliverables/catalog";
 import { getClientDeliverables } from "@/domain/deliverables/queries";
 import { ApprovalResponseForm } from "@/components/architecture/client-responses";
@@ -64,6 +65,8 @@ export default async function ClientEngagementPage({ params }: PageProps<"/porta
     (d) => d.decision_status === "open" || d.decision_status === "recommended",
   ).length;
   const actions = await getClientActions(engagement.id);
+  // The DAM release label and title only (D21); nothing else of the Method Library.
+  const methodology = await getClientEngagementMethodology(engagement.id);
   const myRequests = actions.filter(
     (a) => a.status === "open" && a.addressed_to_user_id === viewer.id,
   ).length;
@@ -109,6 +112,9 @@ export default async function ClientEngagementPage({ params }: PageProps<"/porta
               },
               { label: "Start date", value: formatDate(engagement.start_date) },
               { label: "Target completion", value: formatDate(engagement.target_end_date) },
+              ...(methodology
+                ? [{ label: "Method", value: `Conducted under the ${methodology.release_title}` }]
+                : []),
             ]}
           />
         </div>

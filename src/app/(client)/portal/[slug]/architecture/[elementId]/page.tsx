@@ -16,12 +16,14 @@ import {
   getClientRelationships,
 } from "@/domain/architecture/queries";
 import { objectType, relationshipType } from "@/domain/architecture/rules";
+import { getClientAcceptanceCriteria } from "@/domain/methodology/queries";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { ApprovalTag, ReferenceCode } from "@/components/architecture/badges";
 import { ApprovalResponseForm } from "@/components/architecture/client-responses";
 import { SnapshotView } from "@/components/architecture/snapshot-view";
 import { ContributionCard } from "@/components/intelligence/contribution-card";
 import { UploadForm } from "@/components/intelligence/upload-form";
+import { ClientCriteriaList } from "@/components/methodology/client-criteria";
 import { EngagementNav } from "@/components/portal/engagement-nav";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState, Panel } from "@/components/ui/panel";
@@ -35,13 +37,15 @@ export default async function ClientElementPage({
   const { viewer, engagement, capabilities, canView, canRespond } =
     await getClientArchitectureContext(slug);
   if (!canView) notFound();
-  const [rows, versions, relationships, pending, contributions] = await Promise.all([
+  const [rows, versions, relationships, pending, contributions, allCriteria] = await Promise.all([
     getClientArchitecture(engagement.id),
     getClientElementVersions(elementId),
     getClientRelationships(engagement.id),
     canRespond ? getClientPendingApprovals(engagement.id) : Promise.resolve([]),
     getContributions(engagement.id, elementId),
+    getClientAcceptanceCriteria(engagement.id),
   ]);
+  const criteria = allCriteria.filter((c) => c.governed_element_id === elementId);
   const canContribute = capabilities.has("submit_client_input");
   const names = memberNames(engagement);
   const nameOf = (id: string | null) => (id === viewer.id ? "You" : names(id));
@@ -115,6 +119,15 @@ export default async function ClientElementPage({
           titleOf={(id) => titles.get(id)?.title ?? null}
         />
       </Panel>
+
+      {criteria.length > 0 ? (
+        <Panel
+          title="Acceptance criteria"
+          description="What must be true for this to be accepted, as agreed with TPLCo."
+        >
+          <ClientCriteriaList criteria={criteria} />
+        </Panel>
+      ) : null}
 
       <Panel title="Connected architecture">
         {connected.length === 0 ? (
