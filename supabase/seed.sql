@@ -414,4 +414,434 @@ insert into public.contracts (
   '10000000-0000-4000-8000-000000000002'
 );
 
+
+-- -----------------------------------------------------------------------------
+-- Phase 3: architecture (Meridian, Regional Innovation District)
+--
+-- Built through the same writes and operations as the app, as the people who
+-- would perform them. 27 core objects across the four domains, reproducing
+-- the specification's example chain (Commercial Acquisition requires Property
+-- Underwriting, is informed by the Commercial Real Estate Market, is
+-- threatened by Capital Availability, is measured by Qualified Acquisitions /
+-- Month, is implemented through the Acquisition Team), with:
+--   * statements with provenance and evidence (one contradicting source);
+--   * assumptions, risks (one spanning two domains), an engagement-wide
+--     constraint, a blocking dependency, a decision with options and a
+--     recommendation, and a recommendation record;
+--   * internal-only content (a competitive factor, a note, a conflict,
+--     Method lineage) and a draft that was never published;
+--   * baseline 1 (approved externally), later changes, baseline 2;
+--   * Commercial Acquisition v2 approved in the portal; the Intended Outcome
+--     awaiting the client's response; the decision open for the client.
+-- Harbor gets two published elements to prove tenant isolation.
+-- -----------------------------------------------------------------------------
+create function pg_temp.el(
+  p_id uuid, p_kind public.element_kind, p_title text, p_summary text, p_provenance public.provenance_type,
+  p_visibility public.client_visibility default 'client',
+  p_engagement uuid default 'e0000000-0000-4000-8000-000000000001'
+)
+returns void
+language sql
+as $$
+  insert into public.architecture_elements (id, engagement_id, kind, title, summary, provenance, client_visibility, owner_user_id)
+  values (p_id, p_engagement, p_kind, p_title, p_summary, p_provenance, p_visibility, '10000000-0000-4000-8000-000000000003');
+$$;
+
+create function pg_temp.obj(
+  p_id uuid, p_type text, p_title text, p_summary text, p_provenance public.provenance_type, p_attributes jsonb,
+  p_maturity public.maturity_state default 'undefined', p_rationale text default '',
+  p_visibility public.client_visibility default 'client',
+  p_engagement uuid default 'e0000000-0000-4000-8000-000000000001'
+)
+returns void
+language sql
+as $$
+  select pg_temp.el(p_id, 'object', p_title, p_summary, p_provenance, p_visibility, p_engagement);
+  insert into public.architecture_objects (element_id, object_type, maturity, maturity_rationale, attributes)
+  values (p_id, p_type, p_maturity, p_rationale, '{"schema_version": 1}'::jsonb || p_attributes);
+$$;
+
+create function pg_temp.rel(
+  p_source uuid, p_type text, p_target uuid, p_visibility public.client_visibility default 'client',
+  p_proficiency public.skill_proficiency default null, p_description text default ''
+)
+returns uuid
+language sql
+as $$
+  insert into public.architecture_relationships (
+    engagement_id, source_element_id, target_element_id, relationship_type, required_proficiency,
+    description, provenance, client_visibility
+  )
+  select e.engagement_id, p_source, p_target, p_type, p_proficiency, p_description, 'architect_judgment', p_visibility
+  from public.architecture_elements e where e.id = p_source
+  returning id;
+$$;
+
+create function pg_temp.stmt(
+  p_id uuid, p_element uuid, p_kind public.statement_kind, p_body text, p_provenance public.provenance_type,
+  p_client_visible boolean default true, p_sort int default 0
+)
+returns void
+language sql
+as $$
+  insert into public.architecture_statements (id, element_id, statement_kind, body, provenance, client_visible, sort_order)
+  values (p_id, p_element, p_kind, p_body, p_provenance, p_client_visible, p_sort);
+$$;
+
+create function pg_temp.cite(p_statement uuid, p_source uuid, p_stance public.evidence_stance, p_locator text)
+returns void
+language sql
+as $$
+  insert into public.statement_evidence_links (statement_id, evidence_source_id, stance, locator)
+  values (p_statement, p_source, p_stance, p_locator);
+$$;
+
+select pg_temp.act_as('10000000-0000-4000-8000-000000000003');  -- Architect
+
+-- Evidence sources -------------------------------------------------------------
+insert into public.evidence_sources (
+  id, engagement_id, title, source_type, provenance, reference, url, publisher_author, source_date,
+  accessed_date, summary, ip_classification, client_visibility
+) values
+  ('b3000000-0000-4000-8000-000000000701', 'e0000000-0000-4000-8000-000000000001',
+   'Regional Commercial Real Estate Outlook 2026', 'publication', 'public_source',
+   'Regional Commercial Real Estate Outlook 2026, Metro Economic Council, pp. 10-14',
+   'https://example.org/metro-cre-outlook-2026', 'Metro Economic Council', date '2026-03-02', date '2026-08-10',
+   'Vacancy, absorption and pricing for office and lab space in the region.', 'public_source', 'client'),
+  ('b3000000-0000-4000-8000-000000000702', 'e0000000-0000-4000-8000-000000000001',
+   'Interview: Authority Chief Financial Officer', 'interview', 'client_source',
+   'Interview with the Authority CFO, 14 August 2026', null, 'Meridian Development Authority', date '2026-08-14', null,
+   'Capital position, acquisition appetite and board expectations.', 'client_confidential', 'client'),
+  ('b3000000-0000-4000-8000-000000000703', 'e0000000-0000-4000-8000-000000000001',
+   'University land inventory', 'dataset', 'client_source',
+   'Data room: /land/university-parcels-2026.xlsx', null, 'Meridian Development Authority', date '2026-07-30', null,
+   'Parcel-level holdings of both universities within the proposed footprint.', 'client_owned_source_material', 'internal'),
+  ('b3000000-0000-4000-8000-000000000704', 'e0000000-0000-4000-8000-000000000001',
+   'TPLCo site visit notes', 'meeting_notes', 'architect_observation',
+   'Site visit, 21 August 2026', null, 'TPLCo', date '2026-08-21', null,
+   'Observations from the district walk and the board working session.', 'project_work_product', 'internal');
+
+-- Knowledge Architecture ----------------------------------------------------------
+select pg_temp.obj('b3000000-0000-4000-8000-000000000101', 'knowledge_area', 'Commercial Real Estate Market',
+  'Supply, demand, pricing and financing conditions for office, lab and flex space in the region.', 'public_source',
+  '{"scope_statement": "Office, lab and flex space within 20 miles of the district", "criticality": "foundational"}',
+  'defined', 'Market data is current and reconciled with the client''s own view.');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000102', 'knowledge_area', 'Regional Innovation Economy',
+  'The research, startup and anchor-institution activity the district depends on.', 'architect_judgment',
+  '{"scope_statement": "Research output, spinouts and anchor demand in the region", "criticality": "foundational"}',
+  'emerging', 'Spinout demand is not yet quantified.');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000103', 'concept', 'Anchor Institution',
+  'An institution whose presence draws tenants, talent and investment to the district.', 'architect_judgment',
+  '{"definition": "A long-lived institution that commits space, programs or demand to the district", "excludes": "Ordinary tenants without a program commitment"}',
+  'defined', 'Agreed with the board in the August working session.');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000104', 'concept', 'University Anchor',
+  'A university acting as an anchor institution through land, research programs or spinouts.', 'architect_judgment',
+  '{"definition": "An anchor institution that is a research university", "excludes": "Community colleges and training providers"}');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000105', 'research_question', 'How much space will university spinouts absorb in five years?',
+  'The share of district floor space that spinouts can realistically take up by year five.', 'architect_judgment',
+  '{"question": "What floor area will university spinouts absorb in the district within five years?", "why_it_matters": "It sets the scale of the first acquisition phase", "status": "open"}');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000106', 'knowledge_gap', 'Spinout space demand',
+  'Demand for space from university spinouts is not yet known.', 'architect_observation',
+  '{"unknown": "Annual spinout formation and space needs", "consequence_if_unresolved": "The first phase may be over- or under-sized", "closure_approach": "Technology transfer office data and founder survey"}');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000107', 'regulatory_factor', 'Opportunity Zone designation',
+  'Part of the district sits in a designated Opportunity Zone, with investment holding-period rules.', 'public_source',
+  '{"jurisdiction": "Federal and state", "instrument": "Opportunity Zone program", "obligation": "Qualifying investment and holding periods", "binding": "conditional"}');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000108', 'competitive_factor', 'Northgate Research Park',
+  'An established research park competing for the same lab tenants.', 'architect_observation',
+  '{"actor_or_force": "Northgate Research Park", "current_position": "Mature, 85% leased", "implication": "Competes on price for lab space"}',
+  'undefined', '', 'internal');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000109', 'system_boundary', 'Phase 1 district footprint',
+  'What the first phase of the district includes and excludes.', 'architect_judgment',
+  '{"inside": "The 42-acre core around the transit station", "outside": "University campuses and the health system main campus", "interfaces": "Shared programs, transit, utilities"}');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000110', 'stakeholder', 'Regional Health System',
+  'The regional health system, a prospective anchor and clinical research partner.', 'client_source',
+  '{"stakeholder_kind": "institution", "interest": "Clinical research space near the universities", "influence": "high", "stance": "supportive"}');
+
+-- Capability Architecture -----------------------------------------------------------
+select pg_temp.obj('b3000000-0000-4000-8000-000000000201', 'capability', 'Commercial Acquisition',
+  'The ability to identify, underwrite, negotiate and close acquisitions of commercial property for the district.',
+  'architect_judgment',
+  '{"tier": "core", "leadership_capability": false, "current_readiness": "absent", "ownership_model": "internal"}',
+  'emerging', 'Defined and agreed; the operating form is still being designed.');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000202', 'capability', 'Tenant Partnership Development',
+  'The ability to secure anchor and program commitments from institutions and companies.', 'architect_judgment',
+  '{"tier": "strategic", "leadership_capability": true, "current_readiness": "partial", "ownership_model": "shared"}');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000203', 'skill', 'Property Underwriting',
+  'Assessing the value, risk and return of a commercial property acquisition.', 'architect_judgment',
+  '{"skill_family": "Real estate finance", "baseline_proficiency": "proficient"}');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000204', 'role', 'Acquisition Director',
+  'The position accountable for the district''s acquisition pipeline and closings.', 'architect_judgment',
+  '{"purpose": "Lead acquisitions for the district", "sourcing": "external", "leadership_role": true, "indicative_capacity": "1 FTE"}');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000205', 'capability_gap', 'No in-house acquisition function',
+  'The Authority has no team able to acquire commercial property today.', 'architect_observation',
+  '{"current_state": "Acquisitions handled ad hoc by the board", "required_state": "A standing acquisition function", "closure_approach": "hire"}');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000206', 'talent_stage', 'Stage 1: Founding team',
+  'The first people brought in: acquisition and partnership leadership.', 'architect_judgment',
+  '{"sequence": 1, "trigger_condition": "Board approval of the district charter"}');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000207', 'talent_stage', 'Stage 2: Operating team',
+  'Property management and programs, once the first acquisitions close.', 'architect_judgment',
+  '{"sequence": 2, "trigger_condition": "First two acquisitions closed"}',
+  'undefined', '', 'internal');
+
+-- Strategic Model Architecture --------------------------------------------------------
+select pg_temp.obj('b3000000-0000-4000-8000-000000000301', 'intended_outcome', 'A self-sustaining commercial property portfolio',
+  'A district property portfolio whose income funds its programs without annual appropriations.', 'client_source',
+  '{"desired_condition": "Portfolio income covers district operations and programs", "horizon": "long", "beneficiary": "The region''s research and startup community"}',
+  'defined', 'Confirmed by the Executive Sponsor.');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000302', 'strategic_model', 'Anchor-led cluster development',
+  'Growth led by anchor institutions whose commitments draw tenants and investment.', 'methodology_derived',
+  '{"model_name": "Anchor-led cluster development", "application": "Universities and the health system as anchors", "applicability_limits": "Depends on anchors committing land or space"}',
+  'defined', 'Applied and tested against the region''s anchors.');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000303', 'structural_leverage', 'University land holdings',
+  'Both universities hold land inside the footprint that could be committed on long ground leases.', 'client_source',
+  '{"lever": "University-owned parcels", "mechanism": "Long-term ground leases instead of purchase", "expected_effect": "Lower capital need for the first phase"}');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000304', 'differentiation_logic', 'Clinical-research adjacency',
+  'The only district where lab space sits next to both universities and the health system.', 'architect_judgment',
+  '{"basis_of_difference": "Adjacency of clinical and academic research", "defensibility": "Hard to replicate location", "conditions_relied_on": "Health system participation"}');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000305', 'strategic_implication', 'Acquisition must precede tenant recruitment',
+  'Anchors will commit only once the district controls the first sites.', 'architect_judgment',
+  '{"implication": "Secure sites before the tenant campaign", "horizon": "near"}');
+
+-- Application Architecture --------------------------------------------------------------
+select pg_temp.obj('b3000000-0000-4000-8000-000000000401', 'application_format', 'Acquisition Team',
+  'A standing team that runs the district''s acquisition pipeline.', 'architect_judgment',
+  '{"format_kind": "team", "purpose": "Source, underwrite and close acquisitions", "participants": "Acquisition Director, analyst, counsel", "cadence": "Standing"}');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000402', 'metric', 'Qualified Acquisitions / Month',
+  'Acquisition opportunities that pass underwriting each month.', 'architect_judgment',
+  '{"definition": "Opportunities approved by underwriting in the month", "unit": "count", "direction": "increase", "target": "2 per month by month 12", "cadence": "Monthly", "data_source": "Acquisition pipeline"}');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000403', 'governance_body', 'District Development Board',
+  'The board that holds authority over the district''s portfolio and strategy.', 'client_source',
+  '{"mandate": "Portfolio, strategy and anchor agreements", "membership": "Authority, universities, health system, city", "cadence": "Monthly", "escalation_route": "Authority board"}');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000404', 'decision_right', 'Property acquisition approval',
+  'Authority over acquisitions above the delegated limit.', 'architect_judgment',
+  '{"decision_class": "Acquisitions above $5M", "decides": "District Development Board", "consulted": "Acquisition Director", "veto": "Authority board", "informed": "City"}');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000405', 'operating_model', 'District operating model',
+  'How the district runs: acquisition, partnerships, property operations and programs.', 'architect_judgment',
+  '{"model_form": "Authority-owned district company", "core_flows": "Acquire, lease, program, reinvest", "key_interfaces": "Universities, health system, city"}');
+
+-- Project Intelligence records ---------------------------------------------------------------
+select pg_temp.el('b3000000-0000-4000-8000-000000000501', 'risk', 'Capital availability',
+  'Acquisition capital may not be available on acceptable terms in the first 18 months.', 'client_source');
+insert into public.risks (element_id, category, probability, impact, mitigation, risk_status) values
+  ('b3000000-0000-4000-8000-000000000501', 'Financial', 4, 5,
+   'Ground leases on university land; tenant partnerships that bring capital.', 'mitigating');
+insert into public.intelligence_record_domains (element_id, domain) values
+  ('b3000000-0000-4000-8000-000000000501', 'capability'),
+  ('b3000000-0000-4000-8000-000000000501', 'strategic_model');
+
+select pg_temp.el('b3000000-0000-4000-8000-000000000502', 'risk', 'Leadership succession failure',
+  'The district depends on a small founding team; losing one leader would stall acquisitions and partnerships.',
+  'architect_judgment');
+insert into public.risks (element_id, category, probability, impact, mitigation) values
+  ('b3000000-0000-4000-8000-000000000502', 'People', 2, 4, 'Deputy roles in stage 2; documented pipeline.');
+insert into public.intelligence_record_domains (element_id, domain) values
+  ('b3000000-0000-4000-8000-000000000502', 'capability'),
+  ('b3000000-0000-4000-8000-000000000502', 'application');
+
+select pg_temp.el('b3000000-0000-4000-8000-000000000503', 'assumption', 'Universities will commit land on long ground leases',
+  'Both universities will lease parcels to the district for at least 50 years.', 'client_source');
+insert into public.assumptions (element_id, category, confidence, validation_status, impact_if_false) values
+  ('b3000000-0000-4000-8000-000000000503', 'Anchor commitment', 'medium', 'validating',
+   'The first phase would need purchase capital the Authority does not have.');
+insert into public.intelligence_record_domains (element_id, domain) values
+  ('b3000000-0000-4000-8000-000000000503', 'strategic_model');
+
+select pg_temp.el('b3000000-0000-4000-8000-000000000504', 'constraint', '36-month launch window',
+  'The district must open its first building within 36 months of the charter.', 'client_source');
+insert into public.constraints (element_id, category, source, negotiable) values
+  ('b3000000-0000-4000-8000-000000000504', 'temporal', 'State economic development grant terms', false);
+update public.architecture_elements set engagement_wide = true where id = 'b3000000-0000-4000-8000-000000000504';
+
+select pg_temp.el('b3000000-0000-4000-8000-000000000505', 'dependency', 'Board charter before acquisitions',
+  'The Acquisition Team cannot close without the District Development Board''s delegated authority.', 'architect_judgment');
+insert into public.dependencies (element_id, from_element_id, to_element_id, dependency_type, blocking) values
+  ('b3000000-0000-4000-8000-000000000505', 'b3000000-0000-4000-8000-000000000401',
+   'b3000000-0000-4000-8000-000000000403', 'prerequisite', true);
+
+select pg_temp.el('b3000000-0000-4000-8000-000000000506', 'decision', 'Acquisition vehicle',
+  'Which entity holds and finances the district''s acquisitions.', 'architect_judgment');
+insert into public.decisions (element_id, context, needed_by, downstream_impact, decision_owner_user_id) values
+  ('b3000000-0000-4000-8000-000000000506',
+   'The vehicle decides who can borrow, who bears risk and how fast the team can close.',
+   current_date + 30, 'Sets the Acquisition Team''s authority and the board''s delegation.',
+   '20000000-0000-4000-8000-000000000002');
+insert into public.decision_options (id, decision_element_id, title, description, tradeoffs, sort_order) values
+  ('b3000000-0000-4000-8000-000000000601', 'b3000000-0000-4000-8000-000000000506', 'District-owned LLC',
+   'A limited liability company owned by the Authority.', 'Fast to close and ring-fenced; needs its own capital.', 1),
+  ('b3000000-0000-4000-8000-000000000602', 'b3000000-0000-4000-8000-000000000506', 'Authority balance sheet',
+   'The Authority acquires directly.', 'Cheapest capital; slowest approvals.', 2),
+  ('b3000000-0000-4000-8000-000000000603', 'b3000000-0000-4000-8000-000000000506', 'Joint venture with a university',
+   'A venture with one university contributing land.', 'Lowest capital; shared control.', 3);
+insert into public.intelligence_record_domains (element_id, domain) values
+  ('b3000000-0000-4000-8000-000000000506', 'application');
+select public.set_decision_recommendation('b3000000-0000-4000-8000-000000000506',
+  'b3000000-0000-4000-8000-000000000601', 'Closes fastest while keeping the Authority''s balance sheet separate.');
+
+select pg_temp.el('b3000000-0000-4000-8000-000000000507', 'recommendation', 'Establish the acquisition function first',
+  'Hire the Acquisition Director and stand up the team before the tenant campaign.', 'architect_judgment');
+insert into public.recommendations (element_id, rationale, priority) values
+  ('b3000000-0000-4000-8000-000000000507', 'Anchors will commit only once the district controls sites.', 'critical');
+insert into public.intelligence_record_domains (element_id, domain) values
+  ('b3000000-0000-4000-8000-000000000507', 'capability');
+
+-- Statements and evidence ---------------------------------------------------------------------
+select pg_temp.stmt('b3000000-0000-4000-8000-000000000801', 'b3000000-0000-4000-8000-000000000201', 'finding',
+  'The Authority has closed two property acquisitions in ten years, both through outside brokers.', 'client_source', true, 1);
+select pg_temp.cite('b3000000-0000-4000-8000-000000000801', 'b3000000-0000-4000-8000-000000000702', 'supports', '00:14:30');
+select pg_temp.stmt('b3000000-0000-4000-8000-000000000802', 'b3000000-0000-4000-8000-000000000201', 'rationale',
+  'Without a standing acquisition capability the district cannot secure sites ahead of anchor commitments.',
+  'architect_judgment', true, 2);
+select pg_temp.stmt('b3000000-0000-4000-8000-000000000803', 'b3000000-0000-4000-8000-000000000201', 'note',
+  'Two board members prefer to keep acquisitions with the Authority; raise privately before the next session.',
+  'architect_observation', false, 3);
+select pg_temp.cite('b3000000-0000-4000-8000-000000000803', 'b3000000-0000-4000-8000-000000000704', 'context', 'p. 2');
+select pg_temp.stmt('b3000000-0000-4000-8000-000000000804', 'b3000000-0000-4000-8000-000000000101', 'finding',
+  'Lab vacancy in the region is under 5%, while office vacancy is 18%.', 'public_source', true, 1);
+select pg_temp.cite('b3000000-0000-4000-8000-000000000804', 'b3000000-0000-4000-8000-000000000701', 'supports', 'p. 12, table 3');
+select pg_temp.cite('b3000000-0000-4000-8000-000000000804', 'b3000000-0000-4000-8000-000000000702', 'contradicts', '00:31:10');
+select pg_temp.stmt('b3000000-0000-4000-8000-000000000805', 'b3000000-0000-4000-8000-000000000303', 'finding',
+  'The universities hold 19 of the 42 acres in the Phase 1 footprint.', 'client_source', true, 1);
+select pg_temp.cite('b3000000-0000-4000-8000-000000000805', 'b3000000-0000-4000-8000-000000000703', 'supports', 'Sheet "Parcels", rows 2-40');
+select pg_temp.stmt('b3000000-0000-4000-8000-000000000806', 'b3000000-0000-4000-8000-000000000301', 'definition',
+  'Self-sustaining means portfolio net operating income covers district operations and programs.', 'client_source', true, 1);
+select pg_temp.stmt('b3000000-0000-4000-8000-000000000807', 'b3000000-0000-4000-8000-000000000501', 'finding',
+  'Lenders quoted acquisition debt at 300 basis points above the Authority''s last issue.', 'client_source', true, 1);
+select pg_temp.cite('b3000000-0000-4000-8000-000000000807', 'b3000000-0000-4000-8000-000000000702', 'supports', '00:22:05');
+insert into public.element_evidence_links (element_id, evidence_source_id, stance, locator) values
+  ('b3000000-0000-4000-8000-000000000101', 'b3000000-0000-4000-8000-000000000701', 'supports', 'Whole report');
+
+-- Method lineage (internal only) ---------------------------------------------------------------
+insert into public.element_method_lineage (element_id, method_asset_id, method_version, note)
+select 'b3000000-0000-4000-8000-000000000302', id, 'DAM 1.0', 'Applied from the strategic model library'
+from public.method_assets where title = 'Strategic Model Library Index';
+insert into public.element_method_lineage (element_id, method_asset_id, method_version, note)
+select 'b3000000-0000-4000-8000-000000000201', id, 'DAM 1.0', 'Readiness assessed with the diagnostic'
+from public.method_assets where title = 'Capability Readiness Diagnostic';
+
+-- Relationships ----------------------------------------------------------------------------------
+select pg_temp.rel('b3000000-0000-4000-8000-000000000201', 'requires', 'b3000000-0000-4000-8000-000000000203');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000101', 'informs', 'b3000000-0000-4000-8000-000000000201');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000501', 'threatens', 'b3000000-0000-4000-8000-000000000201');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000201', 'measured_by', 'b3000000-0000-4000-8000-000000000402');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000201', 'implemented_through', 'b3000000-0000-4000-8000-000000000401');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000201', 'serves', 'b3000000-0000-4000-8000-000000000301');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000204', 'requires', 'b3000000-0000-4000-8000-000000000203', 'client', 'expert');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000201', 'requires', 'b3000000-0000-4000-8000-000000000204');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000103', 'part_of', 'b3000000-0000-4000-8000-000000000102');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000104', 'specializes', 'b3000000-0000-4000-8000-000000000103');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000105', 'investigates', 'b3000000-0000-4000-8000-000000000106');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000105', 'investigates', 'b3000000-0000-4000-8000-000000000503');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000106', 'gap_in', 'b3000000-0000-4000-8000-000000000102');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000205', 'gap_in', 'b3000000-0000-4000-8000-000000000201');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000206', 'precedes', 'b3000000-0000-4000-8000-000000000207', 'internal');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000206', 'introduces', 'b3000000-0000-4000-8000-000000000204');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000302', 'shapes', 'b3000000-0000-4000-8000-000000000201');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000302', 'implies', 'b3000000-0000-4000-8000-000000000305');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000302', 'exploits', 'b3000000-0000-4000-8000-000000000303');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000304', 'positioned_against', 'b3000000-0000-4000-8000-000000000108', 'internal');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000304', 'exploits', 'b3000000-0000-4000-8000-000000000303');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000401', 'governed_by', 'b3000000-0000-4000-8000-000000000403');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000403', 'holds', 'b3000000-0000-4000-8000-000000000404');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000401', 'part_of', 'b3000000-0000-4000-8000-000000000405');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000204', 'accountable_for', 'b3000000-0000-4000-8000-000000000401');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000405', 'subject_to', 'b3000000-0000-4000-8000-000000000107');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000405', 'bounded_by', 'b3000000-0000-4000-8000-000000000109');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000110', 'has_stake_in', 'b3000000-0000-4000-8000-000000000301');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000502', 'threatens', 'b3000000-0000-4000-8000-000000000204');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000503', 'underpins', 'b3000000-0000-4000-8000-000000000302');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000504', 'constrains', 'b3000000-0000-4000-8000-000000000506');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000506', 'affects', 'b3000000-0000-4000-8000-000000000401');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000507', 'addresses', 'b3000000-0000-4000-8000-000000000205');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000202', 'mitigates', 'b3000000-0000-4000-8000-000000000501');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000404', 'conflicts_with', 'b3000000-0000-4000-8000-000000000403', 'internal',
+  null, 'The $5M delegation limit contradicts the board''s mandate to approve every acquisition.');
+
+-- Publish everything except the stage 2 draft --------------------------------------------------
+select public.publish_element_version(id, 'First published version')
+from public.architecture_elements
+where engagement_id = 'e0000000-0000-4000-8000-000000000001'
+  and id <> 'b3000000-0000-4000-8000-000000000207'
+order by reference_code;
+
+-- Domain states (Principal Architect) -------------------------------------------------------------
+select pg_temp.act_as('10000000-0000-4000-8000-000000000002');
+select public.record_domain_assessment('e0000000-0000-4000-8000-000000000001', 'knowledge', 'defined',
+  'Market and regulatory knowledge is documented and evidenced; spinout demand remains a known gap.');
+select public.record_domain_assessment('e0000000-0000-4000-8000-000000000001', 'capability', 'emerging',
+  'Core capabilities are named and the acquisition gap is clear; roles and sequencing are still being designed.');
+select public.record_domain_assessment('e0000000-0000-4000-8000-000000000001', 'strategic_model', 'defined',
+  'The anchor-led model is applied and its assumptions are stated.');
+select public.record_domain_assessment('e0000000-0000-4000-8000-000000000001', 'application', 'emerging',
+  'The acquisition team and board are defined; the operating model is an outline.');
+
+-- Baseline 1, approved outside the portal ----------------------------------------------------------
+select pg_temp.act_as('10000000-0000-4000-8000-000000000003');
+insert into public.architecture_baselines (id, engagement_id, label, description) values
+  ('b3000000-0000-4000-8000-000000000901', 'e0000000-0000-4000-8000-000000000001',
+   'Executive Architecture v1', 'The architecture presented at the September board session.');
+insert into public.architecture_baseline_items (baseline_id, element_id, element_version_id)
+select 'b3000000-0000-4000-8000-000000000901', id, latest_version_id
+from public.architecture_elements
+where engagement_id = 'e0000000-0000-4000-8000-000000000001' and latest_version_id is not null;
+select public.freeze_baseline('b3000000-0000-4000-8000-000000000901');
+select public.record_external_architecture_approval(
+  null, 'b3000000-0000-4000-8000-000000000901', 'approved', 'Eleanor Vance', 'Executive Director',
+  current_date - 10, 'signed_document', 'Signed board resolution 2026-14');
+
+-- Changes after baseline 1 -----------------------------------------------------------------------------
+update public.architecture_objects
+set maturity = 'defined', maturity_rationale = 'Operating form, role and metric are now defined and linked.'
+where element_id = 'b3000000-0000-4000-8000-000000000201';
+select pg_temp.stmt('b3000000-0000-4000-8000-000000000808', 'b3000000-0000-4000-8000-000000000201', 'implication',
+  'The Acquisition Director must be in post before the first site option expires.', 'architect_judgment', true, 4);
+select public.publish_element_version('b3000000-0000-4000-8000-000000000201',
+  'Maturity raised to Defined; implication on the Acquisition Director''s start date added.');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000406', 'workflow', 'Site acquisition workflow',
+  'From site identification to closing.', 'architect_judgment',
+  '{"trigger": "A qualifying site is identified", "stages_summary": "Screen, underwrite, board approval, close", "outputs": "Closed acquisition"}');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000406', 'part_of', 'b3000000-0000-4000-8000-000000000405');
+select pg_temp.rel('b3000000-0000-4000-8000-000000000201', 'implemented_through', 'b3000000-0000-4000-8000-000000000406');
+select public.publish_element_version('b3000000-0000-4000-8000-000000000406', 'First published version');
+select public.retire_relationship(r.id, 'Differentiation rests on adjacency, not land holdings.')
+from public.architecture_relationships r
+where r.source_element_id = 'b3000000-0000-4000-8000-000000000304' and r.relationship_type = 'exploits';
+
+select pg_temp.act_as('10000000-0000-4000-8000-000000000002');
+select public.record_domain_assessment('e0000000-0000-4000-8000-000000000001', 'capability', 'defined',
+  'The acquisition capability, its role, skill, metric and operating form are defined and linked.');
+
+-- Approvals: v2 of Commercial Acquisition approved in the portal; the
+-- Intended Outcome awaiting the client.
+select public.request_architecture_approval(latest_version_id, null, 'Please confirm the acquisition capability.')
+from public.architecture_elements where id = 'b3000000-0000-4000-8000-000000000201';
+select public.request_architecture_approval(latest_version_id, null, 'Please confirm the intended outcome.')
+from public.architecture_elements where id = 'b3000000-0000-4000-8000-000000000301';
+select pg_temp.act_as('20000000-0000-4000-8000-000000000001');  -- Meridian Executive Sponsor
+select public.respond_to_architecture_approval(a.id, 'approved', 'Agreed at the board session.')
+from public.architecture_approvals a
+join public.architecture_elements e on e.latest_version_id = a.element_version_id
+where e.id = 'b3000000-0000-4000-8000-000000000201';
+
+-- Baseline 2 ---------------------------------------------------------------------------------------------
+select pg_temp.act_as('10000000-0000-4000-8000-000000000003');
+insert into public.architecture_baselines (id, engagement_id, label, description) values
+  ('b3000000-0000-4000-8000-000000000902', 'e0000000-0000-4000-8000-000000000001',
+   'Executive Architecture v2', 'After the acquisition capability was defined.');
+insert into public.architecture_baseline_items (baseline_id, element_id, element_version_id)
+select 'b3000000-0000-4000-8000-000000000902', id, latest_version_id
+from public.architecture_elements
+where engagement_id = 'e0000000-0000-4000-8000-000000000001' and latest_version_id is not null;
+select public.freeze_baseline('b3000000-0000-4000-8000-000000000902');
+
+-- Harbor: two published elements (tenant isolation) --------------------------------------------------
+select pg_temp.obj('b3000000-0000-4000-8000-000000000a01', 'governance_body', 'Regional Expansion Council',
+  'The council that approves entry into each new service region.', 'client_source',
+  '{"mandate": "Approve new regions", "membership": "Foundation trustees and regional partners", "cadence": "Quarterly"}',
+  'undefined', '', 'client', 'e0000000-0000-4000-8000-000000000003');
+select pg_temp.obj('b3000000-0000-4000-8000-000000000a02', 'knowledge_area', 'Regional service demand',
+  'Demand for the Foundation''s programs in the three candidate regions.', 'client_source',
+  '{"criticality": "foundational"}', 'undefined', '', 'client', 'e0000000-0000-4000-8000-000000000003');
+select public.publish_element_version('b3000000-0000-4000-8000-000000000a01', 'First published version');
+select public.publish_element_version('b3000000-0000-4000-8000-000000000a02', 'First published version');
+
 select set_config('request.jwt.claims', '', false);

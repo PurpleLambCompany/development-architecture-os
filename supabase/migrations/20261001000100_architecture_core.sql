@@ -17,6 +17,8 @@
 --     (23514) or report a missing record (P0002).
 --   * Every permission check uses engagement capabilities, never role names.
 --   * No table here references a finance table (ADR-0023).
+--   * Timestamps use clock_timestamp(), so histories written in one
+--     transaction (a seed, a freeze after a publication) still order correctly.
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -505,9 +507,9 @@ create table public.architecture_elements (
   retired_at           timestamptz,
   retirement_reason    text check (char_length(retirement_reason) <= 1000),
   created_by           uuid references public.profiles (id) on delete set null default auth.uid(),
-  created_at           timestamptz not null default now(),
+  created_at           timestamptz not null default clock_timestamp(),
   updated_by           uuid references public.profiles (id) on delete set null default auth.uid(),
-  updated_at           timestamptz not null default now(),
+  updated_at           timestamptz not null default clock_timestamp(),
   constraint architecture_elements_engagement_key unique (id, engagement_id),
   constraint architecture_elements_kind_key unique (id, engagement_id, kind),
   constraint architecture_elements_code_unique unique (engagement_id, reference_code),
@@ -557,7 +559,7 @@ create table public.intelligence_record_domains (
   kind           public.element_kind not null check (kind <> 'object'),
   domain         public.architecture_domain not null,
   created_by     uuid references public.profiles (id) on delete set null default auth.uid(),
-  created_at     timestamptz not null default now(),
+  created_at     timestamptz not null default clock_timestamp(),
   primary key (element_id, domain),
   constraint intelligence_record_domains_element_fk foreign key (element_id, engagement_id, kind)
     references public.architecture_elements (id, engagement_id, kind) on delete cascade
@@ -686,8 +688,8 @@ create table public.decision_options (
   tradeoffs            text not null default '' check (char_length(tradeoffs) <= 4000),
   sort_order           int not null default 0,
   created_by           uuid references public.profiles (id) on delete set null default auth.uid(),
-  created_at           timestamptz not null default now(),
-  updated_at           timestamptz not null default now(),
+  created_at           timestamptz not null default clock_timestamp(),
+  updated_at           timestamptz not null default clock_timestamp(),
   constraint decision_options_decision_fk foreign key (decision_element_id, engagement_id)
     references public.decisions (element_id, engagement_id) on delete cascade,
   constraint decision_options_decision_key unique (id, decision_element_id)
@@ -725,8 +727,8 @@ create table public.architecture_statements (
   ai_reviewed_at    timestamptz,
   sort_order        int not null default 0,
   created_by        uuid references public.profiles (id) on delete set null default auth.uid(),
-  created_at        timestamptz not null default now(),
-  updated_at        timestamptz not null default now(),
+  created_at        timestamptz not null default clock_timestamp(),
+  updated_at        timestamptz not null default clock_timestamp(),
   constraint architecture_statements_element_fk foreign key (element_id, engagement_id)
     references public.architecture_elements (id, engagement_id) on delete cascade,
   constraint architecture_statements_engagement_key unique (id, engagement_id),
@@ -756,8 +758,8 @@ create table public.evidence_sources (
   ip_classification   public.ip_classification not null default 'project_work_product',
   client_visibility   public.client_visibility not null default 'internal',
   created_by          uuid references public.profiles (id) on delete set null default auth.uid(),
-  created_at          timestamptz not null default now(),
-  updated_at          timestamptz not null default now(),
+  created_at          timestamptz not null default clock_timestamp(),
+  updated_at          timestamptz not null default clock_timestamp(),
   constraint evidence_sources_engagement_key unique (id, engagement_id),
   constraint evidence_sources_method_ip_internal check (
     client_visibility = 'internal' or ip_classification <> 'tplco_method_ip'
@@ -774,7 +776,7 @@ create table public.statement_evidence_links (
   locator             text not null default '' check (char_length(locator) <= 300),
   note                text not null default '' check (char_length(note) <= 1000),
   created_by          uuid references public.profiles (id) on delete set null default auth.uid(),
-  created_at          timestamptz not null default now(),
+  created_at          timestamptz not null default clock_timestamp(),
   constraint statement_evidence_links_statement_fk foreign key (statement_id, engagement_id)
     references public.architecture_statements (id, engagement_id) on delete cascade,
   constraint statement_evidence_links_source_fk foreign key (evidence_source_id, engagement_id)
@@ -792,7 +794,7 @@ create table public.element_evidence_links (
   locator             text not null default '' check (char_length(locator) <= 300),
   note                text not null default '' check (char_length(note) <= 1000),
   created_by          uuid references public.profiles (id) on delete set null default auth.uid(),
-  created_at          timestamptz not null default now(),
+  created_at          timestamptz not null default clock_timestamp(),
   constraint element_evidence_links_element_fk foreign key (element_id, engagement_id)
     references public.architecture_elements (id, engagement_id) on delete cascade,
   constraint element_evidence_links_source_fk foreign key (evidence_source_id, engagement_id)
@@ -810,7 +812,7 @@ create table public.element_method_lineage (
   method_version   text not null default '' check (char_length(method_version) <= 40),
   note             text not null default '' check (char_length(note) <= 1000),
   created_by       uuid references public.profiles (id) on delete set null default auth.uid(),
-  created_at       timestamptz not null default now(),
+  created_at       timestamptz not null default clock_timestamp(),
   constraint element_method_lineage_element_fk foreign key (element_id, engagement_id)
     references public.architecture_elements (id, engagement_id) on delete cascade,
   constraint element_method_lineage_unique unique (element_id, method_asset_id)
@@ -834,8 +836,8 @@ create table public.architecture_relationships (
   retired_by            uuid references public.profiles (id) on delete set null,
   retirement_reason     text check (char_length(retirement_reason) <= 1000),
   created_by            uuid references public.profiles (id) on delete set null default auth.uid(),
-  created_at            timestamptz not null default now(),
-  updated_at            timestamptz not null default now(),
+  created_at            timestamptz not null default clock_timestamp(),
+  updated_at            timestamptz not null default clock_timestamp(),
   constraint architecture_relationships_source_fk foreign key (source_element_id, engagement_id)
     references public.architecture_elements (id, engagement_id) on delete cascade,
   constraint architecture_relationships_target_fk foreign key (target_element_id, engagement_id)
@@ -870,7 +872,7 @@ create table public.element_versions (
   client_visible_at_publication  boolean not null,
   change_summary                 text not null default '' check (char_length(change_summary) <= 2000),
   published_by                   uuid references public.profiles (id) on delete set null,
-  published_at                   timestamptz not null default now(),
+  published_at                   timestamptz not null default clock_timestamp(),
   methodology_version            text not null default '',
   constraint element_versions_element_fk foreign key (element_id, engagement_id)
     references public.architecture_elements (id, engagement_id) on delete restrict,
@@ -893,7 +895,7 @@ create table public.domain_assessments (
   provenance      public.provenance_type not null default 'architect_judgment' check (provenance = 'architect_judgment'),
   client_visible  boolean not null default true,
   assessed_by     uuid references public.profiles (id) on delete set null,
-  assessed_at     timestamptz not null default now(),
+  assessed_at     timestamptz not null default clock_timestamp(),
   constraint domain_assessments_engagement_key unique (id, engagement_id)
 );
 create index domain_assessments_latest_idx on public.domain_assessments (engagement_id, domain, assessed_at desc);
@@ -908,8 +910,8 @@ create table public.architecture_baselines (
   frozen_by      uuid references public.profiles (id) on delete set null,
   frozen_at      timestamptz,
   created_by     uuid references public.profiles (id) on delete set null default auth.uid(),
-  created_at     timestamptz not null default now(),
-  updated_at     timestamptz not null default now(),
+  created_at     timestamptz not null default clock_timestamp(),
+  updated_at     timestamptz not null default clock_timestamp(),
   constraint architecture_baselines_engagement_key unique (id, engagement_id),
   constraint architecture_baselines_frozen check ((status = 'frozen') = (frozen_at is not null))
 );
@@ -957,7 +959,7 @@ create table public.architecture_approvals (
   element_version_id        uuid,
   baseline_id               uuid,
   requested_by              uuid references public.profiles (id) on delete set null,
-  requested_at              timestamptz not null default now(),
+  requested_at              timestamptz not null default clock_timestamp(),
   request_note              text not null default '' check (char_length(request_note) <= 2000),
   response                  public.approval_response,
   comment                   text check (char_length(comment) <= 2000),
@@ -1432,7 +1434,7 @@ begin
     if auth.uid() is not null then
       new.updated_by := auth.uid();
     end if;
-    new.updated_at := now();
+    new.updated_at := clock_timestamp();
   end if;
   return new;
 end;
@@ -1603,7 +1605,7 @@ begin
     new.ai_reviewed_by := null;
     new.ai_reviewed_at := null;
   end if;
-  new.updated_at := now();
+  new.updated_at := clock_timestamp();
   return new;
 end;
 $$;
@@ -1627,7 +1629,7 @@ begin
   if new.client_visibility <> old.client_visibility and not private.can_publish_architecture(new.engagement_id) then
     raise exception 'Only architecture publishers change evidence visibility' using errcode = '42501';
   end if;
-  new.updated_at := now();
+  new.updated_at := clock_timestamp();
   return new;
 end;
 $$;
@@ -1711,7 +1713,7 @@ begin
     raise exception 'An option stays with its decision' using errcode = '23514';
   end if;
   new.engagement_id := d.engagement_id;
-  new.updated_at := now();
+  new.updated_at := clock_timestamp();
   return new;
 end;
 $$;
@@ -1746,7 +1748,7 @@ begin
         raise exception 'A published relationship is immutable; retire it and record a new one'
           using errcode = '23514';
       end if;
-      new.updated_at := now();
+      new.updated_at := clock_timestamp();
       return new;
     end if;
     if new.source_element_id <> old.source_element_id or new.target_element_id <> old.target_element_id
@@ -1842,7 +1844,7 @@ begin
   end if;
 
   if tg_op = 'UPDATE' then
-    new.updated_at := now();
+    new.updated_at := clock_timestamp();
   end if;
   return new;
 end;
@@ -1902,7 +1904,7 @@ begin
   if (new.status <> old.status or new.frozen_at is distinct from old.frozen_at) and not private.in_architecture_operation() then
     raise exception 'Baselines are frozen only through freeze_baseline' using errcode = '42501';
   end if;
-  new.updated_at := now();
+  new.updated_at := clock_timestamp();
   return new;
 end;
 $$;
@@ -2614,7 +2616,7 @@ begin
 
   -- Relationships are published once both ends have a published version.
   update public.architecture_relationships r
-  set published_at = now(), published_by = auth.uid()
+  set published_at = clock_timestamp(), published_by = auth.uid()
   where r.published_at is null
     and r.retired_at is null
     and (r.source_element_id = e.id or r.target_element_id = e.id)
@@ -2648,7 +2650,7 @@ begin
     raise exception 'A reason is required' using errcode = '23514';
   end if;
   update public.architecture_elements
-  set lifecycle = 'retired', retired_at = now(), retirement_reason = btrim(p_reason)
+  set lifecycle = 'retired', retired_at = clock_timestamp(), retirement_reason = btrim(p_reason)
   where id = e.id;
   perform private.end_architecture_operation();
 end;
@@ -2697,7 +2699,7 @@ begin
     old_e.engagement_id, new_e.id, old_e.id, 'supersedes', btrim(p_reason), 'architect_judgment',
     case when old_e.client_visibility = 'client' and new_e.client_visibility = 'client'
          then 'client'::public.client_visibility else 'internal' end,
-    case when old_e.latest_version_id is not null and new_e.latest_version_id is not null then now() end,
+    case when old_e.latest_version_id is not null and new_e.latest_version_id is not null then clock_timestamp() end,
     case when old_e.latest_version_id is not null and new_e.latest_version_id is not null then auth.uid() end
   )
   returning id into rel_id;
@@ -2736,7 +2738,7 @@ begin
     raise exception 'A reason is required' using errcode = '23514';
   end if;
   update public.architecture_relationships
-  set retired_at = now(), retired_by = auth.uid(), retirement_reason = btrim(p_reason)
+  set retired_at = clock_timestamp(), retired_by = auth.uid(), retirement_reason = btrim(p_reason)
   where id = r.id;
   perform private.end_architecture_operation();
 end;
@@ -2768,7 +2770,7 @@ begin
     end if;
     update public.architecture_statements
     set ai_review_state = case when p_accept then 'accepted'::public.ai_review_state else 'rejected' end,
-        ai_reviewed_by = auth.uid(), ai_reviewed_at = now()
+        ai_reviewed_by = auth.uid(), ai_reviewed_at = clock_timestamp()
     where id = s.id;
   else
     e := private.lock_element(p_element_id);
@@ -2778,7 +2780,7 @@ begin
     end if;
     update public.architecture_elements
     set ai_review_state = case when p_accept then 'accepted'::public.ai_review_state else 'rejected' end,
-        ai_reviewed_by = auth.uid(), ai_reviewed_at = now()
+        ai_reviewed_by = auth.uid(), ai_reviewed_at = clock_timestamp()
     where id = e.id;
   end if;
   perform private.end_architecture_operation();
@@ -2930,7 +2932,7 @@ begin
   set response = p_response,
       comment = nullif(btrim(coalesce(p_comment, '')), ''),
       responded_by = auth.uid(),
-      responded_at = now(),
+      responded_at = clock_timestamp(),
       approval_source = 'client_portal'
   where id = a.id;
   perform private.end_architecture_operation();
@@ -2981,7 +2983,7 @@ begin
   update public.architecture_approvals
   set response = p_response,
       comment = nullif(btrim(coalesce(p_comment, '')), ''),
-      responded_at = now(),
+      responded_at = clock_timestamp(),
       approval_source = 'external_recorded_by_tplco',
       external_approver_name = btrim(p_approver_name),
       external_approver_title = nullif(btrim(coalesce(p_approver_title, '')), ''),
@@ -2989,7 +2991,7 @@ begin
       external_approval_method = p_method,
       external_evidence = btrim(p_evidence),
       recorded_by = auth.uid(),
-      recorded_at = now()
+      recorded_at = clock_timestamp()
   where id = a.id;
   perform private.end_architecture_operation();
   return a.id;
@@ -3038,7 +3040,7 @@ begin
   set recommended_option_id = p_option_id,
       recommendation_rationale = nullif(btrim(coalesce(p_rationale, '')), ''),
       recommended_by = auth.uid(),
-      recommended_at = now(),
+      recommended_at = clock_timestamp(),
       decision_status = 'recommended',
       deferred_reason = null
   where element_id = d.element_id;
@@ -3088,7 +3090,7 @@ begin
       outcome_provenance = 'client_decision',
       decision_source = 'client_portal',
       decided_by = auth.uid(),
-      decided_at = now(),
+      decided_at = clock_timestamp(),
       deferred_reason = null
   where element_id = d.element_id;
   perform private.end_architecture_operation();
@@ -3131,13 +3133,13 @@ begin
       decision_note = nullif(btrim(coalesce(p_note, '')), ''),
       outcome_provenance = 'client_decision',
       decision_source = 'external_recorded_by_tplco',
-      decided_at = now(),
+      decided_at = clock_timestamp(),
       external_decider_name = btrim(p_decider_name),
       external_decided_on = p_decided_on,
       external_decision_method = p_method,
       external_evidence = btrim(p_evidence),
       recorded_by = auth.uid(),
-      recorded_at = now(),
+      recorded_at = clock_timestamp(),
       deferred_reason = null
   where element_id = d.element_id;
   perform private.end_architecture_operation();
@@ -3208,7 +3210,7 @@ begin
   where a.engagement_id = b.engagement_id
   order by a.domain, a.assessed_at desc, a.id desc;
 
-  update public.architecture_baselines set status = 'frozen', frozen_by = auth.uid(), frozen_at = now()
+  update public.architecture_baselines set status = 'frozen', frozen_by = auth.uid(), frozen_at = clock_timestamp()
   where id = b.id;
   perform private.end_architecture_operation();
 end;
