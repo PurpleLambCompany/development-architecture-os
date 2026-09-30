@@ -1,6 +1,8 @@
 # Phase 7A — Deterministic Development Edge: Proposal
 
-**Status:** This is a proposal only. Nothing in it has been built: no migration, schema, table, function, enum value, ADR, domain code, seed data, test or UI. Table, function, rule and field names are _proposed_. None is permanent until Kerrick approves this proposal and the open decisions in §29.
+**Status:** Revision 2, **approved and implementation-ready**. Kerrick approved the proposal on 2026-09-30 and decided OD-1 to OD-10 (§29), with five clarifications (§29.2). This revision records those decisions. OD-7 changed the recommendation: a held Review's examined set is now closed (§11.4). Nothing in this proposal has been built: no migration, schema, table, function, enum value, ADR, domain code, seed data, test or UI. Names are proposed until implementation.
+
+**Changed in Revision 2:** §1, §10.6, §11, §12.2, §13.2, §14.2, §17.1, §19, §21, §22, §23, §24, §25, §26, §28, §29 and §30. Sections changed because of OD-7 are §11.1 to §11.4, §19, §21, §22, §23, §24.1, §25, §26 and §28 (AC-32).
 
 **Governing direction:**
 
@@ -46,7 +48,7 @@ What 7A adds, in outline:
 2. **One common intelligence envelope** that every item maps into: what it is, why it surfaced, what it rests on (with versions), its epistemic status, what triggered it and what governance act would resolve it (§6).
 3. **Trigger grouping:** every item carries its triggering change. Items that share a trigger are one **Edge event**, so "APP-001 was revised" appears once with its consequences under it, not as five alerts (§7).
 4. **A governed impact matrix** over all 39 relationship types and the off-spine links, with direct propagation by default, four depth-capped recursive walks, and terminal hops. It replaces the semantics of the two existing impact traces for the Edge (§10).
-5. **Review examined-version capture (Q29):** `hold_review` records the exact latest published version of each examined element, immutably. Change since a Review becomes version-exact (§11).
+5. **Review examined-version capture (Q29):** `hold_review` records the exact latest published version of each examined element, immutably, and the examined set closes at hold (OD-7). Change since a Review becomes version-exact (§11).
 6. **A type-aware definition of substantive revision (Q30):** a publication is a revision only if its snapshot changes outside an explicit, tested list of lifecycle and status fields. `change_summary` is never parsed (§12).
 7. **A curated development-change read model** across Phases 3–6, built on `activity_log` without exposing it (§13).
 8. **Since You Were Away:** a user-private "briefed through" watermark that only the user sets and reads. No view tracking (§14).
@@ -56,7 +58,7 @@ What 7A adds, in outline:
 
 What stays true: deterministic conclusions are computed, never stored. Only human judgments, the Review capture and the user's own watermark are stored. Nothing reaches clients. Nothing is scored, ranked across people or developments, pushed, or promoted automatically.
 
-**Estimated shape:** 10 migrations (one more if OD-2 is approved), 9 new ADRs and 2 ADR amendment notes, about 12 new pgTAP files and 6 Vitest suites, and UI changes on existing internal pages plus one new route. No new dependency.
+**Shape:** 11 migrations, 9 new ADRs and 4 ADR amendment notes, 13 new pgTAP files and 7 Vitest suites, a reordered seed, and UI changes on existing internal pages plus one new route. No new dependency.
 
 ---
 
@@ -221,16 +223,16 @@ Catalog keys are **text with check constraints**, not Postgres enums, wherever t
 
 #### Change (8)
 
-| #   | Rule key                                | Cand.      | Status   | Home         | Subject and scope                                                                                                                                                                                                                                                                          | Trigger (time)                              | Resolving governance act                                                                    | Tier                                                           |
-| --- | --------------------------------------- | ---------- | -------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| 16  | `criteria_predate_revision`             | D-04       | Derived  | criteria     | Agreed criterion in force whose governed element has a substantive revision published after the agreement was **recorded** (system time, OD-2), never after `agreed_on`                                                                                                                    | **S** revision (system)                     | Supersede the criterion with a newly agreed one, or judge                                   | Attention                                                      |
-| 17  | `examined_element_revised_since_review` | D-21       | Derived  | review       | Held Review with a captured examined version (§11) where that element now has a substantive revision later than the captured version. Reviews held before 7A: only if they have a baseline (compared version-exact)                                                                        | **S** revision (exact version)              | A later held Review that examines the element (its capture becomes the reference), or judge | Attention; Ambient on the element                              |
-| 18  | `evidence_after_review`                 | D-22       | Derived  | review       | Held Review with a capture, where evidence was linked to a captured element (statement or element link) after the capture time. `contradicts` orders first                                                                                                                                 | Evidence link (system)                      | A later held Review that examines the element, or judge                                     | Attention for `contradicts`; Ambient otherwise                 |
-| 19  | `decision_not_reflected`                | D-23       | Derived  | intelligence | Decided decision whose `decided_at` (system) is later than the latest substantive version of an element it `affects`                                                                                                                                                                       | Decision (system)                           | A substantive revision of the affected element, or judge ("needs no revision")              | Attention                                                      |
-| 20  | `deliverable_documents_revised`         | D-24       | Derived  | deliverable  | Deliverable, not superseded or retired, documenting an element with a substantive revision later than the version in the Deliverable's baseline (exact) or, without a baseline, published after its latest approval was recorded (system)                                                  | **S** revision (exact version, else system) | Publish a new Deliverable version and record its approval, or judge                         | Attention                                                      |
-| 21  | `contribution_on_prior_version`         | D-25       | Derived  | intelligence | Unhandled client contribution made on a version after which the element has a substantive revision                                                                                                                                                                                         | **S** revision (exact version)              | Handle the contribution                                                                     | Attention                                                      |
-| 22  | `method_basis_superseded`               | D-26, D-27 | Recorded | practice     | Variant `pinned_version_superseded`: open Method Application pinned to a Method version since superseded. Variant `release_moved`: open applications started under a DAM release that is no longer the engagement's, or older than the latest published release; one engagement-level item | State                                       | None required (pins are deliberate, ADR-0043); judge, or change the engagement's release    | `pinned_version_superseded` Ambient; `release_moved` Attention |
-| 23  | `approval_behind_published`             | D-28       | Derived  | architecture | Element whose latest approved version is not its latest published version, and a substantive revision lies between them. Ambient only while an approval request on the latest version is pending                                                                                           | **S** revision (exact version)              | Request and record approval of the latest version                                           | Attention                                                      |
+| #   | Rule key                                | Cand.      | Status   | Home         | Subject and scope                                                                                                                                                                                                                                                                                | Trigger (time)                              | Resolving governance act                                                                    | Tier                                                           |
+| --- | --------------------------------------- | ---------- | -------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| 16  | `criteria_predate_revision`             | D-04       | Derived  | criteria     | Agreed criterion in force whose governed element has a substantive revision published after `agreed_recorded_at` (system time, OD-2), never after `agreed_on`. A criterion whose agreement time could not be backfilled produces no item, and its panel says the agreement time was not recorded | **S** revision (system)                     | Supersede the criterion with a newly agreed one, or judge                                   | Attention                                                      |
+| 17  | `examined_element_revised_since_review` | D-21       | Derived  | review       | Held Review with a captured examined version (§11) where that element now has a substantive revision later than the captured version. Reviews held before 7A: only if they have a baseline (compared version-exact)                                                                              | **S** revision (exact version)              | A later held Review that examines the element (its capture becomes the reference), or judge | Attention; Ambient on the element                              |
+| 18  | `evidence_after_review`                 | D-22       | Derived  | review       | Held Review with a capture, where evidence was linked to a captured element (statement or element link) after the capture time. `contradicts` orders first                                                                                                                                       | Evidence link (system)                      | A later held Review that examines the element, or judge                                     | Attention for `contradicts`; Ambient otherwise                 |
+| 19  | `decision_not_reflected`                | D-23       | Derived  | intelligence | Decided decision whose `decided_at` (system) is later than the latest substantive version of an element it `affects`                                                                                                                                                                             | Decision (system)                           | A substantive revision of the affected element, or judge ("needs no revision")              | Attention                                                      |
+| 20  | `deliverable_documents_revised`         | D-24       | Derived  | deliverable  | Deliverable, not superseded or retired, documenting an element with a substantive revision later than the version in the Deliverable's baseline (exact) or, without a baseline, published after its latest approval was recorded (system)                                                        | **S** revision (exact version, else system) | Publish a new Deliverable version and record its approval, or judge                         | Attention                                                      |
+| 21  | `contribution_on_prior_version`         | D-25       | Derived  | intelligence | Unhandled client contribution made on a version after which the element has a substantive revision                                                                                                                                                                                               | **S** revision (exact version)              | Handle the contribution                                                                     | Attention                                                      |
+| 22  | `method_basis_superseded`               | D-26, D-27 | Recorded | practice     | Variant `pinned_version_superseded`: open Method Application pinned to a Method version since superseded. Variant `release_moved`: open applications started under a DAM release that is no longer the engagement's, or older than the latest published release; one engagement-level item       | State                                       | None required (pins are deliberate, ADR-0043); judge, or change the engagement's release    | `pinned_version_superseded` Ambient; `release_moved` Attention |
+| 23  | `approval_behind_published`             | D-28       | Derived  | architecture | Element whose latest approved version is not its latest published version, and a substantive revision lies between them. Ambient only while an approval request on the latest version is pending                                                                                                 | **S** revision (exact version)              | Request and record approval of the latest version                                           | Attention                                                      |
 
 #### Exposure (3)
 
@@ -257,7 +259,7 @@ Catalog keys are **text with check constraints**, not Postgres enums, wherever t
 
 ### 5.3 The 11 existing rules in the catalog
 
-These are consumed unchanged (§26). The catalog records what they actually do today, including their current scope (F4, OD-3).
+These are consumed unchanged (§26). The catalog records what they actually do today, including their current scope (F4). OD-3 keeps that scope, deliberately.
 
 | Rule key                                     | Cand. | Lens        | Status   | Home           | Scope today                                  | Trigger (time)  | Resolving governance act                       | Tier                    |
 | -------------------------------------------- | ----- | ----------- | -------- | -------------- | -------------------------------------------- | --------------- | ---------------------------------------------- | ----------------------- |
@@ -406,12 +408,12 @@ There is no weighted sum, no numeric importance and no stored rank. Order is lex
 
 ### 9.2 Tiers
 
-| Tier (key)      | Label shown                                | Where it appears           | What places an item here                                                                                                                                                                                                             |
-| --------------- | ------------------------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `human_flagged` | "Escalated or marked critical by the team" | Top of the Edge, set apart | **Only** human-set states: the subject (or trigger subject) has stewardship attention `critical`, or an open escalation (Q22)                                                                                                        |
-| `elevated`      | "Governance approaching"                   | Top of the Edge list       | A governance event within the horizon (OD-4, 14 days) touches the subject: a scheduled Review examining it, a decision `needed_by`, a checkpoint target, a client action due. Or human attention `high` on the subject (D-35 merged) |
-| `attention`     | none (the default list)                    | Engagement Edge, briefing  | The rule's `list_tier` is `attention`                                                                                                                                                                                                |
-| `ambient`       | none                                       | Contextual panels only     | The rule's `list_tier` is `ambient`                                                                                                                                                                                                  |
+| Tier (key)      | Label shown                                | Where it appears           | What places an item here                                                                                                                                                                                                                                                               |
+| --------------- | ------------------------------------------ | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `human_flagged` | "Escalated or marked critical by the team" | Top of the Edge, set apart | **Only** human-set states: the subject (or trigger subject) has stewardship attention `critical`, or an open escalation (Q22)                                                                                                                                                          |
+| `elevated`      | "Governance approaching"                   | Top of the Edge list       | A governance event within the horizon (OD-4: 14 days, a governed constant, not user-configurable in 7A) touches the subject: a scheduled Review examining it, a decision `needed_by`, a checkpoint target, a client action due. Or human attention `high` on the subject (D-35 merged) |
+| `attention`     | none (the default list)                    | Engagement Edge, briefing  | The rule's `list_tier` is `attention`                                                                                                                                                                                                                                                  |
+| `ambient`       | none                                       | Contextual panels only     | The rule's `list_tier` is `ambient`                                                                                                                                                                                                                                                    |
 
 A rule can never produce `human_flagged` by itself. An item from `escalation_before_review` is human-flagged because an escalation is a human act, not because the rule says so. The word "critical" appears only where it quotes the human-set attention value.
 
@@ -497,7 +499,7 @@ At each reached element, the trace joins, without traversing further:
 
 ### 10.6 The existing traces
 
-`intelligence_impact` and `implementation_impact` stay in place, unchanged, and unused by the new UI. The element page's Impact trace panel switches to `impact_trace` in `on_demand` mode. Their removal is left to a later phase with an ADR note (OD-8).
+`impact_trace` is the **authoritative impact semantics** for Phase 7A (OD-8). `intelligence_impact` and `implementation_impact` stay in place, unchanged, for backward compatibility only. Once `impact_trace` exists, no UI surface calls them; the element page's Impact trace panel switches to `impact_trace` in `on_demand` mode. They are documented as **legacy internal read paths** in `docs/database/edge.md` and in their SQL comments, and they are not an alternative definition of impact. A Vitest check fails if application code calls them. Removal, or conversion to wrappers, is a later cleanup with its own ADR.
 
 ---
 
@@ -505,7 +507,7 @@ At each reached element, the trace joins, without traversing further:
 
 ### 11.1 What is captured
 
-When `hold_review` holds a Review, it records, for every element the Review `examines` at that moment (unretired `examines` relationships), the element's latest published version.
+When `hold_review` holds a Review, it records, for every element the Review `examines` at that moment (unretired `examines` relationships), the element's latest published version. From then on the Review's examined set is **closed** (§11.4). A held Review is one closed governance event: an exact examined set, exact examined versions, and an immutable capture. It is not a baseline and does not become a second baseline system.
 
 Proposed table `public.review_examined_versions`:
 
@@ -526,16 +528,41 @@ Proposed table `public.review_examined_versions`:
 | Immutable after the Review is held             | Guard triggers refuse update and delete; there is no operation to change it                                                                                             |
 | Version-exact                                  | Stores `element_version_id`, never a timestamp comparison                                                                                                               |
 | Supports exact "change since Review"           | `examined_element_revised_since_review` and `evidence_after_review` compare against it (§5.2 #17, #18)                                                                  |
+| Examined set closed at hold (OD-7)             | New `examines` from a held Review are refused, and existing ones cannot be retired (§11.4)                                                                              |
 | Distinct from an Architecture Baseline         | Separate table. No baseline is created, required or implied. A Review may still reference a baseline for its own purposes; the capture does not change that             |
 
 ### 11.3 Behavior and edge cases
 
 - `hold_review` keeps its signature and all its existing checks. The capture is an added step inside the same transaction.
 - **Examined elements with no published version** are captured with a null version. Any later publication then counts as change since the Review.
-- **`examines` added after the Review is held** is allowed today and stays allowed (no Phase 5 change). Such an element has no capture; the Review panel lists it as "examined after this Review was held", and no Change item is produced for it (OD-7).
-- **Reviews held before 7A** have no capture. They are not backfilled, because any backfill would have to infer versions from the user-entered `held_at`, which is exactly the F1 false positive. A Review with a baseline still gets version-exact change through the baseline; one without says "held before examined versions were recorded" (OD-6). In the local seed, REV-001 is held through `hold_review` after the migrations run, so it will carry a capture.
-- **Cancelled Reviews** are never held, so never captured.
+- **`examines` added after the Review is held** is refused from 7A onward (OD-7, §11.4). Additional formal examination uses a later Review.
+- **Reviews held before 7A** have no capture and are **not backfilled** (OD-6). Exact history is never inferred from the user-entered `held_at`. A historical Review with a frozen baseline gets version-exact change through the baseline; one without says "This Review predates exact examined-version capture". Their existing `examines` relationships, including any added after the hold, are preserved, and their past state is not mutated.
+- **Cancelled Reviews** are never held, so never captured. OD-7 closes the set only for held Reviews; a cancelled Review's `examines` are unchanged by 7A.
 - Captures are internal: no client policy, no client read model.
+
+### 11.4 The examined set closes at hold (OD-7)
+
+**Rule.** Once a Review's status is `held`:
+
+- inserting an `examines` relationship with that Review as source is refused (23514, "The examined set closed when this Review was held. Use a later Review for further examination.");
+- retiring one of its existing `examines` relationships is refused with the same reason, because retirement would also change the examined set (see §29.3);
+- existing relationships are preserved, and captures are never changed.
+
+**Where it is enforced.** A guard trigger on `architecture_relationships` (before insert, and before an update that sets `retired_at`) for `relationship_type = 'examines'` checks the source Review's status. This covers every write path: the relationship operations, direct inserts under RLS (as the pgTAP suites use), and the seed. `hold_review` itself is unchanged apart from the capture, and takes the Review's lock first, so a concurrent insert cannot slip in between the capture and the status change.
+
+**Phase 5 conflict check (Kerrick's condition).** Phase 5 has **no governed correction mechanism** that needs post-hold `examines`:
+
+- ADR-0034, ADR-0035, ADR-0038 and the Phase 5 proposal describe `examines` as "the review's agenda", recorded under `manage_reviews`. None provides for adding to the agenda after the hold.
+- `record_review_validation` requires that the held Review already `examines` the initiative or an object it implements. Under OD-7, that means "examined at the hold", which is the stricter and intended reading of "a review cannot validate something it never actually looked at" (Phase 5 proposal §7.5).
+- No pgTAP suite adds `examines` after a hold (16, 19, 26 and 99 all add it first).
+
+What does conflict, and must change with 7A:
+
+1. **The seed.** `supabase/seed.sql` holds Harbor's REV-001 and then adds its `examines` to APP-001 and, later, to IMP-002 before validating IMP-002. Both inserts would now be refused. The seed is reordered: IMP-002 is created and published first, both `examines` are added, then REV-001 is held (capturing both), then IMP-002 is validated. The end state is the same.
+2. **The Review page.** The agenda section invites adding items from "Connected architecture" at any status. After the hold, those controls are hidden and the page says the agenda closed at hold.
+3. **Workflow.** An initiative not on a held Review's agenda can no longer be validated by that Review. A new Review examining it is needed. This is the intended consequence and is written into the ADR-0034 amendment note (§21.2).
+
+Existing production Reviews that gained `examines` after their hold keep them. Nothing is migrated or rewritten.
 
 ---
 
@@ -553,21 +580,21 @@ A published element version _v_n_ (n ≥ 2) is a **substantive revision** if and
 
 Explicit, type-aware, governed by ADR and migration, and mirrored in `src/domain/edge/substantive.ts` with a test that compares it against the migration and against the snapshot builder's keys.
 
-| Kind                        | Excluded paths (status and lifecycle only)                       | Why these are status                                                                                                   |
-| --------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| All kinds (element)         | `ai_review_state`, `ai_reviewed_by`, `ai_reviewed_at`            | The AI review gate's state, which changes when pending content is accepted                                             |
-| All kinds (each statement)  | `statements[].ai_review_state`, `statements[].ai_reviewed_by`    | Same, per statement                                                                                                    |
-| `object`                    | `details.maturity`, `details.maturity_rationale`                 | Object maturity is a separate status axis (ADR-0020). **OD-1**                                                         |
-| `assumption`                | `details.validation_status`, `details.validation_note`           | Validation status and the note written with it                                                                         |
-| `risk`                      | `details.risk_status`                                            | Record status                                                                                                          |
-| `constraint`                | `details.constraint_status`                                      | Record status                                                                                                          |
-| `dependency`                | `details.dependency_status`                                      | Record status                                                                                                          |
-| `decision`                  | `details.decision_status`, `details.deferred_reason`             | Decision status. The outcome (chosen option, note, decider, decided time, source) is content and **stays substantive** |
-| `opportunity`               | `details.opportunity_status`                                     | Record status                                                                                                          |
-| `recommendation`            | none                                                             | Has no status field; `priority` is content                                                                             |
-| `review`                    | `details.review_status`, `details.held_at`                       | Written by holding or cancelling                                                                                       |
-| `deliverable`               | none                                                             | Has no status field in its snapshot                                                                                    |
-| `implementation_initiative` | `details.implementation_status`, `details.actual_operational_on` | Written by status publication (F2: the IMP-001 v1 → v2 diff)                                                           |
+| Kind                        | Excluded paths (status and lifecycle only)                       | Why these are status                                                                                                      |
+| --------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| All kinds (element)         | `ai_review_state`, `ai_reviewed_by`, `ai_reviewed_at`            | The AI review gate's state, which changes when pending content is accepted                                                |
+| All kinds (each statement)  | `statements[].ai_review_state`, `statements[].ai_reviewed_by`    | Same, per statement                                                                                                       |
+| `object`                    | `details.maturity`, `details.maturity_rationale`                 | Object maturity is its own governed status and judgment axis (ADR-0020); it never creates a Change event by itself (OD-1) |
+| `assumption`                | `details.validation_status`, `details.validation_note`           | Validation status and the note written with it                                                                            |
+| `risk`                      | `details.risk_status`                                            | Record status                                                                                                             |
+| `constraint`                | `details.constraint_status`                                      | Record status                                                                                                             |
+| `dependency`                | `details.dependency_status`                                      | Record status                                                                                                             |
+| `decision`                  | `details.decision_status`, `details.deferred_reason`             | Decision status. The outcome (chosen option, note, decider, decided time, source) is content and **stays substantive**    |
+| `opportunity`               | `details.opportunity_status`                                     | Record status                                                                                                             |
+| `recommendation`            | none                                                             | Has no status field; `priority` is content                                                                                |
+| `review`                    | `details.review_status`, `details.held_at`                       | Written by holding or cancelling                                                                                          |
+| `deliverable`               | none                                                             | Has no status field in its snapshot                                                                                       |
+| `implementation_initiative` | `details.implementation_status`, `details.actual_operational_on` | Written by status publication (F2: the IMP-001 v1 → v2 diff)                                                              |
 
 Everything else is substantive, including title, summary, statements and their evidence, relationships' reflected fields, owners, visibility, dates that describe the design, and every `details` field not listed. The list is deliberately short: it names status, and nothing else is suppressed.
 
@@ -601,24 +628,24 @@ For every kind: a status-only publication is `status_publication`; a publication
 
 ### 13.2 Classification (Phases 3–6)
 
-| Change type                                                 | Source                                                     |
-| ----------------------------------------------------------- | ---------------------------------------------------------- |
-| First publication, substantive revision, status publication | `element_versions` with §12                                |
-| Retired, superseded                                         | Element lifecycle operations                               |
-| Relationship added, retired                                 | `architecture_relationships`                               |
-| Evidence linked (with stance)                               | Statement and element evidence links                       |
-| Approval requested, recorded                                | `architecture_approvals`                                   |
-| Baseline frozen                                             | `architecture_baselines`                                   |
-| Record status changed (with rationale)                      | `intelligence_status_changes`                              |
-| Escalation opened, resolved                                 | `intelligence_escalations`                                 |
-| Decision decided, deferred                                  | `decisions`                                                |
-| Client action answered, contribution received               | `client_action_events`, `client_contributions`             |
-| Review scheduled, held, cancelled                           | `reviews` (held uses capture time, not `held_at`)          |
-| Validation recorded                                         | `validates` + `validation_criteria`                        |
-| Implementation status changed (with rationale)              | `implementation_status_changes`                            |
-| Checkpoint achieved                                         | `implementation_checkpoints`                               |
-| Criterion proposed, agreed, superseded, withdrawn           | `acceptance_criteria` (agreement at its system time, OD-2) |
-| Method Application started, closed, addendum recorded       | Phase 6 tables (internal)                                  |
+| Change type                                                 | Source                                                                             |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| First publication, substantive revision, status publication | `element_versions` with §12                                                        |
+| Retired, superseded                                         | Element lifecycle operations                                                       |
+| Relationship added, retired                                 | `architecture_relationships`                                                       |
+| Evidence linked (with stance)                               | Statement and element evidence links                                               |
+| Approval requested, recorded                                | `architecture_approvals`                                                           |
+| Baseline frozen                                             | `architecture_baselines`                                                           |
+| Record status changed (with rationale)                      | `intelligence_status_changes`                                                      |
+| Escalation opened, resolved                                 | `intelligence_escalations`                                                         |
+| Decision decided, deferred                                  | `decisions`                                                                        |
+| Client action answered, contribution received               | `client_action_events`, `client_contributions`                                     |
+| Review scheduled, held, cancelled                           | `reviews` (held uses capture time, not `held_at`)                                  |
+| Validation recorded                                         | `validates` + `validation_criteria`                                                |
+| Implementation status changed (with rationale)              | `implementation_status_changes`                                                    |
+| Checkpoint achieved                                         | `implementation_checkpoints`                                                       |
+| Criterion proposed, agreed, superseded, withdrawn           | `acceptance_criteria`; agreement at `agreed_recorded_at` (OD-2), never `agreed_on` |
+| Method Application started, closed, addendum recorded       | Phase 6 tables (internal)                                                          |
 
 ### 13.3 Excluded as noise or out of scope
 
@@ -653,7 +680,7 @@ At the top of the Engagement Edge:
 
 1. **What changed:** `development_changes` since the mark, grouped by trigger (§7), ordered by the same facts as the Edge (§9). Status publications are listed under their subject, after substantive changes.
 2. **What is new on the Edge:** events whose `trigger_at` is after the mark (Q7: "new" is derived from basis timestamps, not from stored first-observed times). `state` and `date` items have no trigger time; they appear in the Edge, not in "new".
-3. **No mark yet:** the briefing covers the last 14 days and says so (OD-10).
+3. **No mark yet:** the briefing covers the prior 14 days and says so on the page ("Showing the last 14 days. Mark reviewed to set your own starting point.") (OD-10). The window is never inferred from sign-in history, page views or how long the user has been on the engagement.
 
 The briefing is a document, not a feed: no unread counts, badges, dots or per-item "seen" state.
 
@@ -739,7 +766,7 @@ Each panel reads `edge_items` filtered to the object as subject, trigger or basi
    - Methods applied together within the same engagement (co-use), per version pair;
    - Standards informing agreed criteria, per Standard version.
 
-   Each is a count with its n. A proportion is shown only when n ≥ 5 closed applications of the version (OD-5). Below that the page says "Not enough closed applications to show a pattern (n = 3)". No engagement names, client names or free text are shown.
+   Each is a count with its n. The denominator n is always shown. A proportion is shown only when n ≥ 5 closed applications of the version (OD-5). Below that the page says "Fewer than 5 closed applications (n = 3); no proportion is shown". The threshold is a product and governance threshold for avoiding meaningless small-sample proportions, not a statistical-validity claim, and the page never describes any n as significant. No engagement names, client names or free text are shown.
 
 3. Readable by users who can read the Method Library, through a `security definer` function `method_practice_counts(p_asset_id)`.
 
@@ -766,6 +793,8 @@ Summaries of stage-note or addendum free text, outcome attribution to Methods, a
 | `edge_items`, `element_revisions`, `development_changes` | `security definer`, `search_path = ''`, first check `can_read_architecture(engagement)`; one engagement per call        |
 | `impact_trace`                                           | `security invoker`: RLS applies to every row read                                                                       |
 | `relationship_impact_rules`                              | Select for internal users; writes only by migration                                                                     |
+| `architecture_relationships` (`examines`)                | Guard trigger: no insert and no retirement of `examines` from a held Review (OD-7, §11.4)                               |
+| `acceptance_criteria.agreed_recorded_at`                 | Written only by `agree_acceptance_criterion` and the backfill; frozen with the other agreement fields                   |
 | `review_examined_versions`                               | Select where `can_read_architecture`; insert only inside `hold_review`; no update or delete                             |
 | `edge_judgments`                                         | Select where `can_read_architecture`; insert only through the two operations (`edit_architecture`); no update or delete |
 | `edge_briefing_marks`                                    | Select, insert and update only where `user_id = auth.uid()`; nothing else; not logged                                   |
@@ -796,30 +825,33 @@ Other obligations:
 
 ### 21.1 New ADRs (proposed numbers)
 
-| ADR      | Title                                                    | Decides                                                                                                                                                      |
-| -------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| ADR-0051 | The Development Edge envelope and rule catalog           | Computed items; one envelope; epistemic statuses; catalog attributes; mirrored catalog; homes; existing signals consumed unchanged; no enums                 |
-| ADR-0052 | One triggering change, one primary Edge event            | Trigger keys; grouping rules; coalescing revisions; subject grouping for standing conditions; grouping is presentation, never stored                         |
-| ADR-0053 | Substantive revision                                     | The definition; the type-aware excluded-path list; read-time computation; `change_summary` never parsed; first publication is not a revision                 |
-| ADR-0054 | Review examined-version capture                          | Captured by `hold_review`; immutable; version-exact; not a baseline; no backfill                                                                             |
-| ADR-0055 | Relationship impact matrix and impact trace              | The governed matrix; four recursive walks at depth ≤ 2; terminal hops; never-traversed links; two modes; the old traces retired from UI                      |
-| ADR-0056 | Edge judgments                                           | Kinds; append-only; fingerprint and return; `edit_architecture`; event-level judgment; promotion only through governed operations; no per-person aggregation |
-| ADR-0057 | Development change read model and the briefing watermark | Curated classification over `activity_log` without exposing it; system time; user-private, unlogged watermark set only explicitly                            |
-| ADR-0058 | Deterministic-first ordering and Edge tiers              | Tiers; human-only top tier and its name; lexicographic keys; explanations; horizon constant; nothing scored                                                  |
-| ADR-0059 | Practice Intelligence in Phase 7A                        | In-engagement practice rules; counts with minimum n; no free text; no scoring                                                                                |
+| ADR      | Title                                                    | Decides                                                                                                                                                       |
+| -------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ADR-0051 | The Development Edge envelope and rule catalog           | Computed items; one envelope; epistemic statuses; catalog attributes; mirrored catalog; homes; existing signals consumed unchanged; no enums                  |
+| ADR-0052 | One triggering change, one primary Edge event            | Trigger keys; grouping rules; coalescing revisions; subject grouping for standing conditions; grouping is presentation, never stored                          |
+| ADR-0053 | Substantive revision                                     | The definition; the type-aware excluded-path list; read-time computation; `change_summary` never parsed; first publication is not a revision                  |
+| ADR-0054 | Review examined-version capture                          | Captured by `hold_review`; immutable; version-exact; the examined set closes at hold; not a baseline or second baseline system; no backfill                   |
+| ADR-0055 | Relationship impact matrix and impact trace              | The governed matrix; four recursive walks at depth ≤ 2; terminal hops; never-traversed links; two modes; `impact_trace` authoritative; old traces legacy only |
+| ADR-0056 | Edge judgments                                           | Kinds; append-only; fingerprint and return; `edit_architecture`; event-level judgment; promotion only through governed operations; no per-person aggregation  |
+| ADR-0057 | Development change read model and the briefing watermark | Curated classification over `activity_log` without exposing it; system time; user-private, unlogged watermark set only explicitly                             |
+| ADR-0058 | Deterministic-first ordering and Edge tiers              | Tiers; human-only top tier and its name; lexicographic keys; explanations; 14-day horizon constant; nothing scored                                            |
+| ADR-0059 | Practice Intelligence in Phase 7A                        | In-engagement practice rules; counts with n always shown; proportions from n ≥ 5, not a significance claim; no free text; no scoring                          |
 
 ### 21.2 Amendment notes on existing ADRs
 
 | ADR      | Amendment                                                                                                                                                                                                                                                                                                                                |
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ADR-0032 | (Q16) "Computed; only judgments stored" is generalized to all deterministic intelligence. The sentence on future AI findings is reconciled: `ai_analysis` with the review gate governs AI-drafted content entering architecture; AI observations are a separate, non-architecture artifact (7B); ephemeral assistance is not stored (Q3) |
+| ADR-0034 | (OD-7) A Review's agenda (`examines`) closes when the Review is held. New `examines` from a held Review are refused and existing ones cannot be retired; further formal examination uses a later Review. The validation gate (ADR-0035) therefore means "examined at the hold"                                                           |
+| ADR-0046 | (OD-2) `agreed_on` stays the business (effective) date entered by the user. `agreed_recorded_at` is the system time of the governed agreement operation, used by Change intelligence. The two are never conflated                                                                                                                        |
 | ADR-0039 | The implementation namespace stays separate for governed records and dismissals. Edge judgments and the envelope read across namespaces without writing either, which is consistent with ADR-0039's separation of storage                                                                                                                |
 
-No ADR is superseded. ADR-0009 (provenance), ADR-0019 (judgment never computed), ADR-0020 (status axes), ADR-0036 (validation gate) and ADR-0046 (criteria capture) are relied on, not changed.
+No ADR is superseded. ADR-0009 (provenance), ADR-0019 (judgment never computed), ADR-0020 (status axes) and ADR-0036 (validation gate) are relied on, not changed.
 
 ### 21.3 Documentation that changes with 7A
 
-- `CLAUDE.md` "Current Build Phase" (it still says Phase 7 is on hold): updated when Kerrick approves 7A for implementation, not by this proposal.
+- `CLAUDE.md` "Current Build Phase" (it still says Phase 7 is on hold): updated in the first implementation commit, once Kerrick says to begin.
+- `docs/database/reviews-deliverables-implementation.md`: the closed examined set.
 - `docs/database/edge.md` (new), and links from `docs/database/schema.md`.
 - `README.md` phase line at the end of 7A.
 
@@ -827,25 +859,25 @@ No ADR is superseded. ADR-0009 (provenance), ADR-0019 (judgment never computed),
 
 ## 22. Migration and schema proposal
 
-All names are proposed. Timestamps continue the existing sequence. Each migration is additive: no Phase 1–6 table loses or changes a column, and no existing function changes signature.
+All names are proposed. Timestamps continue the existing sequence. No Phase 1–6 table loses or changes a column, and no existing function changes signature. Two Phase 1–6 behaviors change deliberately: `examines` is refused after a hold (OD-7), and agreement records its system time (OD-2).
 
-| #   | Migration (proposed)                                                         | Contents                                                                                                                                                                                                                 |
-| --- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | `20261006000000_phase7a_edge_catalog.sql`                                    | `private.edge_rules()` (42 catalog rows); `public.edge_rule_catalog()` read for the UI and mirror tests; `public.relationship_impact_rules` table and seed rows (39 types × 2 directions, plus off-spine link keys); RLS |
-| 2   | `20261006000100_substantive_revisions.sql`                                   | `private.substantive_snapshot(kind, snapshot)` with the excluded-path list; `public.element_revisions(...)`                                                                                                              |
-| 3   | `20261006000200_review_examined_versions.sql`                                | `review_examined_versions` table, guards, RLS; `hold_review` redefined with the capture step (same signature and checks)                                                                                                 |
-| 4   | `20261006000300_development_changes.sql`                                     | `public.development_changes(...)`                                                                                                                                                                                        |
-| 5   | `20261006000400_impact_trace.sql`                                            | `public.impact_trace(element, mode)`                                                                                                                                                                                     |
-| 6   | `20261006000500_edge_rules.sql`                                              | Private rule functions, one per lens (`private.edge_rules_integrity(...)` and so on), implementing the 31 rules and `change_reaches`                                                                                     |
-| 7   | `20261006000600_edge_items.sql`                                              | `public.edge_items(...)`: composition, tiering, order facts, judgment join                                                                                                                                               |
-| 8   | `20261006000700_edge_judgments.sql`                                          | `edge_judgments` table, guards, RLS, activity registration; `record_edge_judgment`, `record_edge_event_judgment`                                                                                                         |
-| 9   | `20261006000800_edge_briefing_marks.sql`                                     | `edge_briefing_marks` table, RLS (own rows only), no activity trigger; `mark_briefed_through`                                                                                                                            |
-| 10  | `20261006000900_practice_counts.sql`                                         | `public.method_practice_counts(asset)` with minimum n                                                                                                                                                                    |
-| 11  | `20261006001000_criterion_agreement_time.sql` (**only if OD-2 is approved**) | Adds `acceptance_criteria.agreed_recorded_at timestamptz`, set by `agree_acceptance_criterion`, backfilled from the agreement's `activity_log` row                                                                       |
+| #   | Migration (proposed)                          | Contents                                                                                                                                                                                                                                                                                                        |
+| --- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `20261006000000_phase7a_edge_catalog.sql`     | `private.edge_rules()` (42 catalog rows); `public.edge_rule_catalog()` read for the UI and mirror tests; `public.relationship_impact_rules` table and seed rows (39 types × 2 directions, plus off-spine link keys); RLS                                                                                        |
+| 2   | `20261006000100_substantive_revisions.sql`    | `private.substantive_snapshot(kind, snapshot)` with the excluded-path list; `public.element_revisions(...)`                                                                                                                                                                                                     |
+| 3   | `20261006000200_review_examined_versions.sql` | `review_examined_versions` table, guards, RLS; `hold_review` redefined with the capture step (same signature and checks); guard trigger closing the examined set of held Reviews (OD-7)                                                                                                                         |
+| 4   | `20261006000300_development_changes.sql`      | `public.development_changes(...)`                                                                                                                                                                                                                                                                               |
+| 5   | `20261006000400_impact_trace.sql`             | `public.impact_trace(element, mode)`                                                                                                                                                                                                                                                                            |
+| 6   | `20261006000500_edge_rules.sql`               | Private rule functions, one per lens (`private.edge_rules_integrity(...)` and so on), implementing the 31 rules and `change_reaches`                                                                                                                                                                            |
+| 7   | `20261006000600_edge_items.sql`               | `public.edge_items(...)`: composition, tiering, order facts, judgment join                                                                                                                                                                                                                                      |
+| 8   | `20261006000700_edge_judgments.sql`           | `edge_judgments` table, guards, RLS, activity registration; `record_edge_judgment`, `record_edge_event_judgment`                                                                                                                                                                                                |
+| 9   | `20261006000800_edge_briefing_marks.sql`      | `edge_briefing_marks` table, RLS (own rows only), no activity trigger; `mark_briefed_through`                                                                                                                                                                                                                   |
+| 10  | `20261006000900_practice_counts.sql`          | `public.method_practice_counts(asset)` with minimum n                                                                                                                                                                                                                                                           |
+| 11  | `20261006001000_criterion_agreement_time.sql` | Adds `acceptance_criteria.agreed_recorded_at timestamptz`, set to `clock_timestamp()` inside `agree_acceptance_criterion` and frozen with the other agreement fields; backfilled for agreed criteria from the authoritative agreement row in `activity_log`, left null where none exists; `agreed_on` unchanged |
 
-**Not created:** no enum type or value; no table for conditions, events, items, first-observed times, scores, AI, prompts, providers, embeddings, data-use settings, Patterns or notifications; no column on `element_versions`, `architecture_relationships`, `reviews` or any signal table; no change to any client read model.
+**Not created:** no enum type or value; no table for conditions, events, items, first-observed times, scores, AI, prompts, providers, embeddings, data-use settings, Patterns or notifications; no column on `element_versions`, `architecture_relationships`, `reviews` or any signal table; no change to any client read model. The only new column on an existing table is `acceptance_criteria.agreed_recorded_at`.
 
-**Seed:** `supabase/seed.sql` gains the scenario data in §25, appended after existing data, through real operations.
+**Seed:** `supabase/seed.sql` is reordered so REV-001's `examines` precede its hold (§11.4), and gains the scenario data in §25 through real operations.
 
 ---
 
@@ -860,9 +892,10 @@ All names are proposed. Timestamps continue the existing sequence. Each migratio
 7. **Promote opens the real form.** Pre-filled, clearly labeled "prompted by this Edge item", never submitted automatically.
 8. **Change summaries are quoted,** in the author's words, labeled.
 9. **The Signals page keeps working** with a line pointing to the Edge.
-10. **The landing page lists engagements alphabetically,** never ordered by how much they have, and shows no totals across engagements.
-11. **Accessibility:** events are a list with headings; actions are buttons with text; the ordering explanation is text.
-12. **Manual browser acceptance** before merge (Kerrick's standing requirement since Phase 5), walking the scenarios in §25 as a Principal Architect, a Researcher, a user without `edit_architecture`, and a client.
+10. **The Review page closes its agenda at hold.** Controls to add agenda items are hidden once the Review is held, and the agenda reads "Closed when this Review was held on [date]. Use a later Review for further examination."
+11. **The landing page lists engagements alphabetically,** never ordered by how much they have, and shows no totals across engagements.
+12. **Accessibility:** events are a list with headings; actions are buttons with text; the ordering explanation is text.
+13. **Manual browser acceptance** before merge (Kerrick's standing requirement since Phase 5), walking the scenarios in §25 as a Principal Architect, a Researcher, a user without `edit_architecture`, and a client.
 
 Copy for every rule (definition, why, heading templates, resolving act label) is part of the TypeScript catalog and is reviewed with Kerrick during implementation.
 
@@ -872,20 +905,21 @@ Copy for every rule (definition, why, heading templates, resolving act label) is
 
 ### 24.1 Database (pgTAP)
 
-| File (proposed)                        | Covers                                                                                                                                                                                                                  |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `29_edge_catalog.test.sql`             | 42 catalog rows; keys match the signal functions' keys; matrix covers all 39 types in both directions; `never` links never traversed                                                                                    |
-| `30_substantive_revisions.test.sql`    | Per kind: status-only → `status_publication`; one content field → `substantive_revision`; each excluded path proven excluded; v1 → `first_publication`; `change_summary` has no effect                                  |
-| `31_review_examined_versions.test.sql` | Capture on hold; null for unpublished; system time independent of `held_at`; guards refuse insert outside `hold_review`, update and delete; `hold_review`'s existing tests unchanged                                    |
-| `32_impact_trace.test.sql`             | Each recursive walk's direction and depth cap; terminal hops; weak links only on demand; RSK-001 and CAP-005 now reached from CAP-001; REV-001, DLV-001, criteria and MUS-001 (open only) from APP-001 (F6 regressions) |
-| `33_edge_rules.test.sql`               | Each of the 31 rules: one positive and one negative fixture; the F1 regression (backdated `held_at` and `agreed_on` produce nothing); the F2 regression (IMP-001's status publication produces nothing)                 |
-| `34_edge_items.test.sql`               | Envelope fields present for every rule; exactly one epistemic status; tiers; `human_flagged` only from human-set state; order facts; existing signals unchanged through the envelope                                    |
-| `35_edge_judgments.test.sql`           | Each kind; fingerprint return; expiry; stale fingerprint refused; event-level judgment; append-only; capability; existing dismissals still honored                                                                      |
-| `36_edge_briefing_marks.test.sql`      | Own row only; a System Administrator and a Principal Architect cannot read another user's mark; no `activity_log` row; explicit operation only                                                                          |
-| `37_development_changes.test.sql`      | Classification of each change type; noise excluded; commercial excluded; no `metadata_json` returned; system time used                                                                                                  |
-| `38_edge_client_boundary.test.sql`     | A client gets nothing from every new function and table                                                                                                                                                                 |
-| `39_practice_counts.test.sql`          | Counts; minimum n; no engagement or free text in output; readers only                                                                                                                                                   |
-| `99_edge_concurrency.test.sql`         | Concurrent judgments on one item; hold versus publish race (capture is consistent with the lock order)                                                                                                                  |
+| File (proposed)                        | Covers                                                                                                                                                                                                                                                                                                           |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `29_edge_catalog.test.sql`             | 42 catalog rows; keys match the signal functions' keys; matrix covers all 39 types in both directions; `never` links never traversed                                                                                                                                                                             |
+| `30_substantive_revisions.test.sql`    | Per kind: status-only → `status_publication`; one content field → `substantive_revision`; each excluded path proven excluded; v1 → `first_publication`; `change_summary` has no effect                                                                                                                           |
+| `31_review_examined_versions.test.sql` | Capture on hold; null for unpublished; system time independent of `held_at`; guards refuse insert outside `hold_review`, update and delete; `examines` insert and retirement refused on a held Review and allowed on a scheduled one; existing relationships preserved; `hold_review`'s existing tests unchanged |
+| `32_impact_trace.test.sql`             | Each recursive walk's direction and depth cap; terminal hops; weak links only on demand; RSK-001 and CAP-005 now reached from CAP-001; REV-001, DLV-001, criteria and MUS-001 (open only) from APP-001 (F6 regressions)                                                                                          |
+| `33_edge_rules.test.sql`               | Each of the 31 rules: one positive and one negative fixture; the F1 regression (backdated `held_at` and `agreed_on` produce nothing); the F2 regression (IMP-001's status publication produces nothing)                                                                                                          |
+| `34_edge_items.test.sql`               | Envelope fields present for every rule; exactly one epistemic status; tiers; `human_flagged` only from human-set state; order facts; existing signals unchanged through the envelope                                                                                                                             |
+| `35_edge_judgments.test.sql`           | Each kind; fingerprint return; expiry; stale fingerprint refused; event-level judgment; append-only; capability; existing dismissals still honored                                                                                                                                                               |
+| `36_edge_briefing_marks.test.sql`      | Own row only; a System Administrator and a Principal Architect cannot read another user's mark; no `activity_log` row; explicit operation only                                                                                                                                                                   |
+| `37_development_changes.test.sql`      | Classification of each change type; noise excluded; commercial excluded; no `metadata_json` returned; system time used                                                                                                                                                                                           |
+| `38_edge_client_boundary.test.sql`     | A client gets nothing from every new function and table                                                                                                                                                                                                                                                          |
+| `40_criterion_agreement_time.test.sql` | `agreed_recorded_at` set by the agree operation in system time; `agreed_on` untouched; frozen after agreement; backfill from `activity_log`; null without a log row, and no `criteria_predate_revision` item then                                                                                                |
+| `39_practice_counts.test.sql`          | Counts; minimum n; no engagement or free text in output; readers only                                                                                                                                                                                                                                            |
+| `99_edge_concurrency.test.sql`         | Concurrent judgments on one item; hold versus publish race (capture is consistent with the lock order)                                                                                                                                                                                                           |
 
 ### 24.2 Application (Vitest)
 
@@ -896,11 +930,12 @@ Copy for every rule (definition, why, heading templates, resolving act label) is
 | `edge/substantive.test.ts`   | Mirror of the excluded paths; every path exists in the snapshot builder's output for its kind                                                                                                                               |
 | `edge/grouping.test.ts`      | The §7.3 rules, including the APP-001 example, coalescing, merging and hub collapse                                                                                                                                         |
 | `edge/ordering.test.ts`      | Lexicographic order, tie-breaks and the explanation strings                                                                                                                                                                 |
+| `edge/legacy-impact.test.ts` | No application code calls `intelligence_impact` or `implementation_impact` (OD-8)                                                                                                                                           |
 | `edge/briefing.test.ts`      | Default window; "new" from trigger time; the mark passed is the newest shown change                                                                                                                                         |
 
 ### 24.3 Before any push
 
-`pnpm check`, `pnpm test`, `pnpm build` and `pnpm db:test` locally, as CI runs them. Then the manual browser acceptance pass (§23 item 12).
+`pnpm check`, `pnpm test`, `pnpm build` and `pnpm db:test` locally, as CI runs them. Then the manual browser acceptance pass (§23 item 13).
 
 ---
 
@@ -908,7 +943,9 @@ Copy for every rule (definition, why, heading templates, resolving act label) is
 
 ### 25.1 Seed additions
 
-Appended to `supabase/seed.sql`, through real operations only, so the demo shows the Edge working:
+First, the one required reordering (§11.4): Harbor's IMP-002 is created and published, REV-001's `examines` of APP-001 and IMP-002 are added, and only then is REV-001 held and IMP-002 validated. The resulting data is the same, and REV-001 now carries a capture.
+
+Then, appended through real operations only, so the demo shows the Edge working:
 
 1. **Harbor:** a substantive revision of APP-001 (summary and a statement changed) published after REV-001 was held, IMP-001 and IMP-003 implement it, and DLV-001 was baselined.
 2. **Harbor:** a substantive revision of KNW-001 after IMP-002 was validated.
@@ -937,6 +974,8 @@ Existing seed facts already exercise many rules: IMP-001 operational and not val
 | S12 | Method Asset page for Capability Readiness Diagnostic 1.1       | Stage treatment counts with "n = 1"; no proportion; no engagement or client name                                                                 |
 | S13 | Promote `materialized_risk_still_threatens` into a new Decision | The Decision form opens pre-filled; nothing is created until submitted; afterward the item shows "Promoted to DEC-00x" and leaves the list       |
 | S14 | `impact_trace(CAP-001, 'on_demand')`                            | Includes RSK-001 (`threatens`) and CAP-005 (`gap_in`), which the old trace missed (F6)                                                           |
+| S15 | Add an `examines` to held REV-001, then try to retire one       | Both refused with the closed-agenda reason; REV-001's relationships and capture unchanged; a new scheduled Review can examine the element        |
+| S16 | Agree a criterion                                               | `agreed_recorded_at` is the operation's system time; `agreed_on` is what the user entered; the seeded ACR-001 and ACR-002 are backfilled         |
 
 ---
 
@@ -950,11 +989,14 @@ Existing seed facts already exercise many rules: IMP-001 operational and not val
 | `intelligence_impact`, `implementation_impact`                     | Unchanged; no longer used by the UI (OD-8)                                                                           |
 | `architecture_activity`                                            | Unchanged                                                                                                            |
 | `hold_review`                                                      | Same signature, checks and effects, plus the capture                                                                 |
+| `examines` on a held Review                                        | **Changed (OD-7):** new ones and retirements refused; existing ones kept. The seed is reordered (§11.4)              |
+| `acceptance_criteria`                                              | **Changed (OD-2):** one added column, set by the agree operation and backfilled; `agreed_on` unchanged               |
+| `intelligence_impact`, `implementation_impact` callers             | Legacy internal read paths only (OD-8)                                                                               |
 | `element_versions`, snapshots, publication                         | Unchanged                                                                                                            |
 | Client read models and portal                                      | Unchanged                                                                                                            |
 | ADR-0039 namespaces                                                | Respected: no implementation record is written by intelligence operations or vice versa                              |
 
-The 11 existing rules keep their current scope, including `opportunity_window_closed` evaluating drafts (F4). The catalog records that scope explicitly, and OD-3 asks whether to keep it.
+The 11 existing rules keep their current scope, including draft Project Intelligence where a rule already includes it, such as `opportunity_window_closed` (F4). OD-3 keeps this deliberately, and the catalog states each rule's scope so it stays intentional.
 
 ---
 
@@ -1034,26 +1076,48 @@ Phase 7A is accepted when all of the following hold on the branch, CI is green (
 - **AC-28** No notification, badge, unread count or push exists.
 - **AC-29** No read model aggregates judgments or activity by person; no page shows per-person counts.
 - **AC-30** No automatic write to any governed record exists; every write is a user-initiated operation.
-- **AC-31** Practice counts show n, hide proportions below the minimum, and name no engagement.
+- **AC-31** Practice counts always show n, show no proportion below 5 closed applications, never describe a threshold as statistically significant, and name no engagement.
+
+**Final decisions**
+
+- **AC-32** A held Review's examined set is closed: new `examines` and retirements are refused on every write path, existing relationships and captures are unchanged, and the seed builds REV-001's agenda before its hold (OD-7).
+- **AC-33** `agreed_recorded_at` is set only by the agreement operation in system time and by the one-time backfill; `agreed_on` is unchanged; no Edge read derives agreement time from `activity_log` (OD-2).
+- **AC-34** No UI surface calls `intelligence_impact` or `implementation_impact`; both are documented as legacy internal read paths, and `impact_trace` is the only impact semantics the Edge uses (OD-8).
 
 ---
 
-## 29. Open implementation decisions
+## 29. Implementation decisions
 
-Everything not listed here is decided by this proposal, subject to Kerrick's review. These need an explicit answer. Each has a recommendation.
+### 29.1 Decided by Kerrick (2026-09-30)
 
-| #     | Decision                                                                                                    | Recommendation                                                                                                                                                                | Alternative                                                                                 |
-| ----- | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| OD-1  | Is object maturity (`maturity`, `maturity_rationale`) excluded from the substantive diff?                   | **Yes.** Maturity is its own status axis (ADR-0020); a maturity judgment is not a design revision                                                                             | Treat maturity changes as substantive                                                       |
-| OD-2  | How does `criteria_predate_revision` get the system time of agreement?                                      | **Add `agreed_recorded_at`** to `acceptance_criteria`, set by the agree operation and backfilled from `activity_log`. Additive; no behavior change                            | Derive it from `activity_log` inside the rule on every read                                 |
-| OD-3  | Should the 11 existing rules keep their current scope (for example, drafts in `opportunity_window_closed`)? | **Keep.** Project Intelligence records are often worked as internal drafts, and a closed window on a draft is still a real governance fact. The catalog now states each scope | Normalize all record rules to published-only, which changes Phase 4 behavior                |
-| OD-4  | The Elevated horizon for governance proximity                                                               | **14 days**, business dates, a documented constant                                                                                                                            | 7 or 30 days                                                                                |
-| OD-5  | Minimum n before a practice proportion is shown                                                             | **5 closed applications** of the version                                                                                                                                      | 3 or 10                                                                                     |
-| OD-6  | Reviews held before 7A                                                                                      | **No backfill.** Use the baseline when there is one; otherwise say the Review predates capture                                                                                | Backfill from `held_at` (reintroduces F1) or from `activity_log` time of the hold operation |
-| OD-7  | `examines` added after a Review is held                                                                     | **Leave Phase 5 as it is.** No capture for those elements; the panel says they were examined after the hold                                                                   | Refuse `examines` on held Reviews (a Phase 5 behavior change)                               |
-| OD-8  | The two existing impact functions                                                                           | **Keep them unchanged and unused by the UI** through 7A; remove later with an ADR note                                                                                        | Redefine them as wrappers over `impact_trace`, or drop them in 7A                           |
-| OD-9  | Where Not material and Defer go for the 11 existing rules                                                   | **Existing dismissal tables,** through the existing operations, so the Signals page and the Edge agree; other kinds go to `edge_judgments`                                    | Put all judgments in `edge_judgments` and have the Signals page read it                     |
-| OD-10 | The briefing window when a user has no mark                                                                 | **14 days,** stated on the page                                                                                                                                               | Since the user joined the engagement                                                        |
+| #     | Decision                                                                                                                                                                                                                      | Where applied        |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| OD-1  | **Yes.** `maturity` and `maturity_rationale` are excluded from the substantive diff; object maturity is its own governed status and judgment axis                                                                             | §12.2                |
+| OD-2  | **Yes.** Add `agreed_recorded_at`, set from system time inside the agreement operation, backfilled from the authoritative `activity_log` row where possible, never derived on Edge reads; `agreed_on` stays the business date | §5.2 #16, §13.2, §22 |
+| OD-3  | **Keep** the 11 existing rules' scope, including drafts where a rule already includes them; the catalog makes each scope explicit                                                                                             | §5.3, §26            |
+| OD-4  | **14 days**, a documented governed constant, not user-configurable in 7A                                                                                                                                                      | §9.2                 |
+| OD-5  | **5 closed applications** before a proportion; n always shown; a governance threshold, not a significance claim                                                                                                               | §17.1                |
+| OD-6  | **No backfill** of captures; historical Reviews use their frozen baseline or say they predate exact capture; nothing is inferred from `held_at`                                                                               | §11.3                |
+| OD-7  | **Changed:** once a Review is held, new `examines` are refused; existing ones are preserved; a later Review is used for further examination; past captures are never mutated                                                  | §11.4                |
+| OD-8  | **Keep temporarily**, unchanged, as legacy internal read paths; the UI stops using them; `impact_trace` is authoritative                                                                                                      | §10.6                |
+| OD-9  | **Keep** the existing dismissal tables and operations for the 11 rules; the Edge consumes them; `edge_judgments` only for judgment kinds without an established mechanism                                                     | §15.4                |
+| OD-10 | **14 days** before a first mark, stated on the page; never inferred from sign-in, page views or membership                                                                                                                    | §14.2                |
+
+### 29.2 Clarifications carried into the proposal
+
+1. **A held Review is a closed governance event:** exact examined set, exact versions, immutable capture. Not a baseline, and not a second baseline system (§11.1, §11.4).
+2. **`impact_trace` is authoritative;** the older functions remain only for backward compatibility (§10.6).
+3. **n = 5 is a display and governance threshold,** not a statistical-validity claim (§17.1).
+4. **One triggering change, one primary Edge event,** with downstream consequences grouped beneath it (§7).
+5. **No 7B implementation:** no AI, provider SDK, embeddings, prompt execution, persisted AI inference, conversational assistant or cross-engagement architectural learning (§2.2, §27).
+
+### 29.3 One consequence of OD-7 stated for confirmation
+
+Kerrick's OD-7 names new `examines` links. This proposal also refuses **retiring** an `examines` from a held Review, because retirement changes the examined set as much as an addition does, and "preserve existing relationships" implies it. If Kerrick prefers retirement to stay possible (for example, to correct a mistaken agenda item after the hold), the guard drops that one check and the capture still records what was examined. This does not block implementation.
+
+### 29.4 Remaining open decisions
+
+None. The proposal is implementation-ready.
 
 ---
 
@@ -1063,7 +1127,7 @@ Everything not listed here is decided by this proposal, subject to Kerrick's rev
 
 1. `20261006000000_phase7a_edge_catalog.sql`: rule catalog and impact matrix.
 2. `20261006000100_substantive_revisions.sql`: excluded paths and `element_revisions`.
-3. `20261006000200_review_examined_versions.sql`: capture table and `hold_review` capture step.
+3. `20261006000200_review_examined_versions.sql`: capture table, `hold_review` capture step, and the closed examined set (OD-7).
 4. `20261006000300_development_changes.sql`: curated change read model.
 5. `20261006000400_impact_trace.sql`: governed traversal.
 6. `20261006000500_edge_rules.sql`: the 31 rules and `change_reaches`.
@@ -1071,21 +1135,21 @@ Everything not listed here is decided by this proposal, subject to Kerrick's rev
 8. `20261006000700_edge_judgments.sql`: judgments and their operations.
 9. `20261006000800_edge_briefing_marks.sql`: the private watermark.
 10. `20261006000900_practice_counts.sql`: Method Asset counts with minimum n.
-11. `20261006001000_criterion_agreement_time.sql`: only if OD-2 is approved.
+11. `20261006001000_criterion_agreement_time.sql`: `agreed_recorded_at` and its backfill (OD-2).
 
 ### 30.2 Proposed ADR set
 
 New: ADR-0051 (envelope and catalog), ADR-0052 (one trigger, one event), ADR-0053 (substantive revision), ADR-0054 (Review examined-version capture), ADR-0055 (impact matrix and trace), ADR-0056 (Edge judgments), ADR-0057 (change read model and watermark), ADR-0058 (ordering and tiers), ADR-0059 (Practice Intelligence in 7A).
-Amendment notes: ADR-0032 (Q16), ADR-0039 (reading across namespaces).
+Amendment notes: ADR-0032 (Q16), ADR-0034 (the agenda closes at hold, OD-7), ADR-0039 (reading across namespaces), ADR-0046 (agreement business date versus system time, OD-2).
 
 ### 30.3 Final 7A acceptance criteria
 
-AC-1 to AC-31 in §28, plus green CI and Kerrick's manual browser pass over scenarios S1 to S14.
+**34 criteria**, AC-1 to AC-34 in §28, plus green CI and Kerrick's manual browser pass over scenarios S1 to S16.
 
-### 30.4 Decisions that need approval
+### 30.4 Readiness
 
-OD-1 to OD-10 in §29, and approval of the proposal as a whole.
+OD-1 to OD-10 are decided (§29.1). No open decision remains; §29.3 states one consequence of OD-7 for confirmation, which does not block work. **The proposal is implementation-ready.** Implementation begins only when Kerrick says so.
 
 ### 30.5 Confirmation
 
-**No Phase 7A implementation was performed.** This proposal and the updates to `PHASE_7_CONCEPTUAL_RECONCILIATION.md` recording the Q29 and Q30 decisions are the only changes. No migration, schema, table, function, enum, ADR, domain code, seed data, test, UI, AI service, provider SDK, embedding or vector store was created, and no Phase 1–6 behavior was changed.
+**No Phase 7A implementation was performed.** This proposal (Revisions 1 and 2) and the updates to `PHASE_7_CONCEPTUAL_RECONCILIATION.md` recording the Q29 and Q30 decisions are the only changes. No migration, schema, table, function, enum, ADR, domain code, seed data, test, UI, AI service, provider SDK, embedding or vector store was created, and no Phase 1–6 behavior was changed.
