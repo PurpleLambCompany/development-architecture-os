@@ -1125,7 +1125,10 @@ from public.architecture_elements e
 where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'implementation_initiative'
   and e.title = 'Expansion Council stand-up';
 
-select public.update_implementation_status(e.id, 'operational', null)
+-- Published immediately: the client-facing snapshot must show "operational",
+-- not the pre-publication "not_started" the first published version froze.
+select public.update_implementation_status(e.id, 'operational', null, true,
+  'Operational: the Regional Expansion Council has stood up.')
 from public.architecture_elements e
 where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'implementation_initiative'
   and e.title = 'Expansion Council stand-up';
@@ -1182,8 +1185,11 @@ where rev.engagement_id = 'e0000000-0000-4000-8000-000000000003' and rev.kind = 
   and init.engagement_id = 'e0000000-0000-4000-8000-000000000003' and init.kind = 'implementation_initiative'
   and init.title = 'Regional demand study rollout';
 
+-- Published immediately: the client-facing snapshot must show "validated",
+-- not the pre-publication "not_started" the first published version froze.
 select public.resolve_implementation_initiative(e.id, 'validated',
-  'Validated at the Expansion Readiness Review: the study is complete and its findings are in use.')
+  'Validated at the Expansion Readiness Review: the study is complete and its findings are in use.',
+  true, 'Validated: the regional demand study is complete and in use.')
 from public.architecture_elements e
 where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'implementation_initiative'
   and e.title = 'Regional demand study rollout';
