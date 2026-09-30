@@ -28,6 +28,8 @@ import {
   type CapabilityRow,
 } from "@/components/engagements/capability-matrix";
 import { ArchitectureNav } from "@/components/architecture/architecture-nav";
+import { EdgeSummary } from "@/components/edge/edge-summary";
+import { getEdgeItems } from "@/domain/edge/queries";
 import { MaturityMark } from "@/components/architecture/badges";
 import { EngagementStatusTag } from "@/components/engagements/engagement-status";
 import { AddTeamMemberForm, RemoveTeamMemberButton } from "@/components/engagements/team-controls";
@@ -70,9 +72,10 @@ export default async function EngagementPage({
     : null;
   const summary = finances?.contract ? finances.summary : null;
   const domainStates = await getDomainStates(engagement.id);
-  const [areas, architecture] = await Promise.all([
+  const [areas, architecture, edgeItems] = await Promise.all([
     getMemberAreas(engagement.id),
     loadArchitecture(engagement.id),
+    getEdgeItems(engagement.id),
   ]);
   const areaMembers = engagement.engagement_members.filter(
     (m) =>
@@ -191,6 +194,8 @@ export default async function EngagementPage({
           ) : null}
         </div>
       </Panel>
+
+      <EdgeSummary slug={engagement.slug} items={edgeItems} />
 
       {finances ? (
         <Panel

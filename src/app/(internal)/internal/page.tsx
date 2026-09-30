@@ -10,6 +10,8 @@ import {
   canSeeAllEngagements,
 } from "@/domain/roles/roles";
 import { EngagementStatusTag } from "@/components/engagements/engagement-status";
+import { groupEdgeItems } from "@/domain/edge/grouping";
+import { getEdgeItems } from "@/domain/edge/queries";
 import { ButtonLink } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState, Panel } from "@/components/ui/panel";
@@ -28,6 +30,22 @@ export default async function InternalDashboard() {
   const active = engagements.filter((e) => e.status === "active" || e.status === "paused");
   const upcoming = engagements.filter((e) => e.status === "proposed");
   const clients = organizations.filter((o) => o.type === "client" && o.status === "active");
+  // Engagements with something to consider (§8.1): Elevated or human-flagged
+  // events only, alphabetical. Engagements the viewer cannot read return nothing.
+  const considering = (
+    await Promise.all(
+      active.map(async (e) => {
+        const events = groupEdgeItems(await getEdgeItems(e.id));
+        return {
+          engagement: e,
+          flagged: events.some((x) => x.tier === "human_flagged"),
+          elevated: events.some((x) => x.tier === "elevated"),
+        };
+      }),
+    )
+  )
+    .filter((x) => x.flagged || x.elevated)
+    .sort((a, b) => a.engagement.title.localeCompare(b.engagement.title));
 
   return (
     <div className="space-y-10">
@@ -63,6 +81,37 @@ export default async function InternalDashboard() {
           href="/internal/organizations"
         />
       </div>
+
+      {considering.length > 0 ? (
+        <Panel
+          title="Engagements with something to consider"
+          description="Where the team has escalated or marked a record critical, or governance on changed architecture is approaching."
+        >
+          <ul className="divide-y divide-rule text-sm">
+            {considering.map(({ engagement, flagged, elevated }) => (
+              <li
+                key={engagement.id}
+                className="flex flex-wrap items-baseline justify-between gap-2 py-2"
+              >
+                <Link
+                  href={`/internal/engagements/${engagement.slug}/edge`}
+                  className="text-ink hover:underline"
+                >
+                  {engagement.title}
+                </Link>
+                <span className="text-xs text-ink-subtle">
+                  {[
+                    flagged ? "Escalated or critical" : null,
+                    elevated ? "Governance approaching" : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      ) : null}
 
       <Panel title="Active engagements">
         {active.length === 0 ? (

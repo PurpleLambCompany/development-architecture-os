@@ -40,13 +40,14 @@ import {
   getClientActions,
   getContributions,
   getEscalations,
-  getImpact,
   getRecordHistory,
   getRegister,
   getStatementOptions,
   getStewardship,
 } from "@/domain/intelligence/queries";
 import { recordsBearingOn } from "@/domain/intelligence/register";
+import { getEdgeItems, getImpactTrace } from "@/domain/edge/queries";
+import { ContextualEdgePanel } from "@/components/edge/edge-panel";
 import { clientMembersWith } from "@/domain/intelligence/views";
 import { RECORD_KINDS } from "@/domain/architecture/vocabulary";
 import { getDeliverableRegister } from "@/domain/deliverables/queries";
@@ -116,6 +117,7 @@ export default async function ElementPage({
     stewardship,
     history,
     impact,
+    edgeItems,
     escalations,
     register,
     actions,
@@ -131,7 +133,8 @@ export default async function ElementPage({
     listEvidence(engagement.id),
     isRecord ? getStewardship(element.id) : null,
     isRecord ? getRecordHistory(element.id) : [],
-    getImpact(element.id),
+    getImpactTrace(element.id),
+    getEdgeItems(engagement.id, { subjectId: element.id }),
     isRecord ? getEscalations(engagement.id) : [],
     isRecord ? [] : getRegister(engagement.id),
     getClientActions(engagement.id),
@@ -441,6 +444,13 @@ export default async function ElementPage({
         />
       )}
 
+      <ContextualEdgePanel
+        slug={slug}
+        engagementId={engagement.id}
+        items={edgeItems}
+        canJudge={canEdit}
+      />
+
       <DecisionPanel
         element={element}
         architecture={architecture}
@@ -505,7 +515,7 @@ export default async function ElementPage({
       />
 
       {isRecord ? <HistoryPanel history={history} /> : null}
-      <ImpactPanel slug={slug} impact={impact} architecture={architecture} />
+      <ImpactPanel slug={slug} element={element} trace={impact} />
 
       <VersionsPanel
         slug={slug}
