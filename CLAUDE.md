@@ -24,9 +24,9 @@ Treat `DSA_OS_MASTER_BUILD_SPEC.md` as the authoritative product specification.
 If code and the specification conflict, surface the conflict before making an expensive architectural change.
 
 ## Current Build Phase
-**Phase 5 — Reviews, Deliverables and Implementation: complete and merged** (2026-09-30; Phases 1-4 merged). See `docs/product/PHASE_5_REPORT.md` for what was built, the corrected acceptance-review defects, and ADR-0034 through ADR-0040.
+**Phase 6 — Method Library: implemented on PR #7, awaiting Kerrick's final acceptance** (2026-09-30). See `docs/product/PHASE_6_REPORT.md`. Kerrick approved `docs/product/PHASE_6_PROPOSAL.md` Revision 2 (decisions D1-D34) and authorized implementation in the staged §38 build order on PR #7. Do not reinterpret approved decisions; surface any genuine contradiction with the repository before a difficult-to-reverse change. Do not merge until Kerrick explicitly approves final acceptance. Phase 7 (Architecture Intelligence) is out of scope.
 
-**Do not begin Phase 6.** Do not create a Phase 6 branch, proposal, migration, schema, ADR, UI, or application code. Phase 6 begins only after its methodological purpose, scope, and intended UX are separately reviewed and approved.
+Phases 1-5 are complete and merged. See `docs/product/PHASE_5_REPORT.md` for the most recent completed phase.
 
 Only build the currently approved phase unless explicitly instructed otherwise.
 

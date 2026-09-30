@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireInternal } from "@/lib/auth/viewer";
 import { ROLE_LABELS } from "@/domain/roles/roles";
 import { ProfileForm } from "@/components/shell/profile-form";
@@ -20,6 +21,14 @@ export default async function SettingsPage() {
             { label: "Organization", value: viewer.organizationName },
           ]}
         />
+      </Panel>
+      <Panel title="Practice">
+        <p className="text-sm text-ink-muted">
+          Who may author and publish TPLCo methodology:{" "}
+          <Link href="/internal/settings/practice" className="text-accent hover:underline">
+            Practice capabilities
+          </Link>
+        </p>
       </Panel>
       <Panel title="Name">
         <ProfileForm firstName={viewer.firstName} lastName={viewer.lastName} />

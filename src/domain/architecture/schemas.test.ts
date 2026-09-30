@@ -3,6 +3,7 @@ import {
   approvalResponseSchema,
   dependencyFields,
   evidenceSourceSchema,
+  lineageSchema,
   objectSchema,
   recordSchema,
   relationshipSchema,
@@ -136,5 +137,22 @@ describe("approvals and evidence", () => {
     expect(evidenceSourceSchema.safeParse({ ...source, url: "http://example.org/r" }).success).toBe(
       false,
     );
+  });
+});
+
+describe("method lineage schema", () => {
+  const version = "3f1c2b8e-4d5a-4b6c-8d7e-9f0a1b2c3d4e";
+  it("accepts a writable lineage role pinned to a version", () => {
+    for (const role of ["instantiates", "produced_from", "judged_against"]) {
+      expect(lineageSchema.safeParse({ target: `${role}:${version}`, note: "" }).success).toBe(
+        true,
+      );
+    }
+  });
+  it("refuses legacy lineage and unpinned targets", () => {
+    expect(
+      lineageSchema.safeParse({ target: `legacy_derived_from:${version}`, note: "" }).success,
+    ).toBe(false);
+    expect(lineageSchema.safeParse({ target: "instantiates", note: "" }).success).toBe(false);
   });
 });

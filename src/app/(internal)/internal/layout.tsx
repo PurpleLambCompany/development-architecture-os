@@ -55,8 +55,10 @@ export default async function InternalLayout({ children }: LayoutProps<"/interna
                 <NavLink href="/internal/reviews">Reviews</NavLink>
                 <NavLink href="/internal/implementation">Implementation</NavLink>
               </NavGroup>
+              <NavGroup label="Practice">
+                <NavLink href="/internal/method-library">Method Library</NavLink>
+              </NavGroup>
               <NavGroup label="Later phases">
-                <NavPlaceholder>Method Library</NavPlaceholder>
                 <NavPlaceholder>Portfolio</NavPlaceholder>
               </NavGroup>
               <NavGroup>

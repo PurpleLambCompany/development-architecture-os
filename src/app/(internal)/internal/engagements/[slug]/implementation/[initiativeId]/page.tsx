@@ -45,6 +45,8 @@ import {
   TRIAGE_STATE,
 } from "@/domain/intelligence/catalog";
 import { clientMembersWith } from "@/domain/intelligence/views";
+import { internalElementHref } from "@/domain/architecture/links";
+import { getCriteriaInForce, getApproachGuidance } from "@/domain/methodology/queries";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { ArchitectureNav } from "@/components/architecture/architecture-nav";
 import {
@@ -58,6 +60,8 @@ import { StatementsPanel } from "@/components/architecture/statements-panel";
 import { VersionsPanel } from "@/components/architecture/versions-panel";
 import { ActivityList } from "@/components/architecture/activity-list";
 import { escalateFields, requiredNoteFields, triageFields } from "@/components/intelligence/fields";
+import { CriteriaPanel } from "@/components/methodology/criteria-panel";
+import { PracticePanel } from "@/components/methodology/practice-panel";
 import { ActionButton, ActionForm, type FieldSpec } from "@/components/ui/action-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { DetailList, EmptyState, Panel } from "@/components/ui/panel";
@@ -105,6 +109,7 @@ export default async function InitiativeDetailPage({
     history,
     impact,
     executives,
+    criteriaInForce,
   ] = await Promise.all([
     loadArchitecture(engagement.id),
     getImplementationRegister(engagement.id),
@@ -116,6 +121,7 @@ export default async function InitiativeDetailPage({
     getStatusHistory(initiativeId),
     getImpact(initiativeId),
     clientMembersWith(engagement, ["view_architecture", "respond_to_client_actions"]),
+    getCriteriaInForce(initiativeId),
   ]);
   const element = architecture.byId.get(initiativeId);
   const row = registerRows.find((r) => r.element_id === initiativeId);
@@ -660,6 +666,28 @@ export default async function InitiativeDetailPage({
         </div>
       </Panel>
 
+      <CriteriaPanel
+        elementId={element.id}
+        published={!!element.latestVersion}
+        canEdit={canEdit && !frozen}
+        canPublish={canPublish && !frozen}
+        evidenceOptions={evidenceOptions}
+        inherited={criteriaInForce
+          .filter((c) => c.governed_element_id !== element.id)
+          .map((c) => {
+            const governed = architecture.byId.get(c.governed_element_id);
+            return {
+              id: c.id,
+              referenceCode: c.reference_code,
+              body: c.body,
+              governedLabel: governed
+                ? `${governed.reference_code ?? ""} ${governed.title}`.trim()
+                : "an implemented object",
+              governedHref: internalElementHref(slug, "object", c.governed_element_id),
+            };
+          })}
+      />
+
       {impact.length > 0 ? (
         <Panel
           title="Impact"
@@ -687,6 +715,7 @@ export default async function InitiativeDetailPage({
 
       <StatementsPanel
         elementId={element.id}
+        approach={await getApproachGuidance(element.id)}
         statements={detail.statements}
         evidenceOptions={evidenceOptions}
         canEdit={canEdit}
@@ -711,6 +740,17 @@ export default async function InitiativeDetailPage({
         canPublish={canPublish}
         nameOf={nameOf}
         today={today}
+      />
+
+      <PracticePanel
+        slug={slug}
+        elementId={element.id}
+        kind={element.kind}
+        editable={canEdit && !frozen}
+        methodologyDerived={
+          element.provenance === "methodology_derived" ||
+          detail.statements.some((st) => st.provenance === "methodology_derived")
+        }
       />
 
       {detail.activity.length > 0 ? (

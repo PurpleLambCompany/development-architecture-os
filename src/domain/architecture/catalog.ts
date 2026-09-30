@@ -295,6 +295,7 @@ export const STATEMENT_KINDS = [
   "implication",
   "definition",
   "note",
+  "approach",
 ] as const satisfies readonly StatementKind[];
 
 export const STATEMENT_KIND_LABELS: Record<StatementKind, string> = {
@@ -304,6 +305,7 @@ export const STATEMENT_KIND_LABELS: Record<StatementKind, string> = {
   implication: "Implications",
   definition: "Definitions",
   note: "Notes",
+  approach: "Approach",
 };
 
 export const STATEMENT_KIND_SINGULAR: Record<StatementKind, string> = {
@@ -313,6 +315,7 @@ export const STATEMENT_KIND_SINGULAR: Record<StatementKind, string> = {
   implication: "Implication",
   definition: "Definition",
   note: "Note",
+  approach: "Approach",
 };
 
 export const AI_REVIEW: Record<AiReviewState, Label> = {

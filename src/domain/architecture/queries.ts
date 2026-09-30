@@ -265,7 +265,9 @@ export async function getElementDetail(engagementId: string, elementId: string) 
       .order("created_at"),
     supabase
       .from("element_method_lineage")
-      .select("*, method_assets(id, title, category, version)")
+      .select(
+        "*, method_assets(id, key, title, form, status), method_asset_versions(id, version_label, lifecycle, legacy)",
+      )
       .eq("element_id", elementId),
     supabase.rpc("architecture_activity", {
       p_engagement_id: engagementId,
@@ -332,7 +334,9 @@ export async function listMethodAssets() {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("method_assets")
-    .select("id, title, category, version, status")
+    .select(
+      "id, key, title, form, status, current_version_id, method_asset_versions!method_assets_current_version_fk(id, version_label, lifecycle, legacy)",
+    )
     .order("title");
   if (error) throw error;
   return data ?? [];

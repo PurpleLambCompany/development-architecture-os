@@ -18,3 +18,7 @@ Implementation must distinguish three separate claims that generic project-manag
 
 - `validated` reliably means "a review looked at this and said so," in the database, not by convention — a query or a client snapshot can trust the status value itself rather than needing to cross-check for a relationship separately.
 - Adding a way to reach `validated` other than through `resolve_implementation_initiative` (a bulk-import shortcut, an admin override) would need to independently reconstruct this same gate or it silently breaks the guarantee this ADR establishes.
+
+## Amendment (Phase 6, 2026-09-30)
+
+`record_review_validation` also captures what a validation was judged against (Phase 6 decision D34). After writing the `validates` relationship it records every agreed acceptance criterion in force at that moment, those on the initiative and those on the core objects it implements, in `validation_criteria`. Architects may add a note per criterion; there is no per-criterion verdict. The gate is unchanged: the same preconditions apply, no new one is added, and a validation with no agreed criteria remains valid. See ADR-0046.

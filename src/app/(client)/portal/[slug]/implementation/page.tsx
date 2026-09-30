@@ -7,8 +7,10 @@ import {
   categoryLabel,
 } from "@/domain/implementation/catalog";
 import { getClientImplementation } from "@/domain/implementation/queries";
+import { getClientAcceptanceCriteria } from "@/domain/methodology/queries";
 import { formatDate } from "@/lib/format";
 import { ReferenceCode } from "@/components/architecture/badges";
+import { ClientCriteriaList } from "@/components/methodology/client-criteria";
 import { EngagementNav } from "@/components/portal/engagement-nav";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState, Panel } from "@/components/ui/panel";
@@ -27,10 +29,11 @@ export default async function ClientImplementationPage({
   const { slug } = await params;
   const { engagement, canView } = await getClientArchitectureContext(slug);
   if (!canView) notFound();
-  const [initiatives, relationships, architecture] = await Promise.all([
+  const [initiatives, relationships, architecture, criteria] = await Promise.all([
     getClientImplementation(engagement.id),
     getClientRelationships(engagement.id),
     getClientArchitecture(engagement.id),
+    getClientAcceptanceCriteria(engagement.id),
   ]);
   const titleOf = new Map(architecture.map((r) => [r.element_id, r]));
   const implementsMap = new Map<string, string[]>();
@@ -101,6 +104,9 @@ export default async function ClientImplementationPage({
                           Target {formatDate(row.target_operational_on)}
                         </p>
                       ) : null}
+                      <ClientCriteriaList
+                        criteria={criteria.filter((c) => c.governed_element_id === row.element_id)}
+                      />
                       {checkpoints.length > 0 ? (
                         <ul className="space-y-1 text-sm text-ink-muted">
                           {checkpoints.map((c) => (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useId, useState, useTransition } from "react";
+import { type ReactNode, useId, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import type { ActionResult } from "@/lib/action-result";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,8 @@ export function ActionForm({
   trigger,
   confirm,
   className,
+  extra,
+  hidden,
 }: {
   fields: FieldSpec[];
   action: (input: Values) => Promise<ActionResult<unknown>>;
@@ -47,6 +49,10 @@ export function ActionForm({
   trigger?: string;
   confirm?: string;
   className?: string;
+  /** Rendered inside the form, after the fields (e.g. authoring help). */
+  extra?: ReactNode;
+  /** Fixed values sent with the form but not shown (e.g. which capability a row is). */
+  hidden?: Record<string, string>;
 }) {
   const router = useRouter();
   const formId = useId();
@@ -77,7 +83,7 @@ export function ActionForm({
     setError(null);
     form.clearErrors();
     startTransition(async () => {
-      const result = await action(values);
+      const result = await action({ ...values, ...hidden });
       if (!result.ok) {
         setError(result.error);
         for (const [field, message] of Object.entries(result.fieldErrors ?? {})) {
@@ -163,6 +169,7 @@ export function ActionForm({
           );
         })}
       </div>
+      {extra}
       <div className="flex gap-2">
         <Button type="submit" size="sm" variant={variant} disabled={pending}>
           {pending ? "Working…" : submitLabel}

@@ -40,7 +40,6 @@ export default async function EditEngagementPage({
             engagementType: engagement.engagement_type,
             objective: engagement.objective,
             description: engagement.description,
-            methodologyVersion: engagement.methodology_version,
             currentPhase: engagement.current_phase,
             status: engagement.status,
             startDate: engagement.start_date ?? "",

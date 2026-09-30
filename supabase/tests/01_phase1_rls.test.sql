@@ -135,7 +135,7 @@ select pg_temp.reset_actor();
 -- -----------------------------------------------------------------------------
 select pg_temp.act_as('researcher@tplco.test');
 select is((select count(*)::int from public.engagements), 1, 'researcher sees only assigned engagements');
-select is((select count(*)::int from public.method_assets), 2, 'researcher can read Method/IP');
+select is((select count(*)::int from public.method_assets), 6, 'researcher can read Method/IP');
 select throws_ok(
   $$ insert into public.organizations (name, slug, type) values ('R Org', 'r-org', 'client') $$,
   '42501', null, 'researcher cannot create organizations'

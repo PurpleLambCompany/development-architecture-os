@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getApproachGuidance } from "@/domain/methodology/queries";
 import { formatDate, formatDateTime } from "@/lib/format";
 import {
-  addLineage,
   deleteElement,
   publishElement,
-  removeLineage,
   retireElement,
   returnToDraft,
   reviewAiContent,
@@ -31,7 +30,6 @@ import {
   getElementDetail,
   getVersionSnapshot,
   listEvidence,
-  listMethodAssets,
   loadArchitecture,
   previewClientSnapshot,
   type LoadedElement,
@@ -60,7 +58,6 @@ import {
   AiReviewTag,
   ApprovalTag,
   ElementLink,
-  InternalMark,
   LifecycleTag,
   MaturityMark,
 } from "@/components/architecture/badges";
@@ -93,6 +90,8 @@ import {
   ReviewedInPanel,
 } from "@/components/architecture/phase5-panels";
 import { ElementRequestsPanel } from "@/components/intelligence/element-requests";
+import { CriteriaPanel } from "@/components/methodology/criteria-panel";
+import { PracticePanel } from "@/components/methodology/practice-panel";
 import { ActionButton, ActionForm } from "@/components/ui/action-form";
 import { ButtonLink } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
@@ -114,7 +113,6 @@ export default async function ElementPage({
   const [
     detail,
     evidence,
-    methodAssets,
     stewardship,
     history,
     impact,
@@ -131,7 +129,6 @@ export default async function ElementPage({
   ] = await Promise.all([
     getElementDetail(engagement.id, element.id),
     listEvidence(engagement.id),
-    listMethodAssets(),
     isRecord ? getStewardship(element.id) : null,
     isRecord ? getRecordHistory(element.id) : [],
     getImpact(element.id),
@@ -146,6 +143,7 @@ export default async function ElementPage({
     getReviewRegister(engagement.id),
     getDeliverableRegister(engagement.id),
   ]);
+
   const preview = query.preview === "1" ? await previewClientSnapshot(element.id) : null;
   const versionId = typeof query.version === "string" ? query.version : null;
   const shownVersion = versionId ? element.versions.find((v) => v.id === versionId) : null;
@@ -454,6 +452,7 @@ export default async function ElementPage({
 
       <StatementsPanel
         elementId={element.id}
+        approach={await getApproachGuidance(element.id)}
         statements={detail.statements}
         evidenceOptions={evidenceOptions}
         canEdit={canEdit}
@@ -517,58 +516,26 @@ export default async function ElementPage({
         today={today}
       />
 
-      <Panel
-        title="Method lineage"
-        description="Which TPLCo Method assets this element derives from. Internal only: never in a client snapshot."
-        actions={<InternalMark />}
-      >
-        <div className="space-y-4">
-          {detail.lineage.length === 0 ? (
-            <EmptyState title="No Method lineage recorded" />
-          ) : (
-            <ul className="divide-y divide-rule border-y border-rule text-sm">
-              {detail.lineage.map((l) => (
-                <li key={l.id} className="flex flex-wrap items-center justify-between gap-3 py-2">
-                  <span>
-                    {l.method_assets?.title}{" "}
-                    <span className="text-ink-subtle">· Method {l.method_version}</span>
-                    {l.note ? <span className="text-ink-muted"> · {l.note}</span> : null}
-                  </span>
-                  {editable ? (
-                    <ActionButton
-                      action={removeLineage.bind(null, l.id)}
-                      label="Remove"
-                      variant="ghost"
-                    />
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          )}
-          {editable && methodAssets.length > 0 ? (
-            <ActionForm
-              fields={[
-                {
-                  name: "methodAssetId",
-                  label: "Method asset",
-                  type: "select",
-                  options: methodAssets.map((a) => ({ value: a.id, label: a.title })),
-                  wide: true,
-                },
-                { name: "methodVersion", label: "Method version" },
-                { name: "note", label: "Note" },
-              ]}
-              defaultValues={{
-                methodAssetId: methodAssets[0]!.id,
-                methodVersion: engagement.methodology_version ?? "",
-              }}
-              action={addLineage.bind(null, element.id)}
-              submitLabel="Record lineage"
-              trigger="Record lineage"
-            />
-          ) : null}
-        </div>
-      </Panel>
+      {element.object ? (
+        <CriteriaPanel
+          elementId={element.id}
+          published={!!element.latestVersion}
+          canEdit={editable}
+          canPublish={canPublish && !frozen}
+          evidenceOptions={evidenceOptions}
+        />
+      ) : null}
+
+      <PracticePanel
+        slug={slug}
+        elementId={element.id}
+        kind={element.kind}
+        editable={editable}
+        methodologyDerived={
+          element.provenance === "methodology_derived" ||
+          detail.statements.some((st) => st.provenance === "methodology_derived")
+        }
+      />
 
       {canEdit || detail.activity.length > 0 ? (
         <Panel

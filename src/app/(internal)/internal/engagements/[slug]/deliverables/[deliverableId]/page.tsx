@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getApproachGuidance } from "@/domain/methodology/queries";
 import {
   publishElement,
   retireElement,
@@ -24,6 +25,7 @@ import { VersionsPanel } from "@/components/architecture/versions-panel";
 import { ActivityList } from "@/components/architecture/activity-list";
 import { DeliverableFileUpload } from "@/components/deliverables/deliverable-file-upload";
 import { ActionButton, ActionForm } from "@/components/ui/action-form";
+import { PracticePanel } from "@/components/methodology/practice-panel";
 import { PageHeader } from "@/components/ui/page-header";
 import { DetailList, EmptyState, Panel } from "@/components/ui/panel";
 
@@ -200,6 +202,7 @@ export default async function DeliverableDetailPage({
 
       <StatementsPanel
         elementId={element.id}
+        approach={await getApproachGuidance(element.id)}
         statements={detail.statements}
         evidenceOptions={evidenceOptions}
         canEdit={canEdit}
@@ -224,6 +227,18 @@ export default async function DeliverableDetailPage({
         canPublish={canPublish}
         nameOf={nameOf}
         today={new Date().toISOString().slice(0, 10)}
+      />
+
+      <PracticePanel
+        deliverableType={row.deliverable_type}
+        slug={slug}
+        elementId={element.id}
+        kind={element.kind}
+        editable={canEdit && !frozen}
+        methodologyDerived={
+          element.provenance === "methodology_derived" ||
+          detail.statements.some((st) => st.provenance === "methodology_derived")
+        }
       />
 
       {detail.activity.length > 0 ? (

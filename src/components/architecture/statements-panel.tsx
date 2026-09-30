@@ -18,7 +18,14 @@ import {
 } from "@/domain/architecture/catalog";
 import type { ElementStatement } from "@/domain/architecture/queries";
 import { groupStatements } from "@/domain/architecture/snapshot";
+import {
+  NO_APPROACH_GUIDANCE,
+  internalTitlesIn,
+  type ApproachGuidance,
+} from "@/domain/methodology/approach";
+import { ApproachHelper } from "@/components/methodology/approach-helper";
 import { ActionButton, ActionForm, type FieldSpec } from "@/components/ui/action-form";
+import { StatusTag } from "@/components/ui/status-tag";
 import { EmptyState, Panel } from "@/components/ui/panel";
 import { AiReviewTag, InternalMark, ProvenanceLabel } from "./badges";
 import { yesNoOptions } from "./element-fields";
@@ -59,6 +66,7 @@ export function StatementsPanel({
   canEdit,
   canPublish,
   frozen,
+  approach = NO_APPROACH_GUIDANCE,
 }: {
   elementId: string;
   statements: ElementStatement[];
@@ -66,8 +74,11 @@ export function StatementsPanel({
   canEdit: boolean;
   canPublish: boolean;
   frozen: boolean;
+  /** Approved names and internal-only titles for approach statements (§17.2). */
+  approach?: ApproachGuidance;
 }) {
   const editable = canEdit && !frozen;
+  const helper = <ApproachHelper guidance={approach} />;
   const groups = groupStatements(statements, STATEMENT_KINDS);
   return (
     <Panel
@@ -88,6 +99,10 @@ export function StatementsPanel({
                   <p className="flex flex-wrap items-center gap-2">
                     <ProvenanceLabel provenance={statement.provenance} />
                     {statement.client_visible ? null : <InternalMark />}
+                    {statement.client_visible &&
+                    internalTitlesIn(statement.body, approach.internalTitles).length > 0 ? (
+                      <StatusTag tone="attention">Names an internal-only method</StatusTag>
+                    ) : null}
                     <AiReviewTag state={statement.ai_review_state} />
                     {statement.source_reference ? (
                       <span className="text-xs text-ink-subtle">
@@ -188,6 +203,7 @@ export function StatementsPanel({
                         action={updateStatement.bind(null, statement.id)}
                         submitLabel="Save statement"
                         trigger="Edit"
+                        extra={helper}
                       />
                       <ActionButton
                         action={deleteStatement.bind(null, statement.id)}
@@ -213,6 +229,7 @@ export function StatementsPanel({
             action={addStatement.bind(null, elementId)}
             submitLabel="Add statement"
             trigger="Add statement"
+            extra={helper}
           />
         ) : null}
       </div>

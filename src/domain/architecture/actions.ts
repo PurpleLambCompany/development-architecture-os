@@ -570,25 +570,23 @@ export async function deferDecision(decisionId: string, input: unknown) {
 // Method lineage (internal only) ------------------------------------------------------
 
 export async function addLineage(elementId: string, input: unknown) {
-  return run(lineageSchema, input, (supabase, v) =>
-    supabase
-      .from("element_method_lineage")
-      .insert({
-        element_id: elementId,
-        method_asset_id: v.methodAssetId,
-        method_version: v.methodVersion,
-        note: v.note,
-      } as never)
-      .select("id")
-      .single(),
-  );
+  return run(lineageSchema, input, (supabase, v) => {
+    const [role, versionId] = v.target.split(":") as [
+      "instantiates" | "produced_from" | "judged_against",
+      string,
+    ];
+    return supabase.rpc("record_method_lineage", {
+      p_element_id: elementId,
+      p_method_version_id: versionId,
+      p_role: role,
+      p_note: v.note,
+    });
+  });
 }
 
 export async function removeLineage(lineageId: string) {
   return run(empty, {}, async (supabase) =>
-    expectRow(
-      await supabase.from("element_method_lineage").delete().eq("id", lineageId).select("id"),
-    ),
+    supabase.rpc("remove_method_lineage", { p_lineage_id: lineageId }),
   );
 }
 
