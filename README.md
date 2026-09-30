@@ -9,7 +9,7 @@ DSA OS is a standalone application. It shares no code, database, environment var
 - Architecture decisions: [`docs/architecture-decisions/`](docs/architecture-decisions/)
 - Database schema and access rules: [`docs/database/`](docs/database/)
 
-**Current phase:** Phase 3 — Architecture Core (built; awaiting review before merge). Phase 1 (foundation: auth, organizations, roles, engagements, access control) and Phase 2 (commercial engagement: contracts, change orders, payment plan, invoices, credit notes, payments, allocations, refunds) are merged. Phase 3 adds the four architecture domains, Project Intelligence records, evidence, typed relationships, published versions, client approvals, decisions and baselines, from the approved proposal in [`docs/product/PHASE_3_PROPOSAL.md`](docs/product/PHASE_3_PROPOSAL.md). See the [Phase 3 report](docs/product/PHASE_3_REPORT.md).
+**Current phase:** Phase 3 complete — Phase 4 planning. Phases 1 (foundation), 2 (commercial engagement) and 3 (Architecture Core: the four architecture domains, Project Intelligence records, evidence, typed relationships, published versions, client approvals, decisions and baselines; see the [Phase 3 report](docs/product/PHASE_3_REPORT.md)) are merged. Phase 4, Project Intelligence, is at proposal stage: [`docs/product/PHASE_4_PROPOSAL.md`](docs/product/PHASE_4_PROPOSAL.md).
 
 ## Stack
 
