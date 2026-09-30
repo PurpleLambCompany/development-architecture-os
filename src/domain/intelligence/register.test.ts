@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  assumptionsUnderpinningPublished,
+  recordsBearingOn,
   filterRegister,
   isActiveRecord,
   orderRegister,
@@ -408,5 +410,33 @@ describe("registerCounts", () => {
     expect(counts).toMatchObject({ untriaged: 1, escalated: 0, reviewsOverdue: 1, critical: 1 });
     expect(counts.byKind.risk).toBe(2);
     expect(counts.byKind.opportunity).toBe(1);
+  });
+});
+
+describe("recordsBearingOn", () => {
+  const edge = (source: string, type: string, target: string, retired = false) => ({
+    source_element_id: source,
+    target_element_id: target,
+    relationship_type: type,
+    retired_at: retired ? "2026-09-01" : null,
+  });
+  it("finds records related either way and dependencies naming the element", () => {
+    const edges = [
+      edge("rsk", "threatens", "obj"),
+      edge("obj", "pursues", "opp"),
+      edge("other", "part_of", "obj"),
+      edge("asm", "underpins", "obj", true),
+    ];
+    const records = new Set(["rsk", "opp", "asm", "dep"]);
+    const deps = [{ element_id: "dep", from_element_id: "x", to_element_id: "obj" }];
+    expect([...recordsBearingOn("obj", edges, records, deps)].sort()).toEqual([
+      "dep",
+      "opp",
+      "rsk",
+    ]);
+  });
+  it("finds assumptions underpinning published elements", () => {
+    const edges = [edge("a1", "underpins", "pub"), edge("a2", "underpins", "draft")];
+    expect([...assumptionsUnderpinningPublished(edges, new Set(["pub"]))]).toEqual(["a1"]);
   });
 });

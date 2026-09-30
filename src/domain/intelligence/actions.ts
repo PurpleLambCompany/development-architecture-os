@@ -125,8 +125,25 @@ export async function resolveEscalation(escalationId: string, input: unknown) {
   );
 }
 
-export async function dismissSignal(engagementId: string, input: unknown) {
-  return run(dismissSignalSchema, input, (supabase, v) =>
+/** Dismiss one signal: `signal` names it (rule, subject, fingerprint); `input` gives the reason. */
+export async function dismissSignal(
+  engagementId: string,
+  signal: {
+    ruleKey: string;
+    elementId: string | null;
+    clientActionId: string | null;
+    fingerprint: string;
+  },
+  input: Record<string, unknown>,
+) {
+  const values = {
+    ...input,
+    ruleKey: signal.ruleKey,
+    elementId: signal.elementId ?? "",
+    clientActionId: signal.clientActionId ?? "",
+    fingerprint: signal.fingerprint,
+  };
+  return run(dismissSignalSchema, values, (supabase, v) =>
     supabase.rpc("dismiss_intelligence_signal", {
       p_engagement_id: engagementId,
       p_rule_key: v.ruleKey,

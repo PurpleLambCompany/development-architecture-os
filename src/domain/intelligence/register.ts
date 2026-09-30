@@ -375,3 +375,48 @@ export function registerCounts(rows: readonly RegisterRow[], today: string) {
     ) as Record<RecordKind, number>,
   };
 }
+
+type RegisterEdge = {
+  source_element_id: string;
+  target_element_id: string;
+  relationship_type: string;
+  retired_at?: string | null;
+};
+
+/**
+ * Records bearing on an element: every record related to it in either
+ * direction, plus dependencies naming it as either end.
+ */
+export function recordsBearingOn(
+  elementId: string,
+  edges: readonly RegisterEdge[],
+  recordIds: ReadonlySet<string>,
+  dependencyEnds: readonly { element_id: string; from_element_id: string; to_element_id: string }[] = [],
+): Set<string> {
+  const ids = new Set<string>();
+  for (const e of edges) {
+    if (e.retired_at) continue;
+    if (e.source_element_id === elementId && recordIds.has(e.target_element_id))
+      ids.add(e.target_element_id);
+    if (e.target_element_id === elementId && recordIds.has(e.source_element_id))
+      ids.add(e.source_element_id);
+  }
+  for (const d of dependencyEnds) {
+    if (d.from_element_id === elementId || d.to_element_id === elementId) ids.add(d.element_id);
+  }
+  ids.delete(elementId);
+  return ids;
+}
+
+/** Assumptions that underpin at least one published element. */
+export function assumptionsUnderpinningPublished(
+  edges: readonly RegisterEdge[],
+  published: ReadonlySet<string>,
+): Set<string> {
+  const ids = new Set<string>();
+  for (const e of edges) {
+    if (!e.retired_at && e.relationship_type === "underpins" && published.has(e.target_element_id))
+      ids.add(e.source_element_id);
+  }
+  return ids;
+}
