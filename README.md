@@ -9,7 +9,7 @@ DSA OS is a standalone application. It shares no code, database, environment var
 - Architecture decisions: [`docs/architecture-decisions/`](docs/architecture-decisions/)
 - Database schema and access rules: [`docs/database/`](docs/database/)
 
-**Current phase:** Phase 2 — Commercial Engagement (contracts, change orders, payment plan, invoices, credit notes, payments, allocations, refunds). Phase 1 (foundation: auth, organizations, roles, engagements, access control) is complete.
+**Current phase:** Phase 2 complete — Phase 3 planning. Phase 1 (foundation: auth, organizations, roles, engagements, access control) and Phase 2 (commercial engagement: contracts, change orders, payment plan, invoices, credit notes, payments, allocations, refunds) are merged. The Phase 3 (Architecture Core) proposal is in [`docs/product/PHASE_3_PROPOSAL.md`](docs/product/PHASE_3_PROPOSAL.md), awaiting review.
 
 ## Stack
 
