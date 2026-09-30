@@ -204,7 +204,8 @@ where em.engagement_id = 'e0000000-0000-4000-8000-000000000001'
 -- -----------------------------------------------------------------------------
 -- Method/IP (internal only; exists to prove client isolation)
 -- -----------------------------------------------------------------------------
-insert into public.method_assets (title, category, methodology_domain, version, status, description, owner_user_id) values
+select private.begin_methodology_operation();
+insert into public.method_assets (title, category, methodology_domain, version, status, description, steward_user_id) values
   (
     'Capability Readiness Diagnostic',
     'diagnostic_framework',
@@ -223,6 +224,7 @@ insert into public.method_assets (title, category, methodology_domain, version, 
     'Index of strategic models with applicability conditions and known failure modes.',
     '10000000-0000-4000-8000-000000000002'
   );
+select private.end_methodology_operation();
 
 -- -----------------------------------------------------------------------------
 -- Phase 2: commercial engagement
