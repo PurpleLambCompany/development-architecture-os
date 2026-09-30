@@ -38,6 +38,11 @@ export function fromDatabaseError(error: PostgrestError, slugField?: string): Ac
     case "P0002":
       return fail("That record was not found, or you do not have access to it.");
     case "23503":
+      // A Development Edge promotion target is kept as the promotion's record (ADR-0056).
+      if (error.message.includes("edge_judgments_promotion"))
+        return fail(
+          "This record was promoted from the Development Edge and is kept as the promotion's record. Edit it instead.",
+        );
       return fail("That refers to a record from a different contract or engagement.");
     case "22023":
       return fail(error.message);

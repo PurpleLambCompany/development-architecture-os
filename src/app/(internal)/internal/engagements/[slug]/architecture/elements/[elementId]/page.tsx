@@ -40,13 +40,14 @@ import {
   getClientActions,
   getContributions,
   getEscalations,
-  getImpact,
   getRecordHistory,
   getRegister,
   getStatementOptions,
   getStewardship,
 } from "@/domain/intelligence/queries";
 import { recordsBearingOn } from "@/domain/intelligence/register";
+import { getEdgeItems, getImpactTrace } from "@/domain/edge/queries";
+import { ContextualEdgePanel } from "@/components/edge/edge-panel";
 import { clientMembersWith } from "@/domain/intelligence/views";
 import { RECORD_KINDS } from "@/domain/architecture/vocabulary";
 import { getDeliverableRegister } from "@/domain/deliverables/queries";
@@ -91,6 +92,7 @@ import {
 } from "@/components/architecture/phase5-panels";
 import { ElementRequestsPanel } from "@/components/intelligence/element-requests";
 import { CriteriaPanel } from "@/components/methodology/criteria-panel";
+import { criterionPromotionFor } from "@/domain/edge/promotion";
 import { PracticePanel } from "@/components/methodology/practice-panel";
 import { ActionButton, ActionForm } from "@/components/ui/action-form";
 import { ButtonLink } from "@/components/ui/button";
@@ -116,6 +118,7 @@ export default async function ElementPage({
     stewardship,
     history,
     impact,
+    edgeItems,
     escalations,
     register,
     actions,
@@ -131,7 +134,8 @@ export default async function ElementPage({
     listEvidence(engagement.id),
     isRecord ? getStewardship(element.id) : null,
     isRecord ? getRecordHistory(element.id) : [],
-    getImpact(element.id),
+    getImpactTrace(element.id),
+    getEdgeItems(engagement.id, { subjectId: element.id }),
     isRecord ? getEscalations(engagement.id) : [],
     isRecord ? [] : getRegister(engagement.id),
     getClientActions(engagement.id),
@@ -435,11 +439,42 @@ export default async function ElementPage({
       ) : (
         <BearingPanel
           slug={slug}
+          engagementId={engagement.id}
           elementId={element.id}
           rows={register.filter((r) => bearing.has(r.element_id))}
           today={today}
+          edgeItems={edgeItems}
+          canJudge={canEdit}
+          servesOutcomes={
+            architecture.relationships.filter(
+              (r) =>
+                r.source_element_id === element.id &&
+                r.relationship_type === "serves" &&
+                !r.retired_at &&
+                architecture.byId.get(r.target_element_id)?.object?.object_type ===
+                  "intended_outcome",
+            ).length
+          }
         />
       )}
+
+      {isRecord ? (
+        <ContextualEdgePanel
+          slug={slug}
+          engagementId={engagement.id}
+          items={edgeItems}
+          canJudge={canEdit}
+          {...(element.kind === "decision"
+            ? {
+                title: "Reflected in architecture?",
+                description:
+                  "For each element this decision affects: whether a version has been published since the decision was recorded. A prompt to look, never a finding that the architecture is wrong.",
+                empty:
+                  "Every element this decision affects has been published since it was decided.",
+              }
+            : {})}
+        />
+      ) : null}
 
       <DecisionPanel
         element={element}
@@ -505,7 +540,7 @@ export default async function ElementPage({
       />
 
       {isRecord ? <HistoryPanel history={history} /> : null}
-      <ImpactPanel slug={slug} impact={impact} architecture={architecture} />
+      <ImpactPanel slug={slug} element={element} trace={impact} />
 
       <VersionsPanel
         slug={slug}
@@ -523,6 +558,12 @@ export default async function ElementPage({
           canEdit={editable}
           canPublish={canPublish && !frozen}
           evidenceOptions={evidenceOptions}
+          promotion={criterionPromotionFor(query, edgeItems, {
+            engagementId: engagement.id,
+            slug,
+            elementId: element.id,
+            elementKind: element.kind,
+          })}
         />
       ) : null}
 

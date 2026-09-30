@@ -10,6 +10,10 @@ import {
 } from "@/domain/architecture/catalog";
 import { getInternalArchitectureContext } from "@/domain/architecture/context";
 import { listEvidence, loadArchitecture, type LoadedEvidence } from "@/domain/architecture/queries";
+import { getEdgeItems } from "@/domain/edge/queries";
+import { groupEdgeItems } from "@/domain/edge/grouping";
+import type { EdgeItem } from "@/domain/edge/items";
+import { EdgeEventCard } from "@/components/edge/edge-event";
 import { formatDate } from "@/lib/format";
 import { ArchitectureNav } from "@/components/architecture/architecture-nav";
 import { ElementLink, InternalMark } from "@/components/architecture/badges";
@@ -86,6 +90,15 @@ function sourceDefaults(s: LoadedEvidence) {
   };
 }
 
+/** Edge items whose governed basis names this evidence source. */
+function bearingOn(items: EdgeItem[], sourceId: string): EdgeItem[] {
+  return items.filter(
+    (i) =>
+      i.details?.evidence_source_id === sourceId ||
+      (i.basis ?? []).some((ref) => ref.type === "evidence_source" && ref.id === sourceId),
+  );
+}
+
 /**
  * The evidence library: a separate source system. Sources are cited by
  * statements (and elements), never copied into them. Clients see a source
@@ -96,10 +109,11 @@ export default async function EvidencePage({
 }: PageProps<"/internal/engagements/[slug]/evidence">) {
   const { slug } = await params;
   const { engagement, canEdit, canPublish } = await getInternalArchitectureContext(slug);
-  const [sources, architecture, files] = await Promise.all([
+  const [sources, architecture, files, edgeItems] = await Promise.all([
     listEvidence(engagement.id),
     loadArchitecture(engagement.id),
     getEvidenceFiles(engagement.id),
+    getEdgeItems(engagement.id),
   ]);
 
   return (
@@ -196,6 +210,26 @@ export default async function EvidencePage({
                       })}
                     </ul>
                   </div>
+                  {(() => {
+                    const events = groupEdgeItems(bearingOn(edgeItems, s.id));
+                    return events.length > 0 ? (
+                      <div>
+                        <p className="text-xs tracking-wide text-ink-subtle uppercase">
+                          This evidence bears on
+                        </p>
+                        {events.map((event) => (
+                          <EdgeEventCard
+                            eventJudgment={false}
+                            key={event.key}
+                            slug={slug}
+                            engagementId={engagement.id}
+                            event={event}
+                            canJudge={canEdit}
+                          />
+                        ))}
+                      </div>
+                    ) : null;
+                  })()}
                   <div>
                     <p className="text-xs tracking-wide text-ink-subtle uppercase">Files</p>
                     <FileList files={files.filter((f) => f.evidence_source_id === s.id)} />

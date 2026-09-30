@@ -47,7 +47,17 @@ export default async function SignalsPage({
       <PageHeader
         eyebrow={[engagement.title, "Project Intelligence"].join(" · ")}
         title="Signals"
-        description="Deterministic rules over the register that point at something needing judgment. A signal is a prompt to look, never a conclusion; dismiss it with a reason when it needs no action. It returns if its facts change."
+        description={
+          <>
+            Deterministic rules over the register that point at something needing judgment. A signal
+            is a prompt to look, never a conclusion; dismiss it with a reason when it needs no
+            action. It returns if its facts change. These signals also appear, unchanged, on the{" "}
+            <Link href={`/internal/engagements/${slug}/edge`} className="underline">
+              Development Edge
+            </Link>
+            , with the changes and conditions around them; a dismissal here is honored there.
+          </>
+        }
       />
       <ArchitectureNav slug={slug} current="intelligence" />
       <IntelligenceNav

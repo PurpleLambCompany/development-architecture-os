@@ -26,6 +26,8 @@ import {
   getCriteriaInForce,
   getValidationCriteria,
 } from "@/domain/methodology/queries";
+import { getEdgeItems, getElementRevisions, getReviewCapture } from "@/domain/edge/queries";
+import { ContextualEdgePanel } from "@/components/edge/edge-panel";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { ArchitectureNav } from "@/components/architecture/architecture-nav";
 import { ElementLink, LifecycleTag, ReferenceCode } from "@/components/architecture/badges";
@@ -52,12 +54,24 @@ export default async function ReviewDetailPage({
   const { slug, reviewId } = await params;
   const { engagement, canEdit, canPublish, canManageReviews } =
     await getInternalArchitectureContext(slug);
-  const [architecture, registerRows, participants, detail, evidence] = await Promise.all([
+  const [
+    architecture,
+    registerRows,
+    participants,
+    detail,
+    evidence,
+    capture,
+    edgeItems,
+    revisions,
+  ] = await Promise.all([
     loadArchitecture(engagement.id),
     getReviewRegister(engagement.id),
     getReviewParticipants(reviewId),
     getElementDetail(engagement.id, reviewId),
     listEvidence(engagement.id),
+    getReviewCapture(reviewId),
+    getEdgeItems(engagement.id),
+    getElementRevisions(engagement.id),
   ]);
   const element = architecture.byId.get(reviewId);
   const row = registerRows.find((r) => r.element_id === reviewId);
@@ -81,6 +95,18 @@ export default async function ReviewDetailPage({
   // gate in record_review_validation exactly, so the control is offered only
   // when it will actually succeed).
   const examinedIds = new Set(examines.map((r) => r.target_element_id));
+  // The closed examined set (ADR-0054): the version of each examined element
+  // captured when this Review was held. Captures are facts, not a baseline.
+  const held = row.review_status === "held";
+  // The Review's own items, and items on what it examines: revisions,
+  // escalations, decisions due and pending approvals on its agenda (§16).
+  const bearing = new Set([reviewId, ...examinedIds]);
+  const reviewItems = edgeItems.filter(
+    (i) => bearing.has(i.subject_id) || (i.basis ?? []).some((ref) => ref.id === reviewId),
+  );
+  const capturedVersion = new Map(capture.map((c) => [c.element_id, c.element_version_id]));
+  const versionNo = (elementId: string, versionId: string | null | undefined) =>
+    architecture.byId.get(elementId)?.versions.find((v) => v.id === versionId)?.version_no ?? null;
   const initiatives = architecture.elements.filter(
     (e) => e.kind === "implementation_initiative" && e.lifecycle !== "retired",
   );
@@ -253,7 +279,11 @@ export default async function ReviewDetailPage({
 
       <Panel
         title="Agenda"
-        description="Elements and Project Intelligence records this review examines."
+        description={
+          held
+            ? "What this Review examined, and the version of each captured when it was held. The examined set closed at hold."
+            : "Elements and Project Intelligence records this review examines. The version of each is captured when the Review is held."
+        }
       >
         {examines.length === 0 ? (
           <EmptyState title="Nothing on the agenda yet">
@@ -263,16 +293,55 @@ export default async function ReviewDetailPage({
           <ul className="divide-y divide-rule border-y border-rule text-sm">
             {examines.map((r) => {
               const target = architecture.byId.get(r.target_element_id);
-              return target ? (
+              if (!target) return null;
+              const examinedNo = versionNo(target.id, capturedVersion.get(target.id));
+              const currentNo = target.versions[0]?.version_no ?? null;
+              return (
                 <li key={r.id} className="flex flex-wrap items-center gap-3 py-2">
                   <ElementLink slug={slug} element={target} />
                   <span className="text-xs text-ink-subtle">{elementTypeLabel(target)}</span>
+                  {held ? (
+                    <span className="text-xs text-ink-muted">
+                      {examinedNo === null
+                        ? "No published version when held"
+                        : currentNo !== null && currentNo > examinedNo
+                          ? `Examined at version ${examinedNo}; now version ${currentNo}${
+                              revisions.some(
+                                (v) =>
+                                  v.element_id === target.id &&
+                                  v.version_no > examinedNo &&
+                                  v.change_type === "substantive_revision",
+                              )
+                                ? ", revised substantively since"
+                                : ", with status-only publications since"
+                            }`
+                          : `Examined at version ${examinedNo}`}
+                    </span>
+                  ) : null}
                 </li>
-              ) : null;
+              );
             })}
           </ul>
         )}
       </Panel>
+
+      <ContextualEdgePanel
+        slug={slug}
+        engagementId={engagement.id}
+        items={reviewItems}
+        canJudge={canEdit}
+        title={held ? "Since this Review was held" : "Before this Review"}
+        description={
+          held
+            ? "What has changed in the records this Review examined since it was held, compared with the versions it captured. A prompt to look, never a finding."
+            : "What bears on this Review's agenda before it convenes: revisions, open escalations, decisions due and pending approvals."
+        }
+        empty={
+          held
+            ? "Nothing examined has changed since this Review was held."
+            : "Nothing bears on this Review's agenda."
+        }
+      />
 
       {row.review_status === "held" && validationCandidates.length > 0 && canPublish ? (
         <Panel
@@ -418,6 +487,15 @@ export default async function ReviewDetailPage({
         canEdit={canEdit}
         canPublish={canPublish}
         frozen={frozen}
+        locked={
+          held
+            ? {
+                types: ["examines"],
+                reason:
+                  "This Review has been held, so what it examined is closed: examines relationships can no longer be added or retired. Examine anything further in a new Review.",
+              }
+            : undefined
+        }
       />
 
       <VersionsPanel

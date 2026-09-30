@@ -26,6 +26,7 @@ export type Database = {
       acceptance_criteria: {
         Row: {
           agreed_on: string | null;
+          agreed_recorded_at: string | null;
           agreed_recorded_by: string | null;
           agreed_with: string | null;
           agreement_evidence_source_id: string | null;
@@ -48,6 +49,7 @@ export type Database = {
         };
         Insert: {
           agreed_on?: string | null;
+          agreed_recorded_at?: string | null;
           agreed_recorded_by?: string | null;
           agreed_with?: string | null;
           agreement_evidence_source_id?: string | null;
@@ -70,6 +72,7 @@ export type Database = {
         };
         Update: {
           agreed_on?: string | null;
+          agreed_recorded_at?: string | null;
           agreed_recorded_by?: string | null;
           agreed_with?: string | null;
           agreement_evidence_source_id?: string | null;
@@ -2343,6 +2346,169 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "engagements";
             referencedColumns: ["id"];
+          },
+        ];
+      };
+      edge_briefing_marks: {
+        Row: {
+          briefed_through: string;
+          engagement_id: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          briefed_through: string;
+          engagement_id: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          briefed_through?: string;
+          engagement_id?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "edge_briefing_marks_engagement_id_fkey";
+            columns: ["engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "edge_briefing_marks_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      edge_judgments: {
+        Row: {
+          acceptance_criterion_id: string | null;
+          client_action_id: string | null;
+          element_id: string | null;
+          engagement_id: string;
+          expires_on: string | null;
+          fingerprint: string;
+          id: string;
+          judged_at: string;
+          judged_by: string;
+          judgment_kind: string;
+          method_application_id: string | null;
+          promotion_target_criterion_id: string | null;
+          promotion_target_element_id: string | null;
+          promotion_target_element_kind: Database["public"]["Enums"]["element_kind"] | null;
+          promotion_target_kind: string | null;
+          reason: string | null;
+          rule_key: string;
+          subject_type: string;
+          trigger_key: string | null;
+        };
+        Insert: {
+          acceptance_criterion_id?: string | null;
+          client_action_id?: string | null;
+          element_id?: string | null;
+          engagement_id: string;
+          expires_on?: string | null;
+          fingerprint: string;
+          id?: string;
+          judged_at?: string;
+          judged_by: string;
+          judgment_kind: string;
+          method_application_id?: string | null;
+          promotion_target_criterion_id?: string | null;
+          promotion_target_element_id?: string | null;
+          promotion_target_element_kind?: never;
+          promotion_target_kind?: string | null;
+          reason?: string | null;
+          rule_key: string;
+          subject_type: string;
+          trigger_key?: string | null;
+        };
+        Update: {
+          acceptance_criterion_id?: string | null;
+          client_action_id?: string | null;
+          element_id?: string | null;
+          engagement_id?: string;
+          expires_on?: string | null;
+          fingerprint?: string;
+          id?: string;
+          judged_at?: string;
+          judged_by?: string;
+          judgment_kind?: string;
+          method_application_id?: string | null;
+          promotion_target_criterion_id?: string | null;
+          promotion_target_element_id?: string | null;
+          promotion_target_element_kind?: never;
+          promotion_target_kind?: string | null;
+          reason?: string | null;
+          rule_key?: string;
+          subject_type?: string;
+          trigger_key?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "edge_judgments_application_fk";
+            columns: ["method_application_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "method_applications";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "edge_judgments_client_action_fk";
+            columns: ["client_action_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "client_actions";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "edge_judgments_criterion_fk";
+            columns: ["acceptance_criterion_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "acceptance_criteria";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "edge_judgments_element_fk";
+            columns: ["element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "edge_judgments_engagement_id_fkey";
+            columns: ["engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "edge_judgments_judged_by_fkey";
+            columns: ["judged_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "edge_judgments_promotion_criterion_fk";
+            columns: ["promotion_target_criterion_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "acceptance_criteria";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "edge_judgments_promotion_element_fk";
+            columns: [
+              "promotion_target_element_id",
+              "engagement_id",
+              "promotion_target_element_kind",
+            ];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id", "kind"];
           },
         ];
       };
@@ -5795,6 +5961,42 @@ export type Database = {
           },
         ];
       };
+      relationship_impact_rules: {
+        Row: {
+          assessment: string;
+          condition: string | null;
+          direction: string;
+          edge_eligible: boolean | null;
+          hub_target: boolean;
+          link_key: string;
+          max_depth: number;
+          propagation: string;
+          reason: string;
+        };
+        Insert: {
+          assessment: string;
+          condition?: string | null;
+          direction: string;
+          edge_eligible?: never;
+          hub_target?: boolean;
+          link_key: string;
+          max_depth: number;
+          propagation: string;
+          reason: string;
+        };
+        Update: {
+          assessment?: string;
+          condition?: string | null;
+          direction?: string;
+          edge_eligible?: never;
+          hub_target?: boolean;
+          link_key?: string;
+          max_depth?: number;
+          propagation?: string;
+          reason?: string;
+        };
+        Relationships: [];
+      };
       relationship_rules: {
         Row: {
           id: number;
@@ -5876,6 +6078,59 @@ export type Database = {
           sort_order?: number;
         };
         Relationships: [];
+      };
+      review_examined_versions: {
+        Row: {
+          captured_at: string;
+          element_id: string;
+          element_version_id: string | null;
+          engagement_id: string;
+          review_element_id: string;
+        };
+        Insert: {
+          captured_at?: string;
+          element_id: string;
+          element_version_id?: string | null;
+          engagement_id: string;
+          review_element_id: string;
+        };
+        Update: {
+          captured_at?: string;
+          element_id?: string;
+          element_version_id?: string | null;
+          engagement_id?: string;
+          review_element_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "review_examined_versions_element_fk";
+            columns: ["element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "review_examined_versions_engagement_id_fkey";
+            columns: ["engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "review_examined_versions_review_fk";
+            columns: ["review_element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "review_examined_versions_version_fk";
+            columns: ["element_version_id", "element_id"];
+            isOneToOne: false;
+            referencedRelation: "element_versions";
+            referencedColumns: ["id", "element_id"];
+          },
+        ];
       };
       review_participants: {
         Row: {
@@ -6671,6 +6926,7 @@ export type Database = {
         Args: { p_initiative_element_id: string };
         Returns: {
           agreed_on: string | null;
+          agreed_recorded_at: string | null;
           agreed_recorded_by: string | null;
           agreed_with: string | null;
           agreement_evidence_source_id: string | null;
@@ -6725,6 +6981,31 @@ export type Database = {
           updated_at: string;
         }[];
       };
+      development_changes: {
+        Args: {
+          p_element_id?: string;
+          p_engagement_id: string;
+          p_limit?: number;
+          p_since?: string;
+          p_until?: string;
+        };
+        Returns: {
+          actor_name: string;
+          change_type: string;
+          occurred_at: string;
+          reference_code: string;
+          related_id: string;
+          related_reference_code: string;
+          related_type: string;
+          subject_id: string;
+          subject_kind: string;
+          subject_type: string;
+          summary: string;
+          title: string;
+          version_id: string;
+          version_no: number;
+        }[];
+      };
       discontinue_method_application: {
         Args: { p_application_id: string; p_reason: string };
         Returns: undefined;
@@ -6751,6 +7032,75 @@ export type Database = {
         };
         Returns: string;
       };
+      edge_items: {
+        Args: {
+          p_as_of?: string;
+          p_engagement_id: string;
+          p_include_judged?: boolean;
+          p_subject_id?: string;
+          p_subject_type?: string;
+        };
+        Returns: {
+          basis: Json;
+          consequence_path: Json;
+          details: Json;
+          epistemic_status: string;
+          fingerprint: string;
+          home: string;
+          item_key: string;
+          judged: boolean;
+          judged_at: string;
+          judged_by: string;
+          judged_by_name: string;
+          judgment_expires_on: string;
+          judgment_kind: string;
+          judgment_reason: string;
+          judgment_source: string;
+          lens: string;
+          order_facts: Json;
+          producer: string;
+          promotion_target_code: string;
+          promotion_target_id: string;
+          promotion_target_kind: string;
+          resolving_act: string;
+          rule_key: string;
+          subject_id: string;
+          subject_kind: string;
+          subject_reference_code: string;
+          subject_title: string;
+          subject_type: string;
+          tier: string;
+          tier_reason: string;
+          trigger_at: string;
+          trigger_key: string;
+          trigger_reference_code: string;
+          trigger_subject_id: string;
+          trigger_title: string;
+          trigger_type: string;
+          trigger_version_id: string;
+          trigger_version_no: number;
+          variant: string;
+        }[];
+      };
+      edge_rule_catalog: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          candidate: string;
+          epistemic_status: string;
+          home: string;
+          lens: string;
+          list_tier: string;
+          origin: string;
+          resolving_act: string;
+          rule_key: string;
+          scope: string;
+          subject_type: string;
+          substantive_only: boolean;
+          thresholds: string;
+          time_basis: string;
+          trigger_type: string;
+        }[];
+      };
       element_practice_context: {
         Args: { p_element_id: string };
         Returns: {
@@ -6776,6 +7126,21 @@ export type Database = {
           p_kind: Database["public"]["Enums"]["element_kind"];
         };
         Returns: string;
+      };
+      element_revisions: {
+        Args: { p_element_id?: string; p_engagement_id: string };
+        Returns: {
+          change_summary: string;
+          change_type: string;
+          changed_paths: string[];
+          element_id: string;
+          kind: Database["public"]["Enums"]["element_kind"];
+          previous_version_id: string;
+          published_at: string;
+          reference_code: string;
+          version_id: string;
+          version_no: number;
+        }[];
       };
       element_version_snapshot: { Args: { p_version_id: string }; Returns: Json };
       engagement_primary_contract_id: { Args: { p_engagement_id: string }; Returns: string };
@@ -6834,6 +7199,27 @@ export type Database = {
       hold_review: {
         Args: { p_element_id: string; p_held_at?: string; p_summary?: string };
         Returns: undefined;
+      };
+      impact_trace: {
+        Args: { p_element_id: string; p_mode?: string };
+        Returns: {
+          assessment: string;
+          category: string;
+          depth: number;
+          direction: string;
+          hub_element_id: string;
+          kind: string;
+          link_key: string;
+          object_type: string;
+          path: Json;
+          propagation: string;
+          reached_id: string;
+          reached_type: string;
+          reason: string;
+          reference_code: string;
+          title: string;
+          via_element_id: string;
+        }[];
       };
       implementation_impact: {
         Args: { p_depth?: number; p_element_id: string };
@@ -7032,6 +7418,10 @@ export type Database = {
         };
         Returns: string;
       };
+      mark_briefed_through: {
+        Args: { p_engagement_id: string; p_through: string };
+        Returns: string;
+      };
       method_application_register: {
         Args: { p_engagement_id: string };
         Returns: {
@@ -7071,6 +7461,25 @@ export type Database = {
           title: string;
           version_label: string;
           version_lifecycle: Database["public"]["Enums"]["method_asset_version_lifecycle"];
+        }[];
+      };
+      method_practice_counts: {
+        Args: { p_asset_id: string };
+        Returns: {
+          count: number;
+          measure: string;
+          min_n: number;
+          n: number;
+          other_asset_title: string;
+          other_version_id: string;
+          other_version_label: string;
+          proportion: number;
+          stage_key: string;
+          stage_ordinal: number;
+          stage_title: string;
+          treatment: string;
+          version_id: string;
+          version_label: string;
         }[];
       };
       method_usage: {
@@ -7194,6 +7603,31 @@ export type Database = {
           p_engagement_id: string;
           p_maturity: Database["public"]["Enums"]["maturity_state"];
           p_rationale: string;
+        };
+        Returns: string;
+      };
+      record_edge_event_judgment: {
+        Args: {
+          p_engagement_id: string;
+          p_expires_on?: string;
+          p_kind: string;
+          p_reason?: string;
+          p_trigger_key: string;
+        };
+        Returns: number;
+      };
+      record_edge_judgment: {
+        Args: {
+          p_engagement_id: string;
+          p_expires_on?: string;
+          p_fingerprint: string;
+          p_kind: string;
+          p_promotion_target_id?: string;
+          p_promotion_target_kind?: string;
+          p_reason?: string;
+          p_rule_key: string;
+          p_subject_id: string;
+          p_subject_type: string;
         };
         Returns: string;
       };

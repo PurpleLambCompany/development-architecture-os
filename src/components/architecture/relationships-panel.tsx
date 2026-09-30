@@ -63,6 +63,7 @@ export function RelationshipsPanel({
   canEdit,
   canPublish,
   frozen,
+  locked,
 }: {
   engagementId: string;
   slug: string;
@@ -71,7 +72,13 @@ export function RelationshipsPanel({
   canEdit: boolean;
   canPublish: boolean;
   frozen: boolean;
+  /**
+   * Relationship types that can no longer be added or retired here, with the
+   * reason shown in place (a held Review's closed examined set, ADR-0054).
+   */
+  locked?: { types: RelationshipTypeKey[]; reason: string };
 }) {
+  const isLocked = (key: string) => locked?.types.includes(key as RelationshipTypeKey) ?? false;
   const rows = architecture.relationships
     .filter((r) => r.source_element_id === element.id || r.target_element_id === element.id)
     .map((r) => {
@@ -100,7 +107,7 @@ export function RelationshipsPanel({
   // validates is written only by record_review_validation (D13); never offered
   // as a free-form relationship insert here.
   const typeOptions = RELATIONSHIP_TYPES.filter(
-    (t) => allowedTypes.has(t.key) && t.key !== "validates",
+    (t) => allowedTypes.has(t.key) && t.key !== "validates" && !isLocked(t.key),
   ).map((t) => ({ value: t.key, label: t.label }));
 
   return (
@@ -110,6 +117,7 @@ export function RelationshipsPanel({
     >
       <div className="space-y-6">
         {rows.length === 0 ? <EmptyState title="No relationships yet" /> : null}
+        {locked ? <p className="text-sm text-ink-muted">{locked.reason}</p> : null}
         {categories.map((category) => {
           const inCategory = rows.filter((row) => row.type!.category === category);
           if (inCategory.length === 0) return null;
@@ -146,11 +154,13 @@ export function RelationshipsPanel({
                     <span className="flex items-center gap-2">
                       {r.client_visibility === "internal" ? <InternalMark /> : null}
                       <RelationshipState r={r} />
-                      <RelationshipControls
-                        r={r}
-                        canEdit={canEdit && !frozen}
-                        canPublish={canPublish}
-                      />
+                      {isLocked(r.relationship_type) ? null : (
+                        <RelationshipControls
+                          r={r}
+                          canEdit={canEdit && !frozen}
+                          canPublish={canPublish}
+                        />
+                      )}
                     </span>
                     {r.description || r.retirement_reason ? (
                       <p className="w-full text-xs text-ink-muted">

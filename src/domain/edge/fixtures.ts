@@ -1,0 +1,49 @@
+import type { EdgeItem } from "./items";
+
+/** A test envelope row with defaults; override what a case needs. */
+export function edgeItem(
+  overrides: Partial<EdgeItem> & Pick<EdgeItem, "rule_key" | "subject_id">,
+): EdgeItem {
+  const base: EdgeItem = {
+    item_key: `${overrides.rule_key}:${overrides.subject_id}`,
+    rule_key: overrides.rule_key,
+    home: "architecture",
+    lens: "change",
+    epistemic_status: "derived",
+    producer: "rule",
+    subject_type: "element",
+    subject_id: overrides.subject_id,
+    subject_reference_code: null,
+    subject_title: null,
+    subject_kind: null,
+    variant: null,
+    details: null,
+    basis: [],
+    trigger_type: "substantive_revision",
+    trigger_subject_id: null,
+    trigger_reference_code: null,
+    trigger_title: null,
+    trigger_version_id: null,
+    trigger_version_no: null,
+    trigger_at: null,
+    trigger_key: `state:${overrides.subject_id}`,
+    consequence_path: null,
+    fingerprint: "fp",
+    resolving_act: "examine_reached",
+    tier: "attention",
+    tier_reason: "rule_default",
+    order_facts: { reach_class: 4, responsible: false },
+    judgment_kind: null,
+    judged_by: null,
+    judged_by_name: null,
+    judged_at: null,
+    judgment_reason: null,
+    judgment_expires_on: null,
+    judgment_source: null,
+    promotion_target_kind: null,
+    promotion_target_id: null,
+    promotion_target_code: null,
+    judged: false,
+  };
+  return { ...base, ...overrides };
+}

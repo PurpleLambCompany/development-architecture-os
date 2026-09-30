@@ -93,7 +93,7 @@ select pg_temp.reset_actor();
 select pg_temp.act_as('advisor@consulting.test');
 select is(pg_temp.seen(), 'APP-001,APP-005,APP-006,DEC-001,DEP-001',
   'an element area shows the element, what is published as part of it, and the records that concern them');
-select is((select count(*)::int from public.client_architecture('e0000000-0000-4000-8000-000000000003')), 6,
+select is((select count(*)::int from public.client_architecture('e0000000-0000-4000-8000-000000000003')), 7,
   'the same person, as Client Project Lead at Harbor, sees all of Harbor''s architecture');
 select pg_temp.reset_actor();
 

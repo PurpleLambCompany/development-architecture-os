@@ -32,7 +32,6 @@ import {
 import {
   getCheckpoints,
   getEscalations,
-  getImpact,
   getImplementationRegister,
   getStatusHistory,
   getStewardship,
@@ -45,6 +44,9 @@ import {
   TRIAGE_STATE,
 } from "@/domain/intelligence/catalog";
 import { clientMembersWith } from "@/domain/intelligence/views";
+import { getEdgeItems, getImpactTrace } from "@/domain/edge/queries";
+import { ContextualEdgePanel } from "@/components/edge/edge-panel";
+import { ImpactPanel } from "@/components/intelligence/element-panels";
 import { internalElementHref } from "@/domain/architecture/links";
 import { getCriteriaInForce, getApproachGuidance } from "@/domain/methodology/queries";
 import { formatDate, formatDateTime } from "@/lib/format";
@@ -61,6 +63,7 @@ import { VersionsPanel } from "@/components/architecture/versions-panel";
 import { ActivityList } from "@/components/architecture/activity-list";
 import { escalateFields, requiredNoteFields, triageFields } from "@/components/intelligence/fields";
 import { CriteriaPanel } from "@/components/methodology/criteria-panel";
+import { criterionPromotionFor } from "@/domain/edge/promotion";
 import { PracticePanel } from "@/components/methodology/practice-panel";
 import { ActionButton, ActionForm, type FieldSpec } from "@/components/ui/action-form";
 import { PageHeader } from "@/components/ui/page-header";
@@ -94,8 +97,10 @@ function publishFields(subject: string): FieldSpec[] {
 
 export default async function InitiativeDetailPage({
   params,
+  searchParams,
 }: PageProps<"/internal/engagements/[slug]/implementation/[initiativeId]">) {
   const { slug, initiativeId } = await params;
+  const query = await searchParams;
   const { engagement, canEdit, canPublish, canManageImplementation } =
     await getInternalArchitectureContext(slug);
   const [
@@ -108,6 +113,7 @@ export default async function InitiativeDetailPage({
     escalations,
     history,
     impact,
+    edgeItems,
     executives,
     criteriaInForce,
   ] = await Promise.all([
@@ -119,7 +125,8 @@ export default async function InitiativeDetailPage({
     getCheckpoints(initiativeId),
     getEscalations(engagement.id),
     getStatusHistory(initiativeId),
-    getImpact(initiativeId),
+    getImpactTrace(initiativeId),
+    getEdgeItems(engagement.id, { subjectId: initiativeId }),
     clientMembersWith(engagement, ["view_architecture", "respond_to_client_actions"]),
     getCriteriaInForce(initiativeId),
   ]);
@@ -686,32 +693,25 @@ export default async function InitiativeDetailPage({
               governedHref: internalElementHref(slug, "object", c.governed_element_id),
             };
           })}
+        promotion={criterionPromotionFor(query, edgeItems, {
+          engagementId: engagement.id,
+          slug,
+          elementId: element.id,
+          elementKind: element.kind,
+        })}
       />
 
-      {impact.length > 0 ? (
-        <Panel
-          title="Impact"
-          description="What this initiative implements and, in turn, what that touches through structural relationships."
-        >
-          <ul className="space-y-1 text-sm">
-            {impact.map((row) => {
-              const target = architecture.byId.get(row.element_id);
-              return (
-                <li key={row.element_id} className="flex flex-wrap items-baseline gap-2">
-                  {target ? (
-                    <ElementLink slug={slug} element={target} />
-                  ) : (
-                    <ReferenceCode code={row.reference_code} />
-                  )}
-                  <span className="text-xs text-ink-subtle">
-                    {row.depth === 1 ? row.relationship_type : `${row.depth} steps away`}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </Panel>
-      ) : null}
+      <ContextualEdgePanel
+        slug={slug}
+        engagementId={engagement.id}
+        items={edgeItems}
+        canJudge={canEdit}
+        title="Correspondence"
+        description="Whether this initiative still corresponds to the architecture it implements: revisions to its targets, criteria agreed or changed, checkpoints and validation. Each line is a prompt to look, never a verdict."
+        empty="Nothing on the Edge bears on this initiative."
+      />
+
+      <ImpactPanel slug={slug} element={element} trace={impact} />
 
       <StatementsPanel
         elementId={element.id}

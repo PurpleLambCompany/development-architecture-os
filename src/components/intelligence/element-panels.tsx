@@ -1,8 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import type { LoadedArchitecture, LoadedElement } from "@/domain/architecture/queries";
+import type { LoadedElement } from "@/domain/architecture/queries";
 import { RECORD_KIND_LABELS, type RecordKind } from "@/domain/architecture/catalog";
-import { RELATIONSHIP_TYPES } from "@/domain/architecture/vocabulary";
 import {
   acknowledgeEscalation,
   escalateRecord,
@@ -20,15 +19,16 @@ import {
   isResolvableKind,
   isTerminalStatus,
 } from "@/domain/intelligence/catalog";
-import type {
-  HistoryRow,
-  ImpactRow,
-  LoadedEscalation,
-  StewardshipRow,
-} from "@/domain/intelligence/queries";
+import type { HistoryRow, LoadedEscalation, StewardshipRow } from "@/domain/intelligence/queries";
+import type { ImpactTraceRow } from "@/domain/edge/queries";
+import { linkWords } from "@/domain/edge/words";
+import { groupEdgeItems } from "@/domain/edge/grouping";
+import type { EdgeItem } from "@/domain/edge/items";
+import { EdgeEventCard } from "@/components/edge/edge-event";
+import { edgeSubjectHref } from "@/components/edge/links";
 import { isActiveRecord, type RegisterRow } from "@/domain/intelligence/register";
 import { formatDate, formatDateTime, personName } from "@/lib/format";
-import { ElementLink, ReferenceCode } from "@/components/architecture/badges";
+import { ReferenceCode } from "@/components/architecture/badges";
 import { recordStatusValue } from "@/components/architecture/element-fields";
 import { ActionButton, ActionForm } from "@/components/ui/action-form";
 import { DetailList, EmptyState, Panel } from "@/components/ui/panel";
@@ -41,8 +41,6 @@ import {
   triageFields,
 } from "./fields";
 import { AttentionTag, RecordStatusTag } from "./register-view";
-
-const RELATIONSHIP_LABEL = new Map<string, string>(RELATIONSHIP_TYPES.map((t) => [t.key, t.label]));
 
 /**
  * Stewardship of one record: attention, triage, review date, resolution and
@@ -268,56 +266,121 @@ export function HistoryPanel({ history }: { history: HistoryRow[] }) {
   );
 }
 
-/** What changing this element could reach, through structural relationships. */
+const IMPACT_CATEGORY_LABELS: Record<string, string> = {
+  active_implementation: "Implementation",
+  implementation: "Implementation",
+  criteria: "Acceptance criteria",
+  review: "Reviews",
+  deliverable: "Deliverables",
+  architecture: "Architecture",
+  governance: "Governance",
+  client_exposure: "Client requests and input",
+  practice: "Method Applications",
+  evidence: "Evidence",
+  lineage: "Method lineage",
+  approval: "Approvals",
+};
+const IMPACT_CATEGORY_ORDER = Object.keys(IMPACT_CATEGORY_LABELS);
+
+/**
+ * What changing this element may bear on (Phase 7A, ADR-0055): the governed
+ * impact trace in on-demand mode. Direction comes from the relationship-impact
+ * matrix; only three walks recurse, to two steps; weak links are labeled.
+ */
 export function ImpactPanel({
   slug,
-  impact,
-  architecture,
+  element,
+  trace,
 }: {
   slug: string;
-  impact: ImpactRow[];
-  architecture: LoadedArchitecture;
+  element: { id: string; reference_code: string | null };
+  trace: ImpactTraceRow[];
 }) {
-  const byDepth = new Map<number, ImpactRow[]>();
-  for (const row of impact) byDepth.set(row.depth, [...(byDepth.get(row.depth) ?? []), row]);
+  const code = element.reference_code ?? "this element";
+  // Hubs collapse (§7.3 rule 6): two or more records reached through one
+  // hub other than this element are one line with a count.
+  const hubCounts = new Map<string, number>();
+  for (const row of trace) {
+    if (row.hub_element_id && row.hub_element_id !== element.id) {
+      hubCounts.set(row.hub_element_id, (hubCounts.get(row.hub_element_id) ?? 0) + 1);
+    }
+  }
+  const collapsed = (row: ImpactTraceRow) =>
+    !!row.hub_element_id &&
+    row.hub_element_id !== element.id &&
+    (hubCounts.get(row.hub_element_id) ?? 0) >= 2;
+  const byCategory = new Map<string, ImpactTraceRow[]>();
+  for (const row of trace)
+    byCategory.set(row.category, [...(byCategory.get(row.category) ?? []), row]);
+  const categories = [...byCategory.keys()].sort(
+    (a, b) => IMPACT_CATEGORY_ORDER.indexOf(a) - IMPACT_CATEGORY_ORDER.indexOf(b),
+  );
+  const codeOf = (id: string) =>
+    trace.find((r) => r.reached_id === id)?.reference_code ?? "a shared element";
+  const hrefOf = (row: ImpactTraceRow) =>
+    row.reached_type === "element"
+      ? edgeSubjectHref(slug, { type: "element", id: row.reached_id, kind: row.kind })
+      : row.reached_type === "evidence_source"
+        ? `/internal/engagements/${slug}/evidence#${row.reached_id}`
+        : edgeSubjectHref(slug, {
+            type: row.reached_type,
+            id: row.reached_id,
+            referenceCode: row.reference_code,
+          });
+  const line = (row: ImpactTraceRow) => (
+    <li
+      key={`${row.reached_type}:${row.reached_id}`}
+      className="flex flex-wrap items-baseline gap-2"
+    >
+      {row.reached_type === "evidence_source" ? (
+        <span className="text-ink">{row.title}</span>
+      ) : (
+        <Link href={hrefOf(row)} className="group inline-flex items-baseline gap-2">
+          <ReferenceCode code={row.reference_code} />
+          <span className="text-ink group-hover:underline">{row.title}</span>
+        </Link>
+      )}
+      <span className="text-xs text-ink-subtle">
+        {linkWords(row.link_key, row.direction, code)}
+        {row.depth > 1 ? " (two steps)" : ""}
+        {row.assessment === "weak" ? " · weak link: shown on demand only" : ""}
+      </span>
+    </li>
+  );
   return (
     <Panel
       title="Impact trace"
-      description="Elements this one bears on directly, then what they are part of, serve, shape or inform, up to three steps. A trace to read, not a score."
+      description="What a change to this element may bear on, by the governed direction of each relationship. Structural parents and requirements are followed two steps; everything else one. A trace to read, not a score."
     >
-      {impact.length === 0 ? (
-        <EmptyState title="Nothing downstream" />
+      {trace.length === 0 ? (
+        <EmptyState title="Nothing reached" />
       ) : (
         <div className="space-y-4">
-          {[...byDepth.entries()]
-            .sort(([a], [b]) => a - b)
-            .map(([depth, rows]) => (
-              <section key={depth}>
+          {categories.map((category) => {
+            const rows = byCategory.get(category)!;
+            const hubs = [...new Set(rows.filter(collapsed).map((r) => r.hub_element_id!))];
+            return (
+              <section key={category}>
                 <h3 className="text-xs tracking-wide text-ink-subtle uppercase">
-                  {depth === 1 ? "Directly" : `${depth} steps away`}
+                  {IMPACT_CATEGORY_LABELS[category] ?? category}
                 </h3>
                 <ul className="mt-1 space-y-1 text-sm">
-                  {rows.map((row) => {
-                    const element = architecture.byId.get(row.element_id);
-                    const via = architecture.byId.get(row.via_element_id);
-                    return (
-                      <li key={row.element_id} className="flex flex-wrap items-baseline gap-2">
-                        {element ? (
-                          <ElementLink slug={slug} element={element} />
-                        ) : (
-                          <ReferenceCode code={row.reference_code} />
-                        )}
-                        <span className="text-xs text-ink-subtle">
-                          {row.relationship_type === "dependency"
-                            ? "an end of this dependency"
-                            : `${row.direction === "incoming" ? "requires" : (RELATIONSHIP_LABEL.get(row.relationship_type) ?? row.relationship_type)}${depth > 1 && via ? ` from ${via.reference_code}` : ""}`}
-                        </span>
-                      </li>
-                    );
-                  })}
+                  {rows.filter((r) => !collapsed(r)).map(line)}
                 </ul>
+                {hubs.map((hub) => (
+                  <details key={hub} className="mt-1 text-sm">
+                    <summary className="cursor-pointer text-ink-muted">
+                      {rows.filter((r) => r.hub_element_id === hub).length} records through{" "}
+                      {codeOf(hub)}
+                    </summary>
+                    <ul className="mt-1 space-y-1 pl-4">
+                      {rows.filter((r) => r.hub_element_id === hub).map(line)}
+                    </ul>
+                  </details>
+                ))}
               </section>
-            ))}
+            );
+          })}
         </div>
       )}
     </Panel>
@@ -327,52 +390,95 @@ export function ImpactPanel({
 /** Project Intelligence records bearing on an architecture element. */
 export function BearingPanel({
   slug,
+  engagementId,
   elementId,
   rows,
   today,
+  edgeItems,
+  canJudge,
+  servesOutcomes,
 }: {
   slug: string;
+  engagementId: string;
   elementId: string;
   rows: RegisterRow[];
   today: string;
+  /** Edge items where this element is subject, trigger or reached (§16). */
+  edgeItems: EdgeItem[];
+  canJudge: boolean;
+  /** The D-38 fact: Intended Outcomes this element serves. A fact, never a condition. */
+  servesOutcomes: number;
 }) {
   const active = rows.filter(isActiveRecord);
+  const events = groupEdgeItems(edgeItems);
   return (
     <Panel
       title="Bearing on this element"
-      description="Open assumptions, risks, constraints, dependencies, decisions, recommendations and opportunities related to it."
+      description="Open assumptions, risks, constraints, dependencies, decisions, recommendations and opportunities related to it, then what the Development Edge finds bearing on it. Each Edge line is a prompt to look, never a conclusion."
       actions={
-        <Link
-          href={`/internal/engagements/${slug}/intelligence?element=${elementId}&status=all`}
-          className="text-sm text-ink-muted hover:underline"
-        >
-          Open in the register
-        </Link>
+        <span className="flex flex-wrap gap-4">
+          <Link
+            href={`/internal/engagements/${slug}/intelligence?element=${elementId}&status=all`}
+            className="text-sm text-ink-muted hover:underline"
+          >
+            Open in the register
+          </Link>
+          <Link
+            href={`/internal/engagements/${slug}/edge`}
+            className="text-sm text-ink-muted hover:underline"
+          >
+            Open the Edge
+          </Link>
+        </span>
       }
     >
-      {active.length === 0 ? (
-        <EmptyState title="Nothing open bears on it" />
-      ) : (
-        <ul className="divide-y divide-rule border-y border-rule text-sm">
-          {active.map((row) => (
-            <li key={row.element_id} className="flex flex-wrap items-center gap-3 py-2">
-              <Link
-                href={`/internal/engagements/${slug}/architecture/elements/${row.element_id}`}
-                className="group inline-flex items-baseline gap-2"
-              >
-                <ReferenceCode code={row.reference_code} />
-                <span className="text-ink group-hover:underline">{row.title}</span>
-              </Link>
-              <span className="text-xs text-ink-subtle">{RECORD_KIND_LABELS[row.kind]}</span>
-              <RecordStatusTag kind={row.kind} status={row.status} />
-              <AttentionTag attention={row.attention} />
-              {row.next_review_on && row.next_review_on < today ? (
-                <span className="text-xs text-negative">Review overdue</span>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className="space-y-4">
+        {servesOutcomes > 0 ? (
+          <p className="text-sm text-ink-muted">
+            Serves {servesOutcomes} Intended {servesOutcomes === 1 ? "Outcome" : "Outcomes"}.
+          </p>
+        ) : null}
+        {active.length === 0 ? (
+          <EmptyState title="Nothing open bears on it" />
+        ) : (
+          <ul className="divide-y divide-rule border-y border-rule text-sm">
+            {active.map((row) => (
+              <li key={row.element_id} className="flex flex-wrap items-center gap-3 py-2">
+                <Link
+                  href={`/internal/engagements/${slug}/architecture/elements/${row.element_id}`}
+                  className="group inline-flex items-baseline gap-2"
+                >
+                  <ReferenceCode code={row.reference_code} />
+                  <span className="text-ink group-hover:underline">{row.title}</span>
+                </Link>
+                <span className="text-xs text-ink-subtle">{RECORD_KIND_LABELS[row.kind]}</span>
+                <RecordStatusTag kind={row.kind} status={row.status} />
+                <AttentionTag attention={row.attention} />
+                {row.next_review_on && row.next_review_on < today ? (
+                  <span className="text-xs text-negative">Review overdue</span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+        {events.length > 0 ? (
+          <div>
+            <p className="text-xs tracking-wide text-ink-subtle uppercase">
+              On the Development Edge
+            </p>
+            {events.map((event) => (
+              <EdgeEventCard
+                eventJudgment={false}
+                key={event.key}
+                slug={slug}
+                engagementId={engagementId}
+                event={event}
+                canJudge={canJudge}
+              />
+            ))}
+          </div>
+        ) : null}
+      </div>
     </Panel>
   );
 }

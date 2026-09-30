@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { createRecord } from "@/domain/architecture/actions";
+import { promoteEdgeItem } from "@/domain/edge/actions";
+import { promotionFromQuery } from "@/domain/edge/promotion";
+import { edgeRuleLabel } from "@/domain/edge/rules";
 import { RECORD_KIND_LABELS, type RecordKind } from "@/domain/architecture/catalog";
 import { getInternalArchitectureContext, memberNames } from "@/domain/architecture/context";
 import { RECORD_KINDS } from "@/domain/architecture/vocabulary";
@@ -51,6 +54,14 @@ export default async function IntelligencePage({
     (RECORD_KINDS as readonly string[]).includes(String(query.new)) && canEdit
       ? (query.new as RecordKind)
       : null;
+  // Promotion from the Development Edge (ADR-0056): the new record is an
+  // ordinary governed record; the Edge item is judged "promoted" to it.
+  const promoting = creating ? promotionFromQuery(query) : null;
+  const promotedFrom = promoting
+    ? [edgeRuleLabel(promoting.ruleKey), architecture.byId.get(promoting.subjectId)?.reference_code]
+        .filter(Boolean)
+        .join(": ")
+    : null;
   const live = architecture.elements.filter(
     (e) => e.lifecycle !== "retired" && e.lifecycle !== "superseded",
   );
@@ -108,7 +119,14 @@ export default async function IntelligencePage({
 
       {canEdit ? (
         creating ? (
-          <Panel title={`New ${RECORD_KIND_LABELS[creating].toLowerCase()}`}>
+          <Panel
+            title={`New ${RECORD_KIND_LABELS[creating].toLowerCase()}`}
+            description={
+              promotedFrom
+                ? `Promoted from the Development Edge (${promotedFrom}). The item is marked promoted once this record is created.`
+                : undefined
+            }
+          >
             <ActionForm
               fields={[
                 ...spineFields(canPublish, { recommendation: creating === "recommendation" }),
@@ -123,8 +141,15 @@ export default async function IntelligencePage({
                 ...(creating === "dependency" && live.length > 1
                   ? { fromElementId: live[0]!.id, toElementId: live[1]!.id }
                   : {}),
+                ...(promotedFrom
+                  ? { summary: `Raised from the Development Edge: ${promotedFrom}.` }
+                  : {}),
               }}
-              action={createRecord.bind(null, engagement.id, creating)}
+              action={
+                promoting
+                  ? promoteEdgeItem.bind(null, engagement.id, slug, creating, promoting)
+                  : createRecord.bind(null, engagement.id, creating)
+              }
               submitLabel={`Create ${RECORD_KIND_LABELS[creating].toLowerCase()}`}
             />
             <Link

@@ -16,6 +16,8 @@ import {
 import { updateDeliverable } from "@/domain/deliverables/actions";
 import { DELIVERABLE_TYPES, DELIVERABLE_TYPE_LABELS } from "@/domain/deliverables/catalog";
 import { getDeliverableFiles, getDeliverableRegister } from "@/domain/deliverables/queries";
+import { getEdgeItems } from "@/domain/edge/queries";
+import { ContextualEdgePanel } from "@/components/edge/edge-panel";
 import { formatDateTime } from "@/lib/format";
 import { ArchitectureNav } from "@/components/architecture/architecture-nav";
 import { LifecycleTag, ReferenceCode } from "@/components/architecture/badges";
@@ -35,12 +37,13 @@ export default async function DeliverableDetailPage({
   const { slug, deliverableId } = await params;
   const { engagement, canEdit, canPublish, canManageDeliverables } =
     await getInternalArchitectureContext(slug);
-  const [architecture, registerRows, baselines, detail, evidence] = await Promise.all([
+  const [architecture, registerRows, baselines, detail, evidence, edgeItems] = await Promise.all([
     loadArchitecture(engagement.id),
     getDeliverableRegister(engagement.id),
     listBaselines(engagement.id),
     getElementDetail(engagement.id, deliverableId),
     listEvidence(engagement.id),
+    getEdgeItems(engagement.id, { subjectId: deliverableId }),
   ]);
   const element = architecture.byId.get(deliverableId);
   const row = registerRows.find((r) => r.element_id === deliverableId);
@@ -170,6 +173,16 @@ export default async function DeliverableDetailPage({
           ) : null}
         </div>
       </Panel>
+
+      <ContextualEdgePanel
+        slug={slug}
+        engagementId={engagement.id}
+        items={edgeItems}
+        canJudge={canEdit}
+        title="Currency"
+        description="Whether what this deliverable documents has moved since it was approved or its baseline taken. A prompt to look, never a verdict on the document."
+        empty="Nothing this deliverable documents has changed since it was approved."
+      />
 
       <Panel
         title="File"

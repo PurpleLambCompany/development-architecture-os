@@ -312,7 +312,8 @@ select is(pg_temp.client_count('e0000000-0000-4000-8000-000000000001'), 34,
 select pg_temp.reset_actor();
 
 select pg_temp.act_as('advisor@consulting.test');
-select is(pg_temp.client_count('e0000000-0000-4000-8000-000000000003'), 6, 'the multi-organization advisor sees Harbor''s architecture');
+-- Six from Phases 3-5 plus the Phase 7A seed's decided partner-seat decision.
+select is(pg_temp.client_count('e0000000-0000-4000-8000-000000000003'), 7, 'the multi-organization advisor sees Harbor''s architecture');
 select is(pg_temp.client_count('e0000000-0000-4000-8000-000000000001'), 5, 'and, separately, the Meridian district operating model that is their area');
 select pg_temp.reset_actor();
 
