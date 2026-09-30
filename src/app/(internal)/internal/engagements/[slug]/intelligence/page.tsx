@@ -46,6 +46,7 @@ const CONCERN_TYPES: Record<RecordKind, string[]> = {
   dependency: ["affects"],
   decision: ["affects"],
   recommendation: ["addresses", "affects"],
+  opportunity: ["advances", "affects"],
 };
 
 export default async function IntelligencePage({

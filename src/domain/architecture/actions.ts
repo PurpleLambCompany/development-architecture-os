@@ -204,10 +204,30 @@ function recordDetails(kind: RecordKind, v: Record<string, unknown>) {
         dependency_status: v.dependencyStatus,
       };
     case "decision":
-      return { context: v.context, needed_by: v.neededBy, downstream_impact: v.downstreamImpact };
+      return {
+        category: v.category,
+        context: v.context,
+        needed_by: v.neededBy,
+        downstream_impact: v.downstreamImpact,
+      };
     case "recommendation":
-      return { rationale: v.rationale, priority: v.priority };
+      return { category: v.category, rationale: v.rationale, priority: v.priority };
+    case "opportunity":
+      return {
+        category: v.category,
+        value: v.value,
+        feasibility: v.feasibility,
+        window_opens_on: v.windowOpensOn,
+        window_closes_on: v.windowClosesOn,
+        pursuit_approach: v.pursuitApproach,
+        opportunity_status: v.opportunityStatus,
+      };
   }
+}
+
+/** Leave out what the form did not send (a resolved record's status). */
+function defined(details: Record<string, unknown>) {
+  return Object.fromEntries(Object.entries(details).filter(([, value]) => value !== undefined));
 }
 
 function recordInput(kind: RecordKind, input: Record<string, unknown>) {
@@ -228,7 +248,7 @@ export async function createRecord(
       p_engagement_id: engagementId,
       p_kind: kind,
       p_element: { ...spine(v), engagement_wide: v.engagementWide },
-      p_details: recordDetails(kind, details.data) as Json,
+      p_details: defined(recordDetails(kind, details.data)) as Json,
       p_domains: v.domains,
     }),
   );
@@ -241,6 +261,7 @@ const RECORD_TABLES = {
   dependency: "dependencies",
   decision: "decisions",
   recommendation: "recommendations",
+  opportunity: "opportunities",
 } as const;
 
 export async function updateRecord(
@@ -290,7 +311,7 @@ export async function updateRecord(
     const updated = expectRow(
       await supabase
         .from(RECORD_TABLES[kind])
-        .update(recordDetails(kind, details.data) as never)
+        .update(defined(recordDetails(kind, details.data)) as never)
         .eq("element_id", elementId)
         .select("element_id"),
     );

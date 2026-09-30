@@ -1,6 +1,8 @@
-// Generated from the Phase 3 vocabulary (proposal §4 and §9). Mirrors the
-// reference rows in supabase/migrations/20261001000100_architecture_core.sql;
-// vocabulary.test.ts checks the two agree.
+// Generated from the Phase 3 vocabulary (proposal §4 and §9) and its Phase 4
+// extension (Opportunity, advances, pursues; Phase 4 proposal §4). Mirrors the
+// reference rows in supabase/migrations/20261001000100_architecture_core.sql
+// and 20261002000100_project_intelligence.sql; vocabulary.test.ts checks
+// they agree.
 
 import type { ArchitectureDomain, ElementKind, RelationshipCategory } from "./catalog";
 
@@ -472,6 +474,25 @@ export const RELATIONSHIP_TYPES = [
       "The recommendation proposes a course of action in response to, or intended to change, the target.",
   },
   {
+    key: "advances",
+    category: "intelligence",
+    label: "advances",
+    inverseLabel: "is advanced by",
+    symmetric: false,
+    acyclic: false,
+    definition:
+      "If the opportunity is realized, the target is materially advanced. The mirror of threatens.",
+  },
+  {
+    key: "pursues",
+    category: "intelligence",
+    label: "pursues",
+    inverseLabel: "is pursued by",
+    symmetric: false,
+    acyclic: false,
+    definition: "The source acts to realize the opportunity. The mirror of mitigates.",
+  },
+  {
     key: "supersedes",
     category: "lineage",
     label: "supersedes",
@@ -601,6 +622,22 @@ export const RELATIONSHIP_RULE_SPEC: readonly (readonly [
   ["conflicts_with", ["@element"], ["@element"]],
 ];
 
+/**
+ * Phase 4 additions, as written in the Project Intelligence migration. The
+ * Phase 3 rules above also expand to Opportunity wherever they name @record
+ * or @element, as the migration regenerates them.
+ */
+export const PHASE_4_RULE_SPEC: readonly (readonly [
+  string,
+  readonly string[],
+  readonly string[],
+])[] = [
+  ["underpins", ["assumption"], ["opportunity"]],
+  ["constrains", ["constraint"], ["opportunity"]],
+  ["advances", ["opportunity"], ["@element", "-risk", "-opportunity"]],
+  ["pursues", ["@capability", "@application", "decision", "recommendation"], ["opportunity"]],
+];
+
 export const RECORD_KINDS = [
   "assumption",
   "risk",
@@ -608,4 +645,5 @@ export const RECORD_KINDS = [
   "dependency",
   "decision",
   "recommendation",
+  "opportunity",
 ] as const satisfies readonly Exclude<ElementKind, "object">[];

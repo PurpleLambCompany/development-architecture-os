@@ -1,6 +1,6 @@
 # Phase 4 — Project Intelligence: Proposal
 
-**Status:** Proposal for review. No migrations or application code until approved.
+**Status:** Approved for implementation 2026-09-30 ("approved", Kerrick Jordan), with the recommended answer to each decision in §16. Being built on this branch.
 **Branch:** `phase-4-project-intelligence` · **Date:** 2026-09-30
 **Builds on:** Phase 1 (engagements, roles, capabilities, RLS), Phase 2 (commercial engagement) and Phase 3 (Architecture Core), all merged.
 **Governing documents:** `DSA_OS_MASTER_BUILD_SPEC.md` §3, §4, §6, §7, §8, §17, §18, §26, §27, §31; `docs/product/PHASE_3_PROPOSAL.md` and `PHASE_3_REPORT.md`; ADR-0008, ADR-0009 and ADR-0013 to ADR-0025.
@@ -502,9 +502,11 @@ Each will get an ADR (0026 onward) with the build.
 
 ---
 
-## 16. Decisions requested
+## 16. Decisions (approved 2026-09-30)
 
-| #   | Question                                                                                                                                                                                                | Recommendation                                                                                                                                                                              |
+Kerrick approved the proposal on 2026-09-30 with no changes. Each decision below is settled as its recommendation. For D8, the recommended option (those who manage the engagement team) applies.
+
+| #   | Question                                                                                                                                                                                                | Outcome (the recommendation, approved)                                                                                                                                                      |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | D1  | Narrow Client Contributors to assigned areas through a new `view_full_architecture` capability (Sponsor, Lead and Viewer hold it; Contributor does not)? This changes Phase 3 behavior for Contributors | **Yes.** It matches spec §4 and your Phase 1 target ("Contributor: assigned areas")                                                                                                         |
 | D2  | Should engagement-wide records be visible to area-scoped Contributors?                                                                                                                                  | **No**, unless assigned directly. Engagement-wide risks (for example leadership succession) can be sensitive                                                                                |

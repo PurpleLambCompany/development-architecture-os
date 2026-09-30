@@ -8,6 +8,7 @@ import {
   EVIDENCE_SOURCE_TYPE_LABELS,
   EVIDENCE_STANCE_LABELS,
   MATURITY_LABELS,
+  OPPORTUNITY_STATUS,
   PROVENANCE_CLIENT_LABELS,
   RECOMMENDATION_PRIORITY,
   RISK_STATUS,
@@ -19,11 +20,13 @@ import {
   type ConstraintStatus,
   type DependencyStatus,
   type DependencyType,
+  type OpportunityStatus,
   type RecommendationPriority,
   type RiskStatus,
   type ValidationStatus,
 } from "@/domain/architecture/catalog";
 import { describeAttributes } from "@/domain/architecture/object-types";
+import { categoryLabel } from "@/domain/intelligence/catalog";
 import type { ObjectTypeKey } from "@/domain/architecture/rules";
 import {
   groupStatements,
@@ -186,6 +189,7 @@ function snapshotFacts(
   switch (snapshot.kind) {
     case "assumption":
       facts.push(
+        { label: "Category", value: categoryLabel("assumption", str(d.category)) },
         { label: "Confidence", value: CONFIDENCE_LABELS[d.confidence as ConfidenceLevel] ?? "" },
         {
           label: "Validation",
@@ -196,6 +200,7 @@ function snapshotFacts(
       break;
     case "risk":
       facts.push(
+        { label: "Category", value: categoryLabel("risk", str(d.category)) },
         { label: "Status", value: RISK_STATUS[d.risk_status as RiskStatus]?.label ?? "" },
         {
           label: "Probability × impact",
@@ -231,6 +236,7 @@ function snapshotFacts(
       break;
     case "decision":
       facts.push(
+        { label: "Category", value: categoryLabel("decision", str(d.category)) },
         { label: "Context", value: str(d.context) },
         { label: "Needed by", value: d.needed_by ? formatDate(str(d.needed_by)) : "" },
         { label: "Downstream impact", value: str(d.downstream_impact) },
@@ -243,6 +249,24 @@ function snapshotFacts(
           value: RECOMMENDATION_PRIORITY[d.priority as RecommendationPriority]?.label ?? "",
         },
         { label: "Rationale", value: str(d.rationale) },
+      );
+      break;
+    case "opportunity":
+      facts.push(
+        { label: "Category", value: categoryLabel("opportunity", str(d.category)) },
+        {
+          label: "Status",
+          value: OPPORTUNITY_STATUS[d.opportunity_status as OpportunityStatus]?.label ?? "",
+        },
+        {
+          label: "Value × feasibility",
+          value: `${str(d.value)} × ${str(d.feasibility)} = ${str(d.attractiveness)}`,
+        },
+        {
+          label: "Window closes",
+          value: d.window_closes_on ? formatDate(str(d.window_closes_on)) : "",
+        },
+        { label: "How it would be pursued", value: str(d.pursuit_approach) },
       );
       break;
   }

@@ -32,7 +32,8 @@ export type RecordDetails =
   | { kind: "constraint"; row: Row<"constraints"> }
   | { kind: "dependency"; row: Row<"dependencies"> }
   | { kind: "decision"; row: Row<"decisions"> }
-  | { kind: "recommendation"; row: Row<"recommendations"> };
+  | { kind: "recommendation"; row: Row<"recommendations"> }
+  | { kind: "opportunity"; row: Row<"opportunities"> };
 
 export type LoadedElement = ElementRow & {
   object: ObjectRow | null;
@@ -68,6 +69,7 @@ export const loadArchitecture = cache(async (engagementId: string) => {
     dependencies,
     decisions,
     recommendations,
+    opportunities,
     versions,
     approvals,
     relationships,
@@ -84,6 +86,7 @@ export const loadArchitecture = cache(async (engagementId: string) => {
     by<Row<"dependencies">>(supabase.from("dependencies").select("*")),
     by<Row<"decisions">>(supabase.from("decisions").select("*")),
     by<Row<"recommendations">>(supabase.from("recommendations").select("*")),
+    by<Row<"opportunities">>(supabase.from("opportunities").select("*")),
     by<VersionRow>(supabase.from("element_versions").select(VERSION_COLUMNS)),
     by<ApprovalRow>(supabase.from("architecture_approvals").select("*")),
     by<RelationshipRow>(supabase.from("architecture_relationships").select("*")),
@@ -99,6 +102,7 @@ export const loadArchitecture = cache(async (engagementId: string) => {
     dependencies,
     decisions,
     recommendations,
+    opportunities,
     versions,
     approvals,
     relationships,
@@ -118,6 +122,8 @@ export const loadArchitecture = cache(async (engagementId: string) => {
   for (const row of decisions.data ?? []) records.set(row.element_id, { kind: "decision", row });
   for (const row of recommendations.data ?? [])
     records.set(row.element_id, { kind: "recommendation", row });
+  for (const row of opportunities.data ?? [])
+    records.set(row.element_id, { kind: "opportunity", row });
 
   const objectsById = new Map((objects.data ?? []).map((o) => [o.element_id, o]));
   const versionsByElement = new Map<string, VersionRow[]>();

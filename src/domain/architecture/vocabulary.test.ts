@@ -24,18 +24,27 @@ import {
   isAllowedPairing,
   type ObjectTypeKey,
 } from "./rules";
-import { OBJECT_TYPES, RELATIONSHIP_RULE_SPEC, RELATIONSHIP_TYPES } from "./vocabulary";
+import {
+  OBJECT_TYPES,
+  PHASE_4_RULE_SPEC,
+  RELATIONSHIP_RULE_SPEC,
+  RELATIONSHIP_TYPES,
+} from "./vocabulary";
 
 const migration = readFileSync(
   join(process.cwd(), "supabase/migrations/20261001000100_architecture_core.sql"),
   "utf8",
 );
+const intelligenceMigration = readFileSync(
+  join(process.cwd(), "supabase/migrations/20261002000100_project_intelligence.sql"),
+  "utf8",
+);
 const seed = readFileSync(join(process.cwd(), "supabase/seed.sql"), "utf8");
 
 /** The rows of one `insert into <table> (...) values ...;` statement, as leading quoted fields. */
-function insertedKeys(table: string, fields: number): string[][] {
-  const start = migration.indexOf(`insert into public.${table} (`);
-  const block = migration.slice(start, migration.indexOf(";\n", start));
+function insertedKeys(table: string, fields: number, sql = migration): string[][] {
+  const start = sql.indexOf(`insert into public.${table} (`);
+  const block = sql.slice(start, sql.indexOf(";\n", start));
   const pattern = new RegExp(`\\n  \\(${Array(fields).fill("'([^']*)'").join(", ")}`, "g");
   return [...block.matchAll(pattern)].map((m) => m.slice(1));
 }
@@ -52,8 +61,14 @@ describe("the vocabulary matches the migration", () => {
     expect(perDomain.application).toHaveLength(9);
   });
 
-  it("has the 31 relationship types with the same labels", () => {
-    expect(insertedKeys("relationship_types", 4)).toEqual(
+  it("has the 33 relationship types with the same labels, in sort order", () => {
+    const phase3 = insertedKeys("relationship_types", 4);
+    const phase4 = insertedKeys("relationship_types", 4, intelligenceMigration);
+    expect(phase4.map((t) => t[0])).toEqual(["advances", "pursues"]);
+    // Phase 4 places advances and pursues before supersedes and conflicts_with.
+    const lineage = phase3.slice(-2);
+    expect(lineage.map((t) => t[0])).toEqual(["supersedes", "conflicts_with"]);
+    expect([...phase3.slice(0, -2), ...phase4, ...lineage]).toEqual(
       RELATIONSHIP_TYPES.map((t) => [t.key, t.category, t.label, t.inverseLabel]),
     );
     expect(RELATIONSHIP_TYPES.filter((t) => t.acyclic).map((t) => t.key)).toEqual([
@@ -68,20 +83,31 @@ describe("the vocabulary matches the migration", () => {
   });
 
   it("has the same pairing rule specification", () => {
-    const calls = [
-      ...migration.matchAll(
-        /select pg_temp\.add_rules\('(\w+)', array\[([^\]]*)\], array\[([^\]]*)\]\);/g,
-      ),
-    ].map(([, type, sources, targets]) => [
-      type,
-      [...sources!.matchAll(/'([^']+)'/g)].map((m) => m[1]),
-      [...targets!.matchAll(/'([^']+)'/g)].map((m) => m[1]),
-    ]);
-    expect(calls).toEqual(RELATIONSHIP_RULE_SPEC.map(([t, s, g]) => [t, [...s], [...g]]));
+    const calls = (sql: string) =>
+      [
+        ...sql.matchAll(
+          /select pg_temp\.add_rules\('(\w+)', array\[([^\]]*)\], array\[([^\]]*)\]\);/g,
+        ),
+      ].map(([, type, sources, targets]) => [
+        type,
+        [...sources!.matchAll(/'([^']+)'/g)].map((m) => m[1]),
+        [...targets!.matchAll(/'([^']+)'/g)].map((m) => m[1]),
+      ]);
+    const spec = (rules: typeof RELATIONSHIP_RULE_SPEC) =>
+      rules.map(([t, s, g]) => [t, [...s], [...g]]);
+    expect(calls(migration)).toEqual(spec(RELATIONSHIP_RULE_SPEC));
+    // Phase 4 regenerates the Phase 3 rules that name every record kind, then
+    // adds its own.
+    const phase4 = calls(intelligenceMigration);
+    const additions = spec(PHASE_4_RULE_SPEC);
+    expect(phase4.slice(-additions.length)).toEqual(additions);
+    for (const call of phase4.slice(0, -additions.length)) {
+      expect(spec(RELATIONSHIP_RULE_SPEC)).toContainEqual(call);
+    }
   });
 
-  it("expands to the 1,960 rules the database holds", () => {
-    expect(RELATIONSHIP_RULES).toHaveLength(1960);
+  it("expands to the 2,130 rules the database holds", () => {
+    expect(RELATIONSHIP_RULES).toHaveLength(2130);
     const counts = Object.fromEntries(
       Object.entries(Object.groupBy(RELATIONSHIP_RULES, (r) => r.relationshipType)).map(
         ([k, v]) => [k, v!.length],
@@ -89,21 +115,22 @@ describe("the vocabulary matches the migration", () => {
     );
     expect(counts).toEqual({
       accountable_for: 12,
-      addresses: 32,
-      affects: 198,
+      addresses: 33,
+      advances: 32,
+      affects: 238,
       bounded_by: 26,
-      conflicts_with: 1089,
-      constrains: 29,
+      conflicts_with: 1156,
+      constrains: 30,
       delivered_through: 2,
       documented_by: 26,
       exploits: 11,
       gap_in: 3,
       governed_by: 16,
-      has_stake_in: 32,
+      has_stake_in: 33,
       holds: 2,
       implemented_through: 4,
       implies: 3,
-      informs: 200,
+      informs: 208,
       introduces: 6,
       investigates: 4,
       measured_by: 10,
@@ -111,20 +138,21 @@ describe("the vocabulary matches the migration", () => {
       part_of: 9,
       positioned_against: 4,
       precedes: 2,
+      pursues: 16,
       requires: 23,
       serves: 18,
       shapes: 56,
       specializes: 1,
-      subject_to: 32,
-      supersedes: 33,
-      threatens: 32,
-      underpins: 29,
+      subject_to: 33,
+      supersedes: 34,
+      threatens: 33,
+      underpins: 30,
     });
   });
 
   it("uses the reference prefixes of public.element_reference_prefix", () => {
-    const fn = migration.slice(
-      migration.indexOf("create function public.element_reference_prefix"),
+    const fn = intelligenceMigration.slice(
+      intelligenceMigration.indexOf("create or replace function public.element_reference_prefix"),
     );
     const body = fn.slice(0, fn.indexOf("$$;"));
     for (const [domain, prefix] of Object.entries(DOMAIN_PREFIXES)) {
@@ -142,7 +170,7 @@ describe("pairing rules", () => {
 
   it("expands groups and exclusions", () => {
     expect(expandTokens(["@core", "-system_boundary"])).toHaveLength(26);
-    expect(expandTokens(["@element", "-risk"])).toHaveLength(32);
+    expect(expandTokens(["@element", "-risk"])).toHaveLength(33);
     expect(expandTokens(["@record"]).map((c) => c.kind)).toEqual([
       "assumption",
       "risk",
@@ -150,6 +178,7 @@ describe("pairing rules", () => {
       "dependency",
       "decision",
       "recommendation",
+      "opportunity",
     ]);
   });
 
@@ -170,6 +199,15 @@ describe("pairing rules", () => {
     // Supersedes: same kind and type only.
     expect(isAllowedPairing("supersedes", rec("decision"), rec("decision"))).toBe(true);
     expect(isAllowedPairing("supersedes", obj("concept"), obj("knowledge_area"))).toBe(false);
+    // Opportunities advance what they would improve, never a risk or another opportunity;
+    // capabilities, application objects, decisions and recommendations pursue them.
+    expect(isAllowedPairing("advances", rec("opportunity"), obj("intended_outcome"))).toBe(true);
+    expect(isAllowedPairing("advances", rec("opportunity"), rec("risk"))).toBe(false);
+    expect(isAllowedPairing("advances", rec("opportunity"), rec("opportunity"))).toBe(false);
+    expect(isAllowedPairing("pursues", obj("capability"), rec("opportunity"))).toBe(true);
+    expect(isAllowedPairing("pursues", obj("concept"), rec("opportunity"))).toBe(false);
+    expect(isAllowedPairing("underpins", rec("assumption"), rec("opportunity"))).toBe(true);
+    expect(isAllowedPairing("threatens", rec("risk"), rec("opportunity"))).toBe(true);
   });
 
   it("never offers supersedes to editors", () => {

@@ -14,6 +14,7 @@ import {
   EVIDENCE_STANCES,
   IP_CLASSIFICATIONS,
   MATURITY_STATES,
+  OPPORTUNITY_STATUSES,
   RECOMMENDATION_PRIORITIES,
   RISK_STATUSES,
   SKILL_PROFICIENCIES,
@@ -21,6 +22,7 @@ import {
   VALIDATION_STATUSES,
 } from "./catalog";
 import { OBJECT_TYPES, RELATIONSHIP_TYPES } from "./vocabulary";
+import { INTELLIGENCE_CATEGORIES, type CategorizedKind } from "@/domain/intelligence/catalog";
 
 /**
  * Form schemas for architecture actions. Forms send strings; these validate
@@ -126,25 +128,43 @@ const recordBase = z.object({
   ...recordScope,
 });
 
+/** A category key from the controlled list for the kind (checked in the database too). */
+const category = (kind: CategorizedKind) =>
+  z
+    .string()
+    .trim()
+    .default("other")
+    .transform((value) => (value === "" ? "other" : value))
+    .refine(
+      (value) => INTELLIGENCE_CATEGORIES[kind].some((c) => c.key === value),
+      "Choose a category",
+    );
+
+/**
+ * Statuses are optional: the edit form of a resolved record leaves the status
+ * out (it moves only by Resolve or Reopen), and a new record takes the
+ * database default. The database refuses a terminal status outside those
+ * operations.
+ */
 export const assumptionFields = z.object({
-  category: text(100),
+  category: category("assumption"),
   confidence: z.enum(CONFIDENCE_LEVELS),
-  validationStatus: z.enum(VALIDATION_STATUSES),
+  validationStatus: z.enum(VALIDATION_STATUSES).optional(),
   impactIfFalse: text(2000),
   validationNote: text(2000),
 });
 export const riskFields = z.object({
-  category: text(100),
+  category: category("risk"),
   probability: rating,
   impact: rating,
   mitigation: text(2000),
-  riskStatus: z.enum(RISK_STATUSES),
+  riskStatus: z.enum(RISK_STATUSES).optional(),
 });
 export const constraintFields = z.object({
   category: z.enum(CONSTRAINT_CATEGORIES),
   source: text(1000),
   negotiable: yesNo,
-  constraintStatus: z.enum(CONSTRAINT_STATUSES),
+  constraintStatus: z.enum(CONSTRAINT_STATUSES).optional(),
 });
 export const dependencyFields = z
   .object({
@@ -152,21 +172,37 @@ export const dependencyFields = z
     toElementId: id,
     dependencyType: z.enum(DEPENDENCY_TYPES),
     blocking: yesNo,
-    dependencyStatus: z.enum(DEPENDENCY_STATUSES),
+    dependencyStatus: z.enum(DEPENDENCY_STATUSES).optional(),
   })
   .refine((v) => v.fromElementId !== v.toElementId, {
     path: ["toElementId"],
     message: "Choose two different elements",
   });
 export const decisionFields = z.object({
+  category: category("decision"),
   context: text(4000),
   neededBy: optionalDate,
   downstreamImpact: text(4000),
 });
 export const recommendationFields = z.object({
+  category: category("recommendation"),
   rationale: text(4000),
   priority: z.enum(RECOMMENDATION_PRIORITIES),
 });
+export const opportunityFields = z
+  .object({
+    category: category("opportunity"),
+    value: rating,
+    feasibility: rating,
+    windowOpensOn: optionalDate,
+    windowClosesOn: optionalDate,
+    pursuitApproach: text(4000),
+    opportunityStatus: z.enum(OPPORTUNITY_STATUSES).optional(),
+  })
+  .refine((v) => !v.windowOpensOn || !v.windowClosesOn || v.windowClosesOn >= v.windowOpensOn, {
+    path: ["windowClosesOn"],
+    message: "The window cannot close before it opens",
+  });
 
 export const RECORD_FIELD_SCHEMAS = {
   assumption: assumptionFields,
@@ -175,6 +211,7 @@ export const RECORD_FIELD_SCHEMAS = {
   dependency: dependencyFields,
   decision: decisionFields,
   recommendation: recommendationFields,
+  opportunity: opportunityFields,
 } as const;
 
 export const recordSchema = recordBase;
