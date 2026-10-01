@@ -1,4 +1,4 @@
-import { KIND_SCHEMAS, outputText, referencedHandles, type AnyKindOutput } from "./kinds/schemas";
+import { OUTPUT_SCHEMAS, outputText, referencedHandles, type AnyKindOutput } from "./kinds/schemas";
 import type { InferenceKind } from "./types";
 
 /**
@@ -40,6 +40,8 @@ export function forbiddenTerm(text: string): string | null {
 
 export type ValidationResult =
   | { ok: true; output: AnyKindOutput }
+  /** The model said, validly, that the records do not support an interpretation (IX-15). */
+  | { ok: true; nothingToAdd: string }
   | { ok: false; outcome: "invalid_output" | "unknown_citation"; reason: string };
 
 export function validateOutput(
@@ -47,9 +49,17 @@ export function validateOutput(
   json: unknown,
   issuedHandles: ReadonlySet<string>,
 ): ValidationResult {
-  const parsed = KIND_SCHEMAS[kind].safeParse(json);
+  const parsed = OUTPUT_SCHEMAS[kind].safeParse(json);
   if (!parsed.success) return { ok: false, outcome: "invalid_output", reason: "schema" };
-  const output = parsed.data as AnyKindOutput;
+  if (parsed.data.result === "nothing_to_add") {
+    // Silence is validated too: its reason obeys the same vocabulary rules.
+    const reason = parsed.data.reason!;
+    const term = forbiddenTerm(reason);
+    if (term)
+      return { ok: false, outcome: "invalid_output", reason: `vocabulary:${term.toLowerCase()}` };
+    return { ok: true, nothingToAdd: reason };
+  }
+  const output = parsed.data.interpretation as AnyKindOutput;
   for (const h of referencedHandles(kind, output)) {
     if (!issuedHandles.has(h.split(".")[0]!))
       return { ok: false, outcome: "unknown_citation", reason: h };

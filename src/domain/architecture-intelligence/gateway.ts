@@ -8,7 +8,7 @@ import type {
 } from "./adapters/types";
 import { NO_USAGE } from "./adapters/types";
 import { CONTEXT_PLANS, type AnchorRead, type ContextPlan } from "./kinds/plans";
-import { KIND_SCHEMAS, OUTPUT_SCHEMA_VERSION, type AnyKindOutput } from "./kinds/schemas";
+import { OUTPUT_SCHEMAS, OUTPUT_SCHEMA_VERSION, type AnyKindOutput } from "./kinds/schemas";
 import { isEvaluatedModel as manifestIsEvaluated } from "./prompts/manifest";
 import { resolvePrompt as loadPrompt, type ResolvedPrompt } from "./prompts/load";
 import type { ArchitectureIntelligenceStore, Standing } from "./store";
@@ -48,6 +48,12 @@ import { validateOutput } from "./validation";
  * The Gateway holds no business rule that is not in the database or a
  * reviewed prompt or plan, never falls back to another provider or model,
  * never repairs or retries an output (OD-9), and logs no content.
+ *
+ * 7B.2 (ADR-0069, ADR-0071): a model may validly answer that it has nothing
+ * to add (outcome nothing_to_add; the reason is returned, never stored). An
+ * ephemeral interpretation is returned with its citations, and the
+ * recording operation holds the exact validated output for thirty minutes
+ * so that its requester can keep it. Nothing is an inference until kept.
  */
 
 export type ProviderSettings = {
@@ -85,9 +91,29 @@ export type InvokeInput = {
   /**
    * An evaluation run (the harness only): allowed only in synthetic_only
    * mode on a synthetic engagement, and only then may an ephemeral output
-   * from a model not yet evaluated be returned. It is never persisted.
+   * from a model not yet evaluated be returned. It is never persisted, and
+   * never held for keeping.
    */
   evaluation?: boolean;
+  /**
+   * A person deliberately asked again where a kept interpretation was shown
+   * or suppressed (IX-13, IX-14). Recorded on the request (PD-20).
+   */
+  interpretAgain?: boolean;
+};
+
+/** How a cited handle reads to a person: reference codes and versions. */
+export type Citation = { label: string; elementId?: string; withheld?: boolean };
+
+/** Generation provenance shown under "How this was produced". */
+export type Provenance = {
+  providerKey: string;
+  requestedModel: string;
+  resolvedModel: string;
+  promptVersion: string;
+  generationPolicyVersion: string;
+  toolContractVersion: string;
+  requestedAt: string;
 };
 
 export type GatewayResult = {
@@ -96,6 +122,16 @@ export type GatewayResult = {
   message: string;
   /** The validated output, for returned and persisted outcomes only. */
   output?: AnyKindOutput;
+  /** The model's one-sentence reason, for nothing_to_add only. Never stored (PD-8). */
+  nothingToAddReason?: string;
+  /** Labels for every handle issued, for returned and persisted outcomes. */
+  citations?: Record<string, Citation>;
+  provenance?: Provenance;
+  /**
+   * For a returned outcome on the application path: the recording operation
+   * holds the exact output for its requester to keep until this time.
+   */
+  keepableUntil?: string;
   /** What the invocation sent, by record identity (never content). */
   manifest: Record<string, unknown>[];
   errorClass?: string;
@@ -105,6 +141,7 @@ export type GatewayResult = {
 export const OUTCOME_MESSAGES: Record<RequestOutcome, string> = {
   persisted: "The inference was recorded.",
   returned: "The inference was returned and not recorded.",
+  nothing_to_add: "DSA's records do not support an interpretation of this.",
   refused_mode: "External processing is not enabled for this engagement in this environment.",
   refused_capability: "You do not hold Architecture Intelligence use on this engagement.",
   refused_authorization: "This engagement is not authorised for external processing.",
@@ -252,6 +289,7 @@ export async function invokeArchitectureIntelligence(
         output_tokens: preModel ? 0 : usage.outputTokens,
         reasoning_tokens: preModel ? 0 : usage.reasoningTokens,
         estimated_cost_usd: Number(priced.toFixed(6)),
+        interpret_again: input.interpretAgain ? true : undefined,
         ...extra,
       }).filter(([, v]) => v !== null && v !== undefined),
     );
@@ -259,7 +297,7 @@ export async function invokeArchitectureIntelligence(
 
   const finish = async (
     outcome: RequestOutcome,
-    extra: { errorClass?: string; reason?: string } = {},
+    extra: { errorClass?: string; reason?: string; nothingToAddReason?: string } = {},
   ): Promise<GatewayResult> => {
     const recorded = await store.record(
       input.engagementId,
@@ -288,8 +326,8 @@ export async function invokeArchitectureIntelligence(
 
   // 4. Model eligibility and budget, before anything is read for the model.
   prompt = (deps.resolvePrompt ?? loadPrompt)(input.kind);
-  const requestedPrice = provider.prices[provider.requestedModel];
-  if (!requestedPrice) return finish("model_not_evaluated", { reason: "model_not_priced" });
+  if (!provider.prices[provider.requestedModel])
+    return finish("model_not_evaluated", { reason: "model_not_priced" });
   if (
     !input.evaluation &&
     !isEvaluated(
@@ -300,12 +338,7 @@ export async function invokeArchitectureIntelligence(
     )
   )
     return finish("model_not_evaluated", { reason: "requested_model_not_evaluated" });
-  const turnsBound = plan.maxToolCalls + 2;
-  const estimate =
-    (turnsBound *
-      (plan.maxContextTokens * requestedPrice.inputPerMTok +
-        plan.maxOutputTokens * requestedPrice.outputPerMTok)) /
-    1_000_000;
+  const estimate = requestEstimateUsd(input.kind, provider)!;
   if (estimate > provider.maxRequestUsd)
     return finish("refused_budget", { reason: "request_ceiling" });
   const monthToDate = await store.monthToDateUsd(input.engagementId);
@@ -360,7 +393,7 @@ export async function invokeArchitectureIntelligence(
   const tools = toolDefinitions(plan.permittedTools);
   const schema = {
     name: `dsa_${input.kind}_v${OUTPUT_SCHEMA_VERSION}`,
-    schema: providerJsonSchema(KIND_SCHEMAS[input.kind]),
+    schema: providerJsonSchema(OUTPUT_SCHEMAS[input.kind]),
   };
   const task = [
     `Question: ${plan.question}`,
@@ -436,10 +469,49 @@ export async function invokeArchitectureIntelligence(
     if (!evaluated && !(input.evaluation && input.mode === "ephemeral"))
       return finish("model_not_evaluated", { reason: "resolved_model_not_evaluated" });
 
+    // Silence is an answer (IX-15): audited with its tokens, never an
+    // inference, its reason returned and not stored.
+    if ("nothingToAdd" in valid)
+      return finish("nothing_to_add", { nothingToAddReason: valid.nothingToAdd });
+
     // 11 and 12. Persist with the audit record, or return.
-    if (input.mode === "ephemeral") {
+    const provenance: Provenance = {
+      providerKey: adapter.providerKey,
+      requestedModel: provider.requestedModel,
+      resolvedModel: response.resolvedModel,
+      promptVersion: prompt.prompt.promptVersion,
+      generationPolicyVersion: prompt.policyVersion,
+      toolContractVersion: TOOL_CONTRACT_VERSION,
+      requestedAt,
+    };
+    const citations = Object.fromEntries(issued.map((i) => [i.handle, citationFor(i)]));
+    if (input.mode === "ephemeral" && input.evaluation) {
       const result = await finish("returned");
-      return result.requestId ? { ...result, output: valid.output } : result;
+      return result.requestId ? { ...result, output: valid.output, citations, provenance } : result;
+    }
+    if (input.mode === "ephemeral") {
+      // Held for keeping: the recording operation verifies the basis now and
+      // keeps the exact output for its requester (ADR-0069).
+      const held = await store.record(
+        input.engagementId,
+        audit("returned"),
+        inferenceRecord(valid.output),
+      );
+      if ("error" in held) {
+        return finish(held.error.code === "42501" ? "authorization_withdrawn" : "invalid_output", {
+          reason: `hold_${held.error.code}`,
+        });
+      }
+      return {
+        outcome: "returned",
+        requestId: held.requestId,
+        message: OUTCOME_MESSAGES.returned,
+        output: valid.output,
+        manifest: issued.map(manifestEntry),
+        citations,
+        provenance,
+        keepableUntil: new Date(now().getTime() + KEEP_WINDOW_MS).toISOString(),
+      };
     }
     const recorded = await store.record(
       input.engagementId,
@@ -460,6 +532,8 @@ export async function invokeArchitectureIntelligence(
       message: OUTCOME_MESSAGES.persisted,
       output: valid.output,
       manifest: issued.map(manifestEntry),
+      citations,
+      provenance,
     };
   }
 
@@ -601,5 +675,88 @@ function describeSubject(subject: Subject, issued: IssuedRow[]): string {
       return `the evidence link ${handleOf(subject.linkId)} on ${handleOf(subject.elementId)}`;
     case "element":
       return `${handleOf(subject.elementId)}`;
+  }
+}
+
+/** The recording operation holds a returned interpretation this long (ADR-0069). */
+export const KEEP_WINDOW_MS = 30 * 60 * 1000;
+
+/**
+ * The pre-send cost estimate for one invocation of a kind (OD-7 bounds):
+ * every turn at the plan's context and output caps, at the requested
+ * model's configured price. Null when the requested model has no price.
+ */
+export function requestEstimateUsd(
+  kind: InferenceKind,
+  provider: Pick<ProviderSettings, "prices" | "requestedModel">,
+): number | null {
+  const plan = CONTEXT_PLANS[kind];
+  const price = provider.prices[provider.requestedModel];
+  if (!price) return null;
+  const turnsBound = plan.maxToolCalls + 2;
+  return (
+    (turnsBound *
+      (plan.maxContextTokens * price.inputPerMTok + plan.maxOutputTokens * price.outputPerMTok)) /
+    1_000_000
+  );
+}
+
+/**
+ * Whether a request is larger than usual: its estimate exceeds half the
+ * per-request ceiling (IX-25, PD-17). The person confirms before sending.
+ * No figure is shown to anyone for this.
+ */
+export function isLargeRequest(
+  kind: InferenceKind,
+  provider: Pick<ProviderSettings, "prices" | "requestedModel" | "maxRequestUsd">,
+): boolean {
+  const estimate = requestEstimateUsd(kind, provider);
+  return estimate !== null && estimate > provider.maxRequestUsd / 2;
+}
+
+function str(content: unknown, key: string): string | undefined {
+  const v = (content as Record<string, unknown> | null)?.[key];
+  return typeof v === "string" || typeof v === "number" ? String(v) : undefined;
+}
+
+/** A citation label from an issued row's projection: codes and versions only. */
+export function citationFor(issued: IssuedRow): Citation {
+  const { row } = issued;
+  const c = row.content;
+  if (row.withheld)
+    return { label: "A record not authorised for external processing", withheld: true };
+  const code = str(c, "reference_code");
+  switch (row.record_type) {
+    case "element_version":
+      return { label: `${code} v${str(c, "version_no")}`, elementId: row.record_id };
+    case "element_working":
+      return { label: `${code} (working)`, elementId: row.record_id };
+    case "revision":
+      return { label: `${code} v${str(c, "version_no")} revision`, elementId: row.record_id };
+    case "relationship":
+      return {
+        label: `${str(c, "from")} ${(str(c, "relationship_type") ?? "").replaceAll("_", " ")} ${str(c, "other_reference_code")}`,
+        elementId: row.anchor_id ?? undefined,
+      };
+    case "impact_reach":
+      return {
+        label: `${str(c, "reached_reference_code")} (reached from ${str(c, "from")})`,
+        elementId: row.record_id,
+      };
+    case "edge_item":
+      return {
+        label: `Edge item on ${str(c, "subject_reference_code")}`,
+        elementId: row.record_id,
+      };
+    case "evidence_link":
+      return { label: `Evidence: ${str(c, "evidence_title")}` };
+    case "acceptance_criterion":
+      return { label: code ?? "An acceptance criterion" };
+    case "review_capture":
+      return { label: `${str(c, "review")} examined set`, elementId: row.record_id };
+    case "checkpoint":
+      return { label: `Checkpoint: ${str(c, "title")}` };
+    default:
+      return { label: row.record_type };
   }
 }

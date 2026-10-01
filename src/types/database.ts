@@ -688,6 +688,91 @@ export type Database = {
           },
         ];
       };
+      architecture_inference_judgments: {
+        Row: {
+          engagement_id: string;
+          expires_on: string | null;
+          id: string;
+          inference_id: string;
+          judged_at: string;
+          judged_by: string;
+          judgment_kind: string;
+          promotion_target_criterion_id: string | null;
+          promotion_target_element_id: string | null;
+          promotion_target_element_kind: Database["public"]["Enums"]["element_kind"] | null;
+          promotion_target_kind: string | null;
+          reason: string | null;
+        };
+        Insert: {
+          engagement_id: string;
+          expires_on?: string | null;
+          id?: string;
+          inference_id: string;
+          judged_at?: string;
+          judged_by: string;
+          judgment_kind: string;
+          promotion_target_criterion_id?: string | null;
+          promotion_target_element_id?: string | null;
+          promotion_target_element_kind?: never;
+          promotion_target_kind?: string | null;
+          reason?: string | null;
+        };
+        Update: {
+          engagement_id?: string;
+          expires_on?: string | null;
+          id?: string;
+          inference_id?: string;
+          judged_at?: string;
+          judged_by?: string;
+          judgment_kind?: string;
+          promotion_target_criterion_id?: string | null;
+          promotion_target_element_id?: string | null;
+          promotion_target_element_kind?: never;
+          promotion_target_kind?: string | null;
+          reason?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "architecture_inference_judgments_engagement_id_fkey";
+            columns: ["engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "architecture_inference_judgments_inference_fk";
+            columns: ["inference_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_inferences";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "architecture_inference_judgments_judged_by_fkey";
+            columns: ["judged_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "architecture_inference_judgments_promotion_criterion_fk";
+            columns: ["promotion_target_criterion_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "acceptance_criteria";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "architecture_inference_judgments_promotion_element_fk";
+            columns: [
+              "promotion_target_element_id",
+              "engagement_id",
+              "promotion_target_element_kind",
+            ];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id", "kind"];
+          },
+        ];
+      };
       architecture_inferences: {
         Row: {
           assertion: string;
@@ -701,6 +786,7 @@ export type Database = {
           id: string;
           inference_kind: string;
           input_tokens: number;
+          kept_at: string | null;
           output_schema_version: string;
           output_tokens: number;
           payload: NonNullable<Json>;
@@ -740,6 +826,7 @@ export type Database = {
           id?: string;
           inference_kind: string;
           input_tokens?: number;
+          kept_at?: string | null;
           output_schema_version: string;
           output_tokens?: number;
           payload?: NonNullable<Json>;
@@ -779,6 +866,7 @@ export type Database = {
           id?: string;
           inference_kind?: string;
           input_tokens?: number;
+          kept_at?: string | null;
           output_schema_version?: string;
           output_tokens?: number;
           payload?: NonNullable<Json>;
@@ -862,6 +950,7 @@ export type Database = {
           id: string;
           inference_kind: string;
           input_tokens: number;
+          interpret_again: boolean;
           manifest: NonNullable<Json>;
           mode: string;
           outcome: string;
@@ -890,6 +979,7 @@ export type Database = {
           id?: string;
           inference_kind: string;
           input_tokens?: number;
+          interpret_again?: boolean;
           manifest?: NonNullable<Json>;
           mode: string;
           outcome: string;
@@ -918,6 +1008,7 @@ export type Database = {
           id?: string;
           inference_kind?: string;
           input_tokens?: number;
+          interpret_again?: boolean;
           manifest?: NonNullable<Json>;
           mode?: string;
           outcome?: string;
@@ -6155,6 +6246,55 @@ export type Database = {
           },
         ];
       };
+      pending_architecture_inferences: {
+        Row: {
+          created_at: string;
+          engagement_id: string;
+          expires_at: string;
+          inference: NonNullable<Json>;
+          request_id: string;
+          requested_by: string;
+        };
+        Insert: {
+          created_at?: string;
+          engagement_id: string;
+          expires_at: string;
+          inference: NonNullable<Json>;
+          request_id: string;
+          requested_by: string;
+        };
+        Update: {
+          created_at?: string;
+          engagement_id?: string;
+          expires_at?: string;
+          inference?: NonNullable<Json>;
+          request_id?: string;
+          requested_by?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "pending_architecture_inferences_engagement_id_fkey";
+            columns: ["engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "pending_architecture_inferences_request_fk";
+            columns: ["request_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_intelligence_requests";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "pending_architecture_inferences_requested_by_fkey";
+            columns: ["requested_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       practice_member_capability_overrides: {
         Row: {
           capability: Database["public"]["Enums"]["practice_capability"];
@@ -7157,6 +7297,10 @@ export type Database = {
           rationale: string;
         }[];
       };
+      architecture_inference_detail: {
+        Args: { p_engagement_id: string; p_inference_id: string };
+        Returns: Json;
+      };
       architecture_inference_state: {
         Args: { p_engagement_id: string; p_inference_id?: string };
         Returns: {
@@ -7164,6 +7308,18 @@ export type Database = {
           inference_kind: string;
           stale_reasons: string[];
           state: string;
+        }[];
+      };
+      architecture_intelligence_availability: {
+        Args: { p_engagement_id: string; p_kind: string; p_subject: Json };
+        Returns: {
+          latest_inference_id: string;
+          latest_judged_at: string;
+          latest_judgment_kind: string;
+          latest_state: string;
+          reason: string;
+          rule_holds: boolean;
+          suppressed: boolean;
         }[];
       };
       architecture_intelligence_budget: {
@@ -7519,6 +7675,20 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      current_architecture_inference: {
+        Args: {
+          p_engagement_id: string;
+          p_kind: string;
+          p_prompt_version: string;
+          p_provider_key: string;
+          p_requested_model: string;
+          p_subject: Json;
+        };
+        Returns: {
+          inference_id: string;
+          resolved_model: string;
+        }[];
+      };
       decide_decision: {
         Args: { p_decision_id: string; p_note?: string; p_option_id: string };
         Returns: undefined;
@@ -7706,6 +7876,10 @@ export type Database = {
           version_id: string;
           version_no: number;
         }[];
+      };
+      element_supports_and_exposures: {
+        Args: { p_element_id: string; p_engagement_id: string };
+        Returns: Json;
       };
       element_version_snapshot: { Args: { p_version_id: string }; Returns: Json };
       engagement_primary_contract_id: { Args: { p_engagement_id: string }; Returns: string };
@@ -7964,6 +8138,36 @@ export type Database = {
         Args: { p_due_date?: string; p_invoice_id: string; p_issue_date: string };
         Returns: string;
       };
+      keep_architecture_inference: {
+        Args: { p_engagement_id: string; p_judgment?: Json; p_request_id: string };
+        Returns: string;
+      };
+      kept_architecture_inferences: {
+        Args: { p_engagement_id: string; p_kind?: string; p_state?: string };
+        Returns: {
+          assertion: string;
+          inference_id: string;
+          inference_kind: string;
+          judged_at: string;
+          judgment_kind: string;
+          kept_at: string;
+          link_id: string;
+          link_type: string;
+          requested_at: string;
+          second_element_id: string;
+          second_reference_code: string;
+          stale_reasons: string[];
+          state: string;
+          subject_element_id: string;
+          subject_fingerprint: string;
+          subject_kind: string;
+          subject_reference_code: string;
+          subject_rule_key: string;
+          subject_title: string;
+          subject_type: string;
+          subject_version_id: string;
+        }[];
+      };
       link_method_application_element: {
         Args: {
           p_application_id: string;
@@ -8152,6 +8356,18 @@ export type Database = {
       reassign_client_action: {
         Args: { p_action_id: string; p_member_id: string; p_note?: string };
         Returns: undefined;
+      };
+      record_architecture_inference_judgment: {
+        Args: {
+          p_engagement_id: string;
+          p_expires_on?: string;
+          p_inference_id: string;
+          p_kind: string;
+          p_promotion_target_id?: string;
+          p_promotion_target_kind?: string;
+          p_reason?: string;
+        };
+        Returns: string;
       };
       record_architecture_intelligence_request: {
         Args: { p_engagement_id: string; p_inference?: Json; p_request: Json };
@@ -8412,6 +8628,7 @@ export type Database = {
         Args: { p_accept: boolean; p_element_id: string; p_statement_id: string };
         Returns: undefined;
       };
+      review_dossier: { Args: { p_engagement_id: string; p_review_id: string }; Returns: Json };
       review_register: {
         Args: { p_engagement_id?: string };
         Returns: {
@@ -8632,6 +8849,29 @@ export type Database = {
         Returns: string;
       };
       submit_element_for_review: { Args: { p_element_id: string }; Returns: undefined };
+      suggested_interpretations: {
+        Args: { p_engagement_id: string };
+        Returns: {
+          assertion: string;
+          governance_date: string;
+          inference_id: string;
+          inference_kind: string;
+          judged_at: string;
+          judgment_kind: string;
+          kept_at: string;
+          link_id: string;
+          link_type: string;
+          requested_at: string;
+          second_element_id: string;
+          second_reference_code: string;
+          second_title: string;
+          subject_element_id: string;
+          subject_kind: string;
+          subject_reference_code: string;
+          subject_title: string;
+          subject_type: string;
+        }[];
+      };
       supersede_acceptance_criterion: {
         Args: {
           p_agreed_on?: string;

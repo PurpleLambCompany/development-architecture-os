@@ -77,3 +77,68 @@ export function costUsd(
     (usage.inputTokens * price.inputPerMTok + usage.outputTokens * price.outputPerMTok) / 1_000_000
   );
 }
+
+/**
+ * The deterministic fake provider, for Step A acceptance only (ADR-0073,
+ * PD-2). Available only when all three hold:
+ *   - ARCHITECTURE_INTELLIGENCE_PROVIDER is `fake`;
+ *   - ARCHITECTURE_INTELLIGENCE_MODE is `synthetic_only`;
+ *   - NODE_ENV is not `production` (`next start` and every production build
+ *     set it, so a production server can never use it).
+ * It needs no credential and calls no network. Its model is priced only so
+ * the Gateway's budget checks run exactly as they would for a real one.
+ */
+const fakeProviderSchema = z.strictObject({
+  providerKey: z.literal("fake"),
+  region: z.string().min(1).max(40),
+  requestedModel: z.string().min(1).max(120),
+  prices: priceSchema,
+  maxRequestUsd: z.number().positive(),
+  timeoutMs: z.number().int().positive().default(60000),
+});
+export type FakeProviderConfig = z.infer<typeof fakeProviderSchema>;
+
+export const FAKE_PROVIDER_DEFAULT_MODEL = "dsa-fake-model-1";
+
+export function fakeProviderConfig(
+  env: Record<string, string | undefined> = process.env,
+): FakeProviderConfig | null {
+  if (env.NODE_ENV === "production") return null;
+  if (env.ARCHITECTURE_INTELLIGENCE_PROVIDER !== "fake") return null;
+  if (processingMode(env) !== "synthetic_only") return null;
+  const requestedModel = env.ARCHITECTURE_INTELLIGENCE_MODEL || FAKE_PROVIDER_DEFAULT_MODEL;
+  let prices: unknown = { [requestedModel]: { inputPerMTok: 1, outputPerMTok: 1 } };
+  if (env.ARCHITECTURE_INTELLIGENCE_PRICES) {
+    try {
+      prices = JSON.parse(env.ARCHITECTURE_INTELLIGENCE_PRICES);
+    } catch {
+      return null;
+    }
+  }
+  const parsed = fakeProviderSchema.safeParse({
+    providerKey: "fake",
+    region: env.ARCHITECTURE_INTELLIGENCE_REGION,
+    requestedModel,
+    prices,
+    maxRequestUsd: Number(env.ARCHITECTURE_INTELLIGENCE_MAX_REQUEST_USD),
+    timeoutMs: env.ARCHITECTURE_INTELLIGENCE_TIMEOUT_MS
+      ? Number(env.ARCHITECTURE_INTELLIGENCE_TIMEOUT_MS)
+      : undefined,
+  });
+  return parsed.success ? parsed.data : null;
+}
+
+/** The provider in force: a configured real provider, the fake one under its conditions, or none. */
+export type ActiveProvider =
+  { kind: "openai"; config: ProviderConfig } | { kind: "fake"; config: FakeProviderConfig };
+
+export function activeProvider(
+  env: Record<string, string | undefined> = process.env,
+): ActiveProvider | null {
+  if (env.ARCHITECTURE_INTELLIGENCE_PROVIDER === "fake") {
+    const config = fakeProviderConfig(env);
+    return config ? { kind: "fake", config } : null;
+  }
+  const config = providerConfig(env);
+  return config ? { kind: "openai", config } : null;
+}

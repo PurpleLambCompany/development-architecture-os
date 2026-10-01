@@ -58,6 +58,20 @@ export function validAnswer(
   };
 }
 
+/** An interpretation in the version 2 output shape (ADR-0071). */
+export const interpretation = (envelope: unknown) => ({
+  result: "interpretation",
+  interpretation: envelope,
+  reason: null,
+});
+
+/** "Nothing to add" in the version 2 output shape (IX-15). */
+export const nothingToAdd = (reason: string) => ({
+  result: "nothing_to_add",
+  interpretation: null,
+  reason,
+});
+
 export const answer =
   (
     kind: InferenceKind,
@@ -65,4 +79,12 @@ export const answer =
     resolvedModel?: string,
   ): FakeStep =>
   (request) =>
-    fake.output(validAnswer(kind, request, overrides), resolvedModel);
+    fake.output(interpretation(validAnswer(kind, request, overrides)), resolvedModel);
+
+export const silence =
+  (
+    reason = "The recorded summary says too little to read a bearing from.",
+    resolvedModel?: string,
+  ): FakeStep =>
+  () =>
+    fake.output(nothingToAdd(reason), resolvedModel);

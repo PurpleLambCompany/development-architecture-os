@@ -24,6 +24,7 @@ export type DataClass = (typeof DATA_CLASSES)[number];
 export const REQUEST_OUTCOMES = [
   "persisted",
   "returned",
+  "nothing_to_add",
   "refused_mode",
   "refused_capability",
   "refused_authorization",

@@ -19,7 +19,7 @@
 -- =============================================================================
 begin;
 
-select plan(40);
+select plan(41);
 
 create function pg_temp.act_as(user_email text) returns void language plpgsql as $$
 begin
@@ -141,9 +141,12 @@ select set_eq($$ select p.proname::text from pg_proc p join pg_namespace n on n.
                  where n.nspname = 'public' and p.prosrc ~ 'private\.(ai_emit|ai_resolve)' $$,
   array['ai_context_element', 'ai_context_relationships', 'ai_context_impact', 'ai_context_revision',
         'ai_context_edge_item', 'ai_context_evidence', 'ai_context_intelligence', 'ai_context_criteria',
-        'ai_context_review', 'ai_context_implementation', 'record_architecture_intelligence_request',
-        'architecture_inference_state'],
+        'ai_context_review', 'ai_context_implementation', 'architecture_inference_state'],
   'no other public function reaches governed content through the AI resolver');
+select set_eq($$ select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                 where n.nspname = 'public' and p.prosrc ~ 'private\.verify_inference_basis' $$,
+  array['record_architecture_intelligence_request', 'keep_architecture_inference'],
+  '... and only recording and keeping verify a basis through it (7B.2)');
 select is((select count(*)::int from information_schema.role_table_grants
            where grantee in ('authenticated', 'anon') and table_schema = 'public'
              and table_name in ('architecture_inferences', 'architecture_inference_basis',

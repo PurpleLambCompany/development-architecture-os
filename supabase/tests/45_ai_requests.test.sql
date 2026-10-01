@@ -101,9 +101,13 @@ select is((select count(*)::int from public.architecture_intelligence_requests),
 
 -- Never aggregated per person: no function returns request data grouped by
 -- requester, and the only read model over requests is the budget.
-select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-           where n.nspname = 'public' and p.prosrc ilike '%architecture_intelligence_requests%'),
-  2, 'only the budget and the recording operation touch the request audit');
+-- 7B.2 adds two readers of single rows, never aggregates: keeping reads its
+-- own request, and reuse reads the latest resolved model (ADR-0069, -0070).
+select set_eq($$ select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                 where n.nspname = 'public' and p.prosrc ilike '%architecture_intelligence_requests%' $$,
+  array['architecture_intelligence_budget', 'record_architecture_intelligence_request', 'keep_architecture_inference',
+        'current_architecture_inference'],
+  'only the budget, the recording operation, keeping and reuse touch the request audit');
 select ok(not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
            where n.nspname in ('public', 'private') and p.prosrc ilike '%architecture_intelligence_requests%'
              and p.prosrc ~* 'group\s+by[^;]*requested_by'), 'nothing groups requests by person');

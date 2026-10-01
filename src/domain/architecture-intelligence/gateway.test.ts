@@ -138,12 +138,12 @@ describe("the Gateway pipeline (proposal §10.2)", () => {
       requested_model: "dsa-fake-model-1",
       resolved_model: "dsa-fake-model-1",
       prompt_id: "explanation",
-      prompt_version: "v1",
-      generation_policy_version: "v1",
+      prompt_version: "v2",
+      generation_policy_version: "v2",
       tool_contract_version: "1",
     });
     expect(JSON.stringify(request)).not.toContain("delegated authority");
-    expect(inference).toMatchObject({ output_schema_version: "1" });
+    expect(inference).toMatchObject({ output_schema_version: "2" });
     expect((inference!.prompt_content_hash as string).length).toBe(64);
     expect(Number(request.estimated_cost_usd)).toBeGreaterThan(0);
   });
