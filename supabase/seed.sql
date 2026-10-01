@@ -116,11 +116,12 @@ insert into public.organization_members (organization_id, user_id, role) values
   ('a0000000-0000-4000-8000-000000000003', '40000000-0000-4000-8000-000000000001', 'client_project_lead');
 
 -- -----------------------------------------------------------------------------
--- Engagements
+-- Engagements. All seed data is made up: every seed engagement's data_origin
+-- is synthetic (ADR-0060), which only seed and migrations can set.
 -- -----------------------------------------------------------------------------
 insert into public.engagements (
   id, client_organization_id, title, slug, engagement_type, objective, description,
-  status, current_phase, start_date, target_end_date, created_by
+  status, current_phase, start_date, target_end_date, created_by, data_origin
 ) values
   (
     'e0000000-0000-4000-8000-000000000001',
@@ -134,7 +135,8 @@ insert into public.engagements (
     'Capability Architecture',
     date '2026-08-03',
     date '2026-12-18',
-    '10000000-0000-4000-8000-000000000002'
+    '10000000-0000-4000-8000-000000000002',
+    'synthetic'
   ),
   (
     'e0000000-0000-4000-8000-000000000002',
@@ -148,7 +150,8 @@ insert into public.engagements (
     'Scoping',
     date '2027-01-11',
     date '2027-02-19',
-    '10000000-0000-4000-8000-000000000002'
+    '10000000-0000-4000-8000-000000000002',
+    'synthetic'
   ),
   (
     'e0000000-0000-4000-8000-000000000003',
@@ -162,7 +165,8 @@ insert into public.engagements (
     'Knowledge Architecture',
     date '2026-06-01',
     date '2027-05-28',
-    '10000000-0000-4000-8000-000000000002'
+    '10000000-0000-4000-8000-000000000002',
+    'synthetic'
   );
 
 -- Seeding runs without an auth.uid(), so the creator trigger does not fire;
@@ -1532,5 +1536,19 @@ set summary = 'Leads the acquisition team and holds delegated authority to commi
 where id = 'b3000000-0000-4000-8000-000000000204';
 select public.publish_element_version('b3000000-0000-4000-8000-000000000204',
   'Delegated authority to commit to site options added.');
+
+-- -----------------------------------------------------------------------------
+-- Phase 7B.1: external processing authorizations (ADR-0061). Meridian and
+-- Harbor are authorized for synthetic evaluation only, for every class, by
+-- the Principal Architect: Meridian carries the Architecture Core seed and
+-- Harbor the only Reviews and Implementation Initiatives. Meridian
+-- Workforce stays unauthorized, so the refusal path has seed coverage.
+-- -----------------------------------------------------------------------------
+select pg_temp.act_as('10000000-0000-4000-8000-000000000002');  -- Principal Architect
+select public.set_engagement_ai_authorization(e, 'authorized',
+  array['published_architecture', 'working_architecture', 'project_intelligence', 'evidence_metadata'],
+  'openai', 'us', 'synthetic_evaluation', 'Seed evaluation: synthetic engagement',
+  'All engagement data is made up; authorized for the 7B.1 evaluation harness only.', 25, current_date)
+from unnest(array['e0000000-0000-4000-8000-000000000001', 'e0000000-0000-4000-8000-000000000003']::uuid[]) e;
 
 select set_config('request.jwt.claims', '', false);
