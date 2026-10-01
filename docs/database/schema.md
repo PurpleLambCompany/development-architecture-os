@@ -108,3 +108,15 @@ Documented in full in [edge.md](edge.md). Only what a person did or a governed o
 | `public.my_engagement_capabilities(engagement)`                                    | yes (authenticated) | the caller's effective capabilities on an engagement |
 | `public.capability_side(capability)`, `public.is_financial_capability(capability)` | yes                 | capability metadata                                  |
 | `private.*` helpers                                                                | no                  | used by RLS policies; see [rls.md](rls.md)           |
+
+## Phase 7B.1 tables
+
+Documented in full in [architecture-intelligence.md](architecture-intelligence.md). Nothing is in `activity_log`; every table is append-only and internal.
+
+| Table                                | Holds                                                                      | Written by                                 |
+| ------------------------------------ | -------------------------------------------------------------------------- | ------------------------------------------ |
+| `engagements.data_origin`            | New column: `real` or `synthetic`, immutable                               | migrations and the seed only               |
+| `engagement_ai_authorizations`       | Versioned per-engagement external-processing authorisation                 | `set_engagement_ai_authorization`          |
+| `architecture_intelligence_requests` | Metadata-only audit of every invocation                                    | `record_architecture_intelligence_request` |
+| `architecture_inferences`            | Persisted structured inferences (`suggested`, `model`)                     | `record_architecture_intelligence_request` |
+| `architecture_inference_basis`       | The pinned basis of each inference: identities, versions, classes, digests | `record_architecture_intelligence_request` |

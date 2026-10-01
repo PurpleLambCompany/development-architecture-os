@@ -609,6 +609,364 @@ export type Database = {
           },
         ];
       };
+      architecture_inference_basis: {
+        Row: {
+          anchor_id: string | null;
+          cited: boolean;
+          data_class: string;
+          digest: string;
+          digest_version: number;
+          element_id: string | null;
+          element_version_id: string | null;
+          engagement_id: string;
+          handle: string;
+          id: string;
+          inference_id: string;
+          origin: string;
+          record_id: string;
+          record_type: string;
+          variant: string | null;
+          version_id: string | null;
+        };
+        Insert: {
+          anchor_id?: string | null;
+          cited: boolean;
+          data_class: string;
+          digest: string;
+          digest_version?: number;
+          element_id?: string | null;
+          element_version_id?: string | null;
+          engagement_id: string;
+          handle: string;
+          id?: string;
+          inference_id: string;
+          origin: string;
+          record_id: string;
+          record_type: string;
+          variant?: string | null;
+          version_id?: string | null;
+        };
+        Update: {
+          anchor_id?: string | null;
+          cited?: boolean;
+          data_class?: string;
+          digest?: string;
+          digest_version?: number;
+          element_id?: string | null;
+          element_version_id?: string | null;
+          engagement_id?: string;
+          handle?: string;
+          id?: string;
+          inference_id?: string;
+          origin?: string;
+          record_id?: string;
+          record_type?: string;
+          variant?: string | null;
+          version_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "architecture_inference_basis_element_fk";
+            columns: ["element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "architecture_inference_basis_inference_fk";
+            columns: ["inference_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_inferences";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "architecture_inference_basis_version_fk";
+            columns: ["element_version_id"];
+            isOneToOne: false;
+            referencedRelation: "element_versions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      architecture_inferences: {
+        Row: {
+          assertion: string;
+          authorization_id: string;
+          claims: NonNullable<Json>;
+          created_at: string;
+          engagement_id: string;
+          epistemic_status: string;
+          examination: NonNullable<Json>;
+          generation_policy_version: string;
+          id: string;
+          inference_kind: string;
+          input_tokens: number;
+          output_schema_version: string;
+          output_tokens: number;
+          payload: NonNullable<Json>;
+          producer: string;
+          prompt_content_hash: string;
+          prompt_id: string;
+          prompt_version: string;
+          provider_key: string;
+          provider_request_id: string | null;
+          reasoning_effort: string | null;
+          reasoning_tokens: number;
+          request_id: string;
+          requested_at: string;
+          requested_by: string;
+          requested_model: string;
+          resolved_model: string;
+          subject_element_id: string;
+          subject_fingerprint: string | null;
+          subject_link_id: string | null;
+          subject_link_type: string | null;
+          subject_rule_key: string | null;
+          subject_second_element_id: string | null;
+          subject_type: string;
+          subject_version_id: string | null;
+          tool_contract_version: string;
+          uncertainty: string;
+        };
+        Insert: {
+          assertion: string;
+          authorization_id: string;
+          claims: NonNullable<Json>;
+          created_at?: string;
+          engagement_id: string;
+          epistemic_status?: string;
+          examination?: NonNullable<Json>;
+          generation_policy_version: string;
+          id?: string;
+          inference_kind: string;
+          input_tokens?: number;
+          output_schema_version: string;
+          output_tokens?: number;
+          payload?: NonNullable<Json>;
+          producer?: string;
+          prompt_content_hash: string;
+          prompt_id: string;
+          prompt_version: string;
+          provider_key: string;
+          provider_request_id?: string | null;
+          reasoning_effort?: string | null;
+          reasoning_tokens?: number;
+          request_id: string;
+          requested_at: string;
+          requested_by: string;
+          requested_model: string;
+          resolved_model: string;
+          subject_element_id: string;
+          subject_fingerprint?: string | null;
+          subject_link_id?: string | null;
+          subject_link_type?: string | null;
+          subject_rule_key?: string | null;
+          subject_second_element_id?: string | null;
+          subject_type: string;
+          subject_version_id?: string | null;
+          tool_contract_version: string;
+          uncertainty?: string;
+        };
+        Update: {
+          assertion?: string;
+          authorization_id?: string;
+          claims?: NonNullable<Json>;
+          created_at?: string;
+          engagement_id?: string;
+          epistemic_status?: string;
+          examination?: NonNullable<Json>;
+          generation_policy_version?: string;
+          id?: string;
+          inference_kind?: string;
+          input_tokens?: number;
+          output_schema_version?: string;
+          output_tokens?: number;
+          payload?: NonNullable<Json>;
+          producer?: string;
+          prompt_content_hash?: string;
+          prompt_id?: string;
+          prompt_version?: string;
+          provider_key?: string;
+          provider_request_id?: string | null;
+          reasoning_effort?: string | null;
+          reasoning_tokens?: number;
+          request_id?: string;
+          requested_at?: string;
+          requested_by?: string;
+          requested_model?: string;
+          resolved_model?: string;
+          subject_element_id?: string;
+          subject_fingerprint?: string | null;
+          subject_link_id?: string | null;
+          subject_link_type?: string | null;
+          subject_rule_key?: string | null;
+          subject_second_element_id?: string | null;
+          subject_type?: string;
+          subject_version_id?: string | null;
+          tool_contract_version?: string;
+          uncertainty?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "architecture_inferences_authorization_fk";
+            columns: ["authorization_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagement_ai_authorizations";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "architecture_inferences_engagement_id_fkey";
+            columns: ["engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "architecture_inferences_request_fk";
+            columns: ["request_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_intelligence_requests";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "architecture_inferences_requested_by_fkey";
+            columns: ["requested_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "architecture_inferences_second_fk";
+            columns: ["subject_second_element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "architecture_inferences_subject_fk";
+            columns: ["subject_element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id"];
+          },
+        ];
+      };
+      architecture_intelligence_requests: {
+        Row: {
+          authorization_id: string | null;
+          completed_at: string;
+          engagement_id: string;
+          error_class: string | null;
+          estimated_cost_usd: number;
+          generation_policy_version: string | null;
+          id: string;
+          inference_kind: string;
+          input_tokens: number;
+          manifest: NonNullable<Json>;
+          mode: string;
+          outcome: string;
+          output_tokens: number;
+          prompt_id: string | null;
+          prompt_version: string | null;
+          provider_key: string | null;
+          provider_request_id: string | null;
+          reasoning_tokens: number;
+          requested_at: string;
+          requested_by: string;
+          requested_model: string | null;
+          resolved_model: string | null;
+          subject_element_id: string | null;
+          subject_type: string | null;
+          tool_calls: NonNullable<Json>;
+          tool_contract_version: string | null;
+        };
+        Insert: {
+          authorization_id?: string | null;
+          completed_at?: string;
+          engagement_id: string;
+          error_class?: string | null;
+          estimated_cost_usd?: number;
+          generation_policy_version?: string | null;
+          id?: string;
+          inference_kind: string;
+          input_tokens?: number;
+          manifest?: NonNullable<Json>;
+          mode: string;
+          outcome: string;
+          output_tokens?: number;
+          prompt_id?: string | null;
+          prompt_version?: string | null;
+          provider_key?: string | null;
+          provider_request_id?: string | null;
+          reasoning_tokens?: number;
+          requested_at: string;
+          requested_by: string;
+          requested_model?: string | null;
+          resolved_model?: string | null;
+          subject_element_id?: string | null;
+          subject_type?: string | null;
+          tool_calls?: NonNullable<Json>;
+          tool_contract_version?: string | null;
+        };
+        Update: {
+          authorization_id?: string | null;
+          completed_at?: string;
+          engagement_id?: string;
+          error_class?: string | null;
+          estimated_cost_usd?: number;
+          generation_policy_version?: string | null;
+          id?: string;
+          inference_kind?: string;
+          input_tokens?: number;
+          manifest?: NonNullable<Json>;
+          mode?: string;
+          outcome?: string;
+          output_tokens?: number;
+          prompt_id?: string | null;
+          prompt_version?: string | null;
+          provider_key?: string | null;
+          provider_request_id?: string | null;
+          reasoning_tokens?: number;
+          requested_at?: string;
+          requested_by?: string;
+          requested_model?: string | null;
+          resolved_model?: string | null;
+          subject_element_id?: string | null;
+          subject_type?: string | null;
+          tool_calls?: NonNullable<Json>;
+          tool_contract_version?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "architecture_intelligence_requests_authorization_fk";
+            columns: ["authorization_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagement_ai_authorizations";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "architecture_intelligence_requests_element_fk";
+            columns: ["subject_element_id", "engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "architecture_elements";
+            referencedColumns: ["id", "engagement_id"];
+          },
+          {
+            foreignKeyName: "architecture_intelligence_requests_engagement_id_fkey";
+            columns: ["engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagements";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "architecture_intelligence_requests_requested_by_fkey";
+            columns: ["requested_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       architecture_object_types: {
         Row: {
           attribute_schema_version: number;
@@ -2695,6 +3053,72 @@ export type Database = {
           },
         ];
       };
+      engagement_ai_authorizations: {
+        Row: {
+          authorized_at: string;
+          authorized_by: string;
+          basis_kind: string | null;
+          basis_note: string | null;
+          basis_reference: string | null;
+          data_classes: string[];
+          effective_from: string;
+          engagement_id: string;
+          id: string;
+          monthly_budget_usd: number | null;
+          processing_region: string | null;
+          provider_key: string | null;
+          sequence_no: number;
+          state: string;
+        };
+        Insert: {
+          authorized_at?: string;
+          authorized_by: string;
+          basis_kind?: string | null;
+          basis_note?: string | null;
+          basis_reference?: string | null;
+          data_classes?: string[];
+          effective_from: string;
+          engagement_id: string;
+          id?: string;
+          monthly_budget_usd?: number | null;
+          processing_region?: string | null;
+          provider_key?: string | null;
+          sequence_no: number;
+          state: string;
+        };
+        Update: {
+          authorized_at?: string;
+          authorized_by?: string;
+          basis_kind?: string | null;
+          basis_note?: string | null;
+          basis_reference?: string | null;
+          data_classes?: string[];
+          effective_from?: string;
+          engagement_id?: string;
+          id?: string;
+          monthly_budget_usd?: number | null;
+          processing_region?: string | null;
+          provider_key?: string | null;
+          sequence_no?: number;
+          state?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "engagement_ai_authorizations_authorized_by_fkey";
+            columns: ["authorized_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "engagement_ai_authorizations_engagement_id_fkey";
+            columns: ["engagement_id"];
+            isOneToOne: false;
+            referencedRelation: "engagements";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       engagement_development_contexts: {
         Row: {
           context_id: string;
@@ -3007,6 +3431,7 @@ export type Database = {
           created_by: string | null;
           current_phase: string;
           dam_release_id: string | null;
+          data_origin: string;
           description: string;
           engagement_type: Database["public"]["Enums"]["engagement_type"];
           id: string;
@@ -3025,6 +3450,7 @@ export type Database = {
           created_by?: string | null;
           current_phase?: string;
           dam_release_id?: string | null;
+          data_origin?: string;
           description?: string;
           engagement_type: Database["public"]["Enums"]["engagement_type"];
           id?: string;
@@ -3043,6 +3469,7 @@ export type Database = {
           created_by?: string | null;
           current_phase?: string;
           dam_release_id?: string | null;
+          data_origin?: string;
           description?: string;
           engagement_type?: Database["public"]["Enums"]["engagement_type"];
           id?: string;
@@ -6593,6 +7020,111 @@ export type Database = {
         };
         Returns: undefined;
       };
+      ai_context_criteria: {
+        Args: { p_element_id: string; p_engagement_id: string };
+        Returns: Database["public"]["CompositeTypes"]["ai_context_row"][];
+        SetofOptions: {
+          from: "*";
+          to: "ai_context_row";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      ai_context_edge_item: {
+        Args: {
+          p_element_id: string;
+          p_engagement_id: string;
+          p_fingerprint: string;
+          p_rule_key: string;
+        };
+        Returns: Database["public"]["CompositeTypes"]["ai_context_row"][];
+        SetofOptions: {
+          from: "*";
+          to: "ai_context_row";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      ai_context_element: {
+        Args: { p_element_id: string; p_engagement_id: string; p_state?: string };
+        Returns: Database["public"]["CompositeTypes"]["ai_context_row"][];
+        SetofOptions: {
+          from: "*";
+          to: "ai_context_row";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      ai_context_evidence: {
+        Args: { p_element_id: string; p_engagement_id: string; p_include_summary?: boolean };
+        Returns: Database["public"]["CompositeTypes"]["ai_context_row"][];
+        SetofOptions: {
+          from: "*";
+          to: "ai_context_row";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      ai_context_impact: {
+        Args: { p_element_id: string; p_engagement_id: string };
+        Returns: Database["public"]["CompositeTypes"]["ai_context_row"][];
+        SetofOptions: {
+          from: "*";
+          to: "ai_context_row";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      ai_context_implementation: {
+        Args: { p_engagement_id: string; p_initiative_element_id: string };
+        Returns: Database["public"]["CompositeTypes"]["ai_context_row"][];
+        SetofOptions: {
+          from: "*";
+          to: "ai_context_row";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      ai_context_intelligence: {
+        Args: { p_element_id: string; p_engagement_id: string };
+        Returns: Database["public"]["CompositeTypes"]["ai_context_row"][];
+        SetofOptions: {
+          from: "*";
+          to: "ai_context_row";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      ai_context_relationships: {
+        Args: { p_element_id: string; p_engagement_id: string };
+        Returns: Database["public"]["CompositeTypes"]["ai_context_row"][];
+        SetofOptions: {
+          from: "*";
+          to: "ai_context_row";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      ai_context_review: {
+        Args: { p_engagement_id: string; p_review_element_id: string };
+        Returns: Database["public"]["CompositeTypes"]["ai_context_row"][];
+        SetofOptions: {
+          from: "*";
+          to: "ai_context_row";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      ai_context_revision: {
+        Args: { p_element_id: string; p_engagement_id: string; p_version_id?: string };
+        Returns: Database["public"]["CompositeTypes"]["ai_context_row"][];
+        SetofOptions: {
+          from: "*";
+          to: "ai_context_row";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       allocate_payment: {
         Args: { p_amount_minor: number; p_invoice_id: string; p_payment_id: string };
         Returns: string;
@@ -6623,6 +7155,39 @@ export type Database = {
           domain: Database["public"]["Enums"]["architecture_domain"];
           maturity: Database["public"]["Enums"]["maturity_state"];
           rationale: string;
+        }[];
+      };
+      architecture_inference_state: {
+        Args: { p_engagement_id: string; p_inference_id?: string };
+        Returns: {
+          inference_id: string;
+          inference_kind: string;
+          stale_reasons: string[];
+          state: string;
+        }[];
+      };
+      architecture_intelligence_budget: {
+        Args: { p_engagement_id: string };
+        Returns: {
+          month_requests: number;
+          month_started_at: string;
+          month_to_date_usd: number;
+          monthly_budget_usd: number;
+        }[];
+      };
+      architecture_intelligence_standing: {
+        Args: { p_engagement_id: string };
+        Returns: {
+          authorization_id: string;
+          authorization_state: string;
+          can_authorize: boolean;
+          can_use: boolean;
+          data_classes: string[];
+          data_origin: string;
+          engagement_status: string;
+          monthly_budget_usd: number;
+          processing_region: string;
+          provider_key: string;
         }[];
       };
       assign_member_area: {
@@ -7588,6 +8153,10 @@ export type Database = {
         Args: { p_action_id: string; p_member_id: string; p_note?: string };
         Returns: undefined;
       };
+      record_architecture_intelligence_request: {
+        Args: { p_engagement_id: string; p_inference?: Json; p_request: Json };
+        Returns: string;
+      };
       record_checkpoint_achieved: {
         Args: {
           p_achieved_evidence_source_id?: string;
@@ -7899,6 +8468,42 @@ export type Database = {
       set_decision_recommendation: {
         Args: { p_decision_id: string; p_option_id: string; p_rationale: string };
         Returns: undefined;
+      };
+      set_engagement_ai_authorization: {
+        Args: {
+          p_basis_kind?: string;
+          p_basis_note?: string;
+          p_basis_reference?: string;
+          p_data_classes?: string[];
+          p_effective_from?: string;
+          p_engagement_id: string;
+          p_monthly_budget_usd?: number;
+          p_processing_region?: string;
+          p_provider_key?: string;
+          p_state: string;
+        };
+        Returns: {
+          authorized_at: string;
+          authorized_by: string;
+          basis_kind: string | null;
+          basis_note: string | null;
+          basis_reference: string | null;
+          data_classes: string[];
+          effective_from: string;
+          engagement_id: string;
+          id: string;
+          monthly_budget_usd: number | null;
+          processing_region: string | null;
+          provider_key: string | null;
+          sequence_no: number;
+          state: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "engagement_ai_authorizations";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
       set_engagement_dam_release: {
         Args: { p_engagement_id: string; p_reason: string; p_release_id: string };
@@ -8231,7 +8836,9 @@ export type Database = {
         | "submit_client_input"
         | "manage_reviews"
         | "manage_deliverables"
-        | "manage_implementation";
+        | "manage_implementation"
+        | "use_architecture_intelligence"
+        | "authorize_external_ai_processing";
       engagement_file_purpose:
         "client_response" | "client_contribution" | "evidence" | "deliverable";
       engagement_status: "proposed" | "active" | "paused" | "completed" | "archived";
@@ -8324,7 +8931,18 @@ export type Database = {
       validation_status: "unvalidated" | "validating" | "validated" | "invalidated";
     };
     CompositeTypes: {
-      [_ in never]: never;
+      ai_context_row: {
+        record_type: string | null;
+        record_id: string | null;
+        version_id: string | null;
+        anchor_id: string | null;
+        variant: string | null;
+        data_class: string | null;
+        withheld: boolean | null;
+        withheld_reason: string | null;
+        digest: string | null;
+        content: Json | null;
+      };
     };
   };
 };
@@ -8534,6 +9152,8 @@ export const Constants = {
         "manage_reviews",
         "manage_deliverables",
         "manage_implementation",
+        "use_architecture_intelligence",
+        "authorize_external_ai_processing",
       ],
       engagement_file_purpose: [
         "client_response",

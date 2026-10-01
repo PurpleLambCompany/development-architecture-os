@@ -175,3 +175,75 @@ describe("canManageCapability", () => {
     expect(check("system_administrator", null, "view_financials", true)).toBe(true);
   });
 });
+
+describe("Architecture Intelligence capabilities (ADR-0060)", () => {
+  const ai = ["use_architecture_intelligence", "authorize_external_ai_processing"] as const;
+
+  it("are internal and never a client default", () => {
+    for (const capability of ai) {
+      expect(capabilitySide(capability)).toBe("internal");
+      for (const role of CLIENT_ROLES)
+        expect(ROLE_CAPABILITY_DEFAULTS[role]).not.toContain(capability);
+    }
+  });
+
+  it("give use to Principal Architects and Architects only, and authorization to Principal Architects only (OD-1, OD-2)", () => {
+    const holders = (capability: EngagementCapability) =>
+      INTERNAL_ROLES.filter((role) => ROLE_CAPABILITY_DEFAULTS[role].includes(capability));
+    expect(holders("use_architecture_intelligence")).toEqual(["principal_architect", "architect"]);
+    expect(holders("authorize_external_ai_processing")).toEqual(["principal_architect"]);
+  });
+
+  it("are separate from editing in both directions", () => {
+    expect(ROLE_CAPABILITY_DEFAULTS.researcher).toContain("edit_architecture");
+    expect(ROLE_CAPABILITY_DEFAULTS.researcher).not.toContain("use_architecture_intelligence");
+    expect(
+      effectiveCapabilities("architect", [{ capability: "edit_architecture", granted: false }]),
+    ).toContain("use_architecture_intelligence");
+  });
+
+  it("are overridden only by Principal Architects, never for themselves", () => {
+    for (const capability of ai) {
+      expect(
+        canManageCapability({
+          viewerRole: "principal_architect",
+          viewerEngagementRole: "principal_architect",
+          isSelf: false,
+          capability,
+        }),
+      ).toBe(true);
+      expect(
+        canManageCapability({
+          viewerRole: "principal_architect",
+          viewerEngagementRole: "principal_architect",
+          isSelf: true,
+          capability,
+        }),
+      ).toBe(false);
+      expect(
+        canManageCapability({
+          viewerRole: "system_administrator",
+          viewerEngagementRole: null,
+          isSelf: false,
+          capability,
+        }),
+      ).toBe(false);
+      expect(
+        canManageCapability({
+          viewerRole: "project_administrator",
+          viewerEngagementRole: "project_administrator",
+          isSelf: false,
+          capability,
+        }),
+      ).toBe(false);
+      expect(
+        canManageCapability({
+          viewerRole: "architect",
+          viewerEngagementRole: "architect",
+          isSelf: false,
+          capability,
+        }),
+      ).toBe(false);
+    }
+  });
+});

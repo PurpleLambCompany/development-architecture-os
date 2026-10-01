@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 export type ArchitectureSection =
   | "engagement"
   | "edge"
+  | "architecture-intelligence"
   | "home"
   | (typeof DOMAINS)[number]
   | "element"
@@ -22,6 +23,11 @@ export function ArchitectureNav({ slug, current }: { slug: string; current: Arch
   const tabs: { key: ArchitectureSection; href: string; label: string }[] = [
     { key: "engagement", href: base, label: "Engagement" },
     { key: "edge", href: `${base}/edge`, label: "Edge" },
+    {
+      key: "architecture-intelligence",
+      href: `${base}/architecture-intelligence`,
+      label: "Architecture Intelligence",
+    },
     { key: "home", href: `${base}/architecture`, label: "Architecture" },
     ...DOMAINS.map((domain) => ({
       key: domain,

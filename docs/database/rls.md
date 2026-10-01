@@ -135,3 +135,23 @@ Who can change what:
 | Change the impact matrix                               | migrations only                                                                                |
 
 Not material and Deferred judgments on the 11 Phase 4 and Phase 5 signal rules are written through `dismiss_intelligence_signal` and `dismiss_implementation_signal`, which require `edit_architecture`, so the Signals page and the Edge agree (OD-9). Judgments are recorded in `activity_log`; briefing marks are not, so no role can learn from the log who read what. Tests: `35_edge_judgments.test.sql`, `36_edge_briefing_marks.test.sql`, `38_edge_client_boundary.test.sql`, `39_practice_counts.test.sql`.
+
+## Phase 7B.1: Architecture Intelligence
+
+Everything in Phase 7B.1 is internal. No client policy, client read model or client-callable function is added or changed. See [architecture-intelligence.md](architecture-intelligence.md).
+
+| Capability                         | System Admin | Principal Architect | Architect | Researcher | Project Admin | Finance | Client roles |
+| ---------------------------------- | :----------: | :-----------------: | :-------: | :--------: | :-----------: | :-----: | :----------: |
+| `use_architecture_intelligence`    |              |          ✓          |     ✓     |            |               |         |     n/a      |
+| `authorize_external_ai_processing` |              |          ✓          |           |            |               |         |     n/a      |
+
+Both are architecture authority: overrides only by Principal Architects on the engagement, never for themselves.
+
+| Table                                | Readers                                                         | Client users |
+| ------------------------------------ | --------------------------------------------------------------- | ------------ |
+| `engagement_ai_authorizations`       | internal readers of the engagement's architecture               | **never**    |
+| `architecture_intelligence_requests` | holders of `authorize_external_ai_processing` on the engagement | **never**    |
+| `architecture_inferences`            | current holders of `use_architecture_intelligence` (OD-11)      | **never**    |
+| `architecture_inference_basis`       | current holders of `use_architecture_intelligence`              | **never**    |
+
+All four are append-only (`23514` on update or delete for every role) and written only by their operations. Tests: `41`–`47`, `99_ai_concurrency`.

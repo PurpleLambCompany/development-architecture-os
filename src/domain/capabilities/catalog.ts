@@ -28,6 +28,8 @@ export const ENGAGEMENT_CAPABILITIES = [
   "manage_reviews",
   "manage_deliverables",
   "manage_implementation",
+  "use_architecture_intelligence",
+  "authorize_external_ai_processing",
 ] as const satisfies readonly EngagementCapability[];
 
 export const CAPABILITY_LABELS: Record<EngagementCapability, string> = {
@@ -49,6 +51,8 @@ export const CAPABILITY_LABELS: Record<EngagementCapability, string> = {
   manage_reviews: "Manage reviews",
   manage_deliverables: "Manage deliverables",
   manage_implementation: "Manage implementation",
+  use_architecture_intelligence: "Use Architecture Intelligence",
+  authorize_external_ai_processing: "Authorize external AI processing",
 };
 
 export const FINANCIAL_CAPABILITIES = [
@@ -62,10 +66,16 @@ export function isFinancialCapability(capability: EngagementCapability): boolean
   return (FINANCIAL_CAPABILITIES as readonly EngagementCapability[]).includes(capability);
 }
 
-/** Drafting and publishing authority: only Principal Architects grant or revoke these. */
+/**
+ * Architecture authority: drafting, publishing and Architecture Intelligence
+ * (its use and the authorization of external processing, ADR-0060). Only
+ * Principal Architects grant or revoke these, never for themselves.
+ */
 export const ARCHITECTURE_AUTHORITY_CAPABILITIES = [
   "edit_architecture",
   "publish_architecture",
+  "use_architecture_intelligence",
+  "authorize_external_ai_processing",
 ] as const satisfies readonly EngagementCapability[];
 
 export function isArchitectureAuthorityCapability(capability: EngagementCapability): boolean {
@@ -93,7 +103,9 @@ export function capabilitySide(capability: EngagementCapability): MemberSide | n
     capability === "manage_client_requests" ||
     capability === "manage_reviews" ||
     capability === "manage_deliverables" ||
-    capability === "manage_implementation"
+    capability === "manage_implementation" ||
+    capability === "use_architecture_intelligence" ||
+    capability === "authorize_external_ai_processing"
   )
     return "internal";
   return null;
@@ -120,6 +132,8 @@ export const ROLE_CAPABILITY_DEFAULTS: Record<AppRole, readonly EngagementCapabi
     "manage_reviews",
     "manage_deliverables",
     "manage_implementation",
+    "use_architecture_intelligence",
+    "authorize_external_ai_processing",
   ],
   architect: [
     "view_confidential_deliverables",
@@ -129,6 +143,7 @@ export const ROLE_CAPABILITY_DEFAULTS: Record<AppRole, readonly EngagementCapabi
     "manage_reviews",
     "manage_deliverables",
     "manage_implementation",
+    "use_architecture_intelligence",
   ],
   researcher: [
     "view_confidential_deliverables",
@@ -190,7 +205,7 @@ export function effectiveCapabilities(
 /**
  * Whether the viewer may grant or revoke `capability` for a member.
  * Mirrors private.can_manage_capability: architecture authority
- * (edit_architecture, publish_architecture) is granted only by Principal
+ * (ARCHITECTURE_AUTHORITY_CAPABILITIES) is granted only by Principal
  * Architects, never to themselves; otherwise nobody but a System
  * Administrator changes their own capabilities, financial capabilities need
  * financial authority and the rest need engagement management rights.
