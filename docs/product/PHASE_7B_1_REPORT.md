@@ -163,7 +163,7 @@ The reviewer made one observation worth recording. RLS already lets current hold
 
 ## 15. CI state
 
-CI_STATE
+Both required checks, **App** and **Database**, passed on `d850955`, the code-complete head ([run 36877566544](https://github.com/PurpleLambCompany/development-architecture-os/actions/runs/36877566544)). The only later change is this section of the report. PR #11 stays a draft and unmerged.
 
 ## 16. Recommended next step
 
