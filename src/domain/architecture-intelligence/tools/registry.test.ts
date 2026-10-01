@@ -57,7 +57,7 @@ describe("the Tool Contract registry (proposal §12)", () => {
     const hash = createHash("sha256").update(definition).digest("hex");
     // Update both together: a changed hash without a new TOOL_CONTRACT_VERSION fails here.
     expect({ version: TOOL_CONTRACT_VERSION, hash }).toEqual({
-      version: "1",
+      version: "2",
       hash: "f598d288604964b3862f8ddde7b980338e1ebec7c0e76be33cee3b3d309ad76b",
     });
   });

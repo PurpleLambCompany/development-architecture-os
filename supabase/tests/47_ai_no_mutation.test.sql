@@ -21,6 +21,23 @@ begin;
 
 select plan(41);
 
+-- Recording is server-only (ADR-0069): record as the current test user through
+-- the service role's one recording path, then return to the caller's role.
+create function pg_temp.record_as_server(eng uuid, req jsonb, inf jsonb default null) returns uuid
+language plpgsql as $rec$
+declare
+  r uuid;
+  sub uuid := (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')::uuid;
+  prior text := current_user;
+begin
+  execute 'reset role';
+  execute 'set local role service_role';
+  r := public.record_architecture_intelligence_request_for(sub, eng, req, inf);
+  execute format('set local role %I', prior);
+  return r;
+end;
+$rec$;
+
 create function pg_temp.act_as(user_email text) returns void language plpgsql as $$
 begin
   execute 'reset role';
@@ -159,7 +176,7 @@ savepoint ro;
 set local transaction_read_only = on;
 select is((select count(*)::int from valid_calls where pg_temp.try(sql) <> 'ok'), 0,
   'every valid contract call succeeds inside a READ ONLY transaction');
-select is(pg_temp.try($$ select public.record_architecture_intelligence_request('e0000000-0000-4000-8000-000000000001',
+select is(pg_temp.try($$ select pg_temp.record_as_server('e0000000-0000-4000-8000-000000000001',
   '{"outcome": "refused_mode", "mode": "ephemeral", "inference_kind": "explanation"}') $$), '25006',
   '... where the recording operation, which does write, is refused by the engine');
 select is(pg_temp.try($$ select public.retire_relationship(gen_random_uuid(), 'x') $$) in ('25006', 'P0002', '42501'), true,
@@ -197,7 +214,7 @@ reset role;
 select pg_temp.fingerprint(array['architecture_intelligence_requests', 'architecture_inferences',
                                  'architecture_inference_basis']) as before_record \gset
 select pg_temp.act_as('architect@tplco.test');
-select is(pg_temp.try(format($$ select public.record_architecture_intelligence_request(%L,
+select is(pg_temp.try(format($$ select pg_temp.record_as_server(%L,
   jsonb_build_object('outcome', 'persisted', 'mode', 'persist', 'inference_kind', 'explanation', 'subject_type', 'element',
     'subject_element_id', %L, 'authorization_id', (select id from public.engagement_ai_authorizations
       where engagement_id = %L order by sequence_no desc limit 1),
@@ -228,7 +245,7 @@ select pg_temp.act_as('architect@tplco.test');
 select is((select count(*)::int from calls where sql like '%e0000000-0000-4000-8000-000000000001%'
              and pg_temp.try(sql) not in ('42501', 'P0002')), 0,
   'after use revocation, every Meridian contract call is refused');
-select is(pg_temp.try($$ select public.record_architecture_intelligence_request('e0000000-0000-4000-8000-000000000001',
+select is(pg_temp.try($$ select pg_temp.record_as_server('e0000000-0000-4000-8000-000000000001',
   '{"outcome": "returned", "mode": "ephemeral", "inference_kind": "explanation"}') $$), '42501',
   '... and no model outcome can be recorded');
 select is((select count(*)::int from public.architecture_inferences), 0, '... and no inference is readable');
@@ -250,7 +267,7 @@ select is((select count(*)::int from public.ai_context_element(:M, :CAP, 'workin
            or digest is not null), 0, 'working architecture is withheld without content or digest');
 select is((select count(*)::int from public.ai_context_evidence(:M, :KNW) where content is not null), 0,
   'evidence metadata is withheld');
-select is(pg_temp.try(format($$ select public.record_architecture_intelligence_request(%L,
+select is(pg_temp.try(format($$ select pg_temp.record_as_server(%L,
   jsonb_build_object('outcome', 'persisted', 'mode', 'persist', 'inference_kind', 'explanation', 'subject_type', 'element',
     'subject_element_id', %L, 'authorization_id', (select id from public.engagement_ai_authorizations
       where engagement_id = %L order by sequence_no desc limit 1),

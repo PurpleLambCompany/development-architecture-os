@@ -17,13 +17,17 @@ import {
 } from "./gateway";
 import { isEvaluatedModel } from "./prompts/manifest";
 import { testManifestOverlay, type EvaluatedModelCheck } from "./prompts/test-overlay";
-import { supabaseStore } from "./store";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { supabaseStore, trustedRecording } from "./store";
 import type { ProcessingMode } from "./types";
 
 /**
  * The only entry point application code may use. It wires the Gateway to
- * the requesting user's Supabase session (never the service role) and to
- * the configured provider.
+ * the requesting user's Supabase session for every read, to the
+ * server-only recording path for the one write (ADR-0069: the service-role
+ * client calls record_architecture_intelligence_request_for and nothing
+ * else, for the user the Auth server verified), and to the configured
+ * provider.
  *
  * 7B.2: the application calls it only in ephemeral mode, on a person's
  * explicit request (IX-12, IX-16); a source scan proves no application
@@ -76,9 +80,13 @@ export async function invokeAsUser(
 ): Promise<GatewayResult> {
   const active = activeProvider();
   const d = deployment();
+  // The requester is whoever the Auth server verifies for this session.
+  const { data } = await supabase.auth.getUser();
+  const requestedBy = data.user?.id;
+  const record = requestedBy ? trustedRecording(createSupabaseAdminClient, requestedBy) : undefined;
   return invokeArchitectureIntelligence(
     {
-      store: supabaseStore(supabase),
+      store: supabaseStore(supabase, record),
       adapter: adapterFor(active),
       provider: d.provider,
       mode: () => processingMode(),

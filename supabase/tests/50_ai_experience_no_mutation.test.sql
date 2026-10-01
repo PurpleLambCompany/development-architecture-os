@@ -10,6 +10,23 @@ begin;
 
 select plan(14);
 
+-- Recording is server-only (ADR-0069): record as the current test user through
+-- the service role's one recording path, then return to the caller's role.
+create function pg_temp.record_as_server(eng uuid, req jsonb, inf jsonb default null) returns uuid
+language plpgsql as $rec$
+declare
+  r uuid;
+  sub uuid := (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')::uuid;
+  prior text := current_user;
+begin
+  execute 'reset role';
+  execute 'set local role service_role';
+  r := public.record_architecture_intelligence_request_for(sub, eng, req, inf);
+  execute format('set local role %I', prior);
+  return r;
+end;
+$rec$;
+
 
 create function pg_temp.act_as(user_email text) returns void language plpgsql as $$
 begin
@@ -87,12 +104,12 @@ select public.set_engagement_ai_authorization(:M, 'authorized',
 -- An interpretation held for keeping (the audit row and the hold are the
 -- recording operation's writes, proved in 7B.1 and test 48).
 select pg_temp.act_as('architect@tplco.test');
-select public.record_architecture_intelligence_request(:M,
+select pg_temp.record_as_server(:M,
   jsonb_build_object('outcome', 'returned', 'mode', 'ephemeral', 'inference_kind', 'explanation',
     'subject_type', 'impact_trace', 'subject_element_id', :CAP,
     'authorization_id', (select id from public.engagement_ai_authorizations where engagement_id = :M
       order by sequence_no desc limit 1),
-    'prompt_id', 'explanation', 'prompt_version', 'v2', 'generation_policy_version', 'v2', 'tool_contract_version', '1',
+    'prompt_id', 'explanation', 'prompt_version', 'v2', 'generation_policy_version', 'v2', 'tool_contract_version', '2',
     'provider_key', 'fake', 'requested_model', 'dsa-fake-model-1', 'resolved_model', 'dsa-fake-model-1',
     'input_tokens', 1200, 'output_tokens', 300, 'estimated_cost_usd', 0.01,
     'manifest', '[{"record_type": "element_working"}]'::jsonb, 'tool_calls', '[]'::jsonb),
@@ -111,7 +128,7 @@ grant all on reads to authenticated;
 insert into reads select format(s, :M, :H, :CAP, :CAP1, :'rev') from (values
   ($$select * from public.architecture_intelligence_availability(%1$L, 'explanation', jsonb_build_object('type', 'impact_trace', 'element_id', %3$L))$$),
   ($$select * from public.architecture_intelligence_availability(%1$L, 'tension', jsonb_build_object('type', 'element_pair', 'element_id', %4$L, 'second_element_id', %3$L))$$),
-  ($$select * from public.current_architecture_inference(%1$L, 'explanation', jsonb_build_object('type', 'impact_trace', 'element_id', %3$L), 'v2', 'fake', 'dsa-fake-model-1')$$),
+  ($$select * from public.current_architecture_inference(%1$L, 'explanation', jsonb_build_object('type', 'impact_trace', 'element_id', %3$L), 'v2', 'fake', 'dsa-fake-model-1', '2')$$),
   ($$select * from public.suggested_interpretations(%1$L)$$),
   ($$select * from public.kept_architecture_inferences(%1$L)$$),
   ($$select public.element_supports_and_exposures(%1$L, %4$L)$$),

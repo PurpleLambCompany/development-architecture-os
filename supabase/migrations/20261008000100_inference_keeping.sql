@@ -1,5 +1,5 @@
 -- =============================================================================
--- Phase 7B.2: Architecture Intelligence Experience. Migration 2 of 8.
+-- Phase 7B.2: Architecture Intelligence Experience. Migration 2 of 9.
 -- Persistence intent: what makes keeping possible without a new secret
 -- (IX-12, PD-3, PD-4, PD-5, PD-21; proposal §14, §15; ADR-0069).
 --

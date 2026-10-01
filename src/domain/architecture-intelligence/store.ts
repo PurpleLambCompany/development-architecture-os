@@ -4,10 +4,12 @@ import type { ToolFunction } from "./tools/registry";
 import type { ContextRow } from "./types";
 
 /**
- * Everything the Gateway asks of the database, as the requesting user
- * (never the service role, ADR-0005). The only operation that writes is
- * record_architecture_intelligence_request, which writes only the request
- * audit, the inference and its basis. Everything else is a read.
+ * Everything the Gateway asks of the database. Reads run as the requesting
+ * user (ADR-0005). Recording is the one exception (ADR-0069, 7B.2): it goes
+ * through the server-only recording path, record_architecture_intelligence_
+ * request_for, which only the service role may execute and which records as
+ * the verified requester with every check of the recording operation. No
+ * browser session can record, so no browser can supply model text.
  */
 
 export type Standing = {
@@ -43,7 +45,38 @@ export interface ArchitectureIntelligenceStore {
 
 type Client = SupabaseClient<Database>;
 
-export function supabaseStore(supabase: Client): ArchitectureIntelligenceStore {
+export type TrustedRecord = ArchitectureIntelligenceStore["record"];
+
+/**
+ * The server-only recording path. `server` creates the service-role client,
+ * which the DSA server alone holds; it is created only when a request is
+ * recorded and used for exactly this one call and nothing else in
+ * Architecture Intelligence. `requestedBy` is the signed-in user's id as the
+ * Auth server verified it, never a value from a request.
+ */
+export function trustedRecording(server: () => Client, requestedBy: string): TrustedRecord {
+  return async (engagementId, request, inference) => {
+    const { data, error } = await server().rpc("record_architecture_intelligence_request_for", {
+      p_requested_by: requestedBy,
+      p_engagement_id: engagementId,
+      p_request: request as never,
+      ...(inference ? { p_inference: inference as never } : {}),
+    });
+    if (error || !data)
+      return { error: { code: error?.code ?? "", message: error?.message ?? "" } };
+    return { requestId: data };
+  };
+}
+
+/** A store for reads only: it cannot record. */
+const noRecording: TrustedRecord = async () => ({
+  error: { code: "42501", message: "Recording is server-only" },
+});
+
+export function supabaseStore(
+  supabase: Client,
+  record: TrustedRecord = noRecording,
+): ArchitectureIntelligenceStore {
   return {
     async standing(engagementId) {
       const { data, error } = await supabase.rpc("architecture_intelligence_standing", {
@@ -88,15 +121,6 @@ export function supabaseStore(supabase: Client): ArchitectureIntelligenceStore {
         .maybeSingle();
       return data?.id ?? null;
     },
-    async record(engagementId, request, inference) {
-      const { data, error } = await supabase.rpc("record_architecture_intelligence_request", {
-        p_engagement_id: engagementId,
-        p_request: request as never,
-        ...(inference ? { p_inference: inference as never } : {}),
-      });
-      if (error || !data)
-        return { error: { code: error?.code ?? "", message: error?.message ?? "" } };
-      return { requestId: data };
-    },
+    record,
   };
 }

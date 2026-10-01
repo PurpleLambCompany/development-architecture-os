@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requestEstimateUsd } from "../gateway";
 import { CONTEXT_PLANS } from "../kinds/plans";
 import { currentPrompt } from "../prompts/manifest";
+import { TOOL_CONTRACT_VERSION } from "../tools/registry";
 import { deployment } from "../server";
 import { supabaseStore } from "../store";
 import type { InferenceKind } from "../types";
@@ -62,7 +63,7 @@ export type Layer2 =
       kind: InferenceKind;
       /** The kept interpretation to show: the reusable one, else the newest kept. */
       kept: InferenceDetail | null;
-      /** Whether `kept` is reusable now (IX-13, PD-13a): current, same prompt and model. */
+      /** Whether `kept` is reusable now (IX-13, PD-13a): current, same prompt, model and Tool Contract version. */
       reusable: boolean;
       suppressed: { kind: string; judgedAt: string } | null;
     };
@@ -111,6 +112,7 @@ export async function getLayer2(engagementId: string, subject: DrawerSubject): P
           p_prompt_version: promptVersion,
           p_provider_key: d.configured.providerKey,
           p_requested_model: d.configured.requestedModel,
+          p_tool_contract_version: TOOL_CONTRACT_VERSION,
         })
       : Promise.resolve({ data: [] as { inference_id: string; resolved_model: string }[] }),
   ]);

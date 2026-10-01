@@ -7,7 +7,24 @@
 -- =============================================================================
 begin;
 
-select plan(38);
+select plan(39);
+
+-- Recording is server-only (ADR-0069): record as the current test user through
+-- the service role's one recording path, then return to the caller's role.
+create function pg_temp.record_as_server(eng uuid, req jsonb, inf jsonb default null) returns uuid
+language plpgsql as $rec$
+declare
+  r uuid;
+  sub uuid := (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')::uuid;
+  prior text := current_user;
+begin
+  execute 'reset role';
+  execute 'set local role service_role';
+  r := public.record_architecture_intelligence_request_for(sub, eng, req, inf);
+  execute format('set local role %I', prior);
+  return r;
+end;
+$rec$;
 
 create function pg_temp.act_as(user_email text) returns void language plpgsql as $$
 begin
@@ -29,7 +46,7 @@ returns jsonb language sql as $$
     'subject_type', subject_type, 'subject_element_id', el,
     'authorization_id', (select id from public.engagement_ai_authorizations
       where engagement_id = 'e0000000-0000-4000-8000-000000000001' order by sequence_no desc limit 1),
-    'prompt_id', kind, 'prompt_version', 'v2', 'generation_policy_version', 'v2', 'tool_contract_version', '1',
+    'prompt_id', kind, 'prompt_version', 'v2', 'generation_policy_version', 'v2', 'tool_contract_version', '2',
     'provider_key', 'fake', 'requested_model', 'dsa-fake-model-1', 'resolved_model', resolved,
     'input_tokens', 1200, 'output_tokens', 300, 'estimated_cost_usd', 0.01,
     'manifest', '[{"record_type": "element_working"}]'::jsonb, 'tool_calls', '[]'::jsonb);
@@ -48,7 +65,7 @@ $$;
 create function pg_temp.keep(kind text, subject_type text, el uuid, extra jsonb default '{}',
   resolved text default 'dsa-fake-model-1') returns uuid language sql as $$
   select public.keep_architecture_inference('e0000000-0000-4000-8000-000000000001',
-    public.record_architecture_intelligence_request('e0000000-0000-4000-8000-000000000001',
+    pg_temp.record_as_server('e0000000-0000-4000-8000-000000000001',
       pg_temp.request(kind, subject_type, el, resolved), pg_temp.inference(el, extra)));
 $$;
 create function pg_temp.avail(kind text, subject jsonb) returns text language sql as $$
@@ -57,7 +74,7 @@ create function pg_temp.avail(kind text, subject jsonb) returns text language sq
 $$;
 create function pg_temp.reuse(subject jsonb) returns uuid language sql as $$
   select inference_id from public.current_architecture_inference('e0000000-0000-4000-8000-000000000001',
-    'explanation', subject, 'v2', 'fake', 'dsa-fake-model-1');
+    'explanation', subject, 'v2', 'fake', 'dsa-fake-model-1', '2');
 $$;
 
 select private.business_today() as today \gset
@@ -95,18 +112,21 @@ select pg_temp.keep('explanation', 'impact_trace', :CAP) as k1 \gset
 select is(pg_temp.reuse(jsonb_build_object('type', 'impact_trace', 'element_id', :CAP)), :'k1'::uuid,
   'a current kept interpretation with the same prompt and model is reused');
 select is((select inference_id from public.current_architecture_inference(:M, 'explanation',
-  jsonb_build_object('type', 'impact_trace', 'element_id', :CAP), 'v1', 'fake', 'dsa-fake-model-1')), null,
+  jsonb_build_object('type', 'impact_trace', 'element_id', :CAP), 'v1', 'fake', 'dsa-fake-model-1', '2')), null,
   'not across a prompt version');
 select is((select inference_id from public.current_architecture_inference(:M, 'explanation',
-  jsonb_build_object('type', 'impact_trace', 'element_id', :CAP), 'v2', 'openai', 'dsa-fake-model-1')), null,
+  jsonb_build_object('type', 'impact_trace', 'element_id', :CAP), 'v2', 'openai', 'dsa-fake-model-1', '2')), null,
   'not across a provider');
+select is((select inference_id from public.current_architecture_inference(:M, 'explanation',
+  jsonb_build_object('type', 'impact_trace', 'element_id', :CAP), 'v2', 'fake', 'dsa-fake-model-1', '1')), null,
+  'not across a Tool Contract version');
 select is(pg_temp.reuse(jsonb_build_object('type', 'element', 'element_id', :CAP)), null, 'not across a subject');
 -- The same requested model now resolves to another model: reuse ends (invariant 2).
-select public.record_architecture_intelligence_request(:M,
+select pg_temp.record_as_server(:M,
   pg_temp.request('explanation', 'impact_trace', :CAP1, 'dsa-fake-model-2') || '{"outcome": "nothing_to_add"}');
 select is(pg_temp.reuse(jsonb_build_object('type', 'impact_trace', 'element_id', :CAP)), null,
   'invariant 2: never reused across a resolved-model change');
-select public.record_architecture_intelligence_request(:M,
+select pg_temp.record_as_server(:M,
   pg_temp.request('explanation', 'impact_trace', :CAP1, 'dsa-fake-model-1') || '{"outcome": "nothing_to_add"}');
 select is(pg_temp.reuse(jsonb_build_object('type', 'impact_trace', 'element_id', :CAP)), :'k1'::uuid,
   '... and resumes only when the requested model resolves to the same model again');

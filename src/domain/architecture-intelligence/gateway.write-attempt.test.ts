@@ -71,7 +71,8 @@ describe("no path from a model to a mutation", () => {
     const allowedRpc = new Set([
       "architecture_intelligence_standing",
       "architecture_intelligence_budget",
-      "record_architecture_intelligence_request",
+      // The one write, through the server-only recording path (ADR-0069).
+      "record_architecture_intelligence_request_for",
     ]);
     for (const { file, text } of sources()) {
       expect(text, file).not.toMatch(/\.(insert|upsert|delete)\(/);

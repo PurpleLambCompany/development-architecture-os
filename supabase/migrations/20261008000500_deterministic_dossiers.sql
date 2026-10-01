@@ -1,5 +1,5 @@
 -- =============================================================================
--- Phase 7B.2: Architecture Intelligence Experience. Migration 6 of 8.
+-- Phase 7B.2: Architecture Intelligence Experience. Migration 6 of 9.
 -- Deterministic dossiers: the Review dossier and an element's supports and
 -- exposures (principle 22, PD-9, PD-22; proposal §7, §8; ADR-0072).
 --

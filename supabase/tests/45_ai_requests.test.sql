@@ -9,6 +9,23 @@ begin;
 
 select plan(34);
 
+-- Recording is server-only (ADR-0069): record as the current test user through
+-- the service role's one recording path, then return to the caller's role.
+create function pg_temp.record_as_server(eng uuid, req jsonb, inf jsonb default null) returns uuid
+language plpgsql as $rec$
+declare
+  r uuid;
+  sub uuid := (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')::uuid;
+  prior text := current_user;
+begin
+  execute 'reset role';
+  execute 'set local role service_role';
+  r := public.record_architecture_intelligence_request_for(sub, eng, req, inf);
+  execute format('set local role %I', prior);
+  return r;
+end;
+$rec$;
+
 create function pg_temp.act_as(user_email text) returns void language plpgsql as $$
 begin
   execute 'reset role';
@@ -28,7 +45,7 @@ create function pg_temp.req(outcome text, cost numeric default 0, extra jsonb de
     'input_tokens', case when cost > 0 then 1000 else 0 end, 'estimated_cost_usd', cost) || extra;
 $$;
 create function pg_temp.rec(outcome text, cost numeric default 0, extra jsonb default '{}') returns uuid language sql as $$
-  select public.record_architecture_intelligence_request('e0000000-0000-4000-8000-000000000001',
+  select pg_temp.record_as_server('e0000000-0000-4000-8000-000000000001',
     pg_temp.req(outcome, cost, extra));
 $$;
 

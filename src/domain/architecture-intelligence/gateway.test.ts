@@ -140,7 +140,7 @@ describe("the Gateway pipeline (proposal §10.2)", () => {
       prompt_id: "explanation",
       prompt_version: "v2",
       generation_policy_version: "v2",
-      tool_contract_version: "1",
+      tool_contract_version: "2",
     });
     expect(JSON.stringify(request)).not.toContain("delegated authority");
     expect(inference).toMatchObject({ output_schema_version: "2" });

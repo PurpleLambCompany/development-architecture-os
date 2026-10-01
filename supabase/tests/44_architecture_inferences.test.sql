@@ -8,6 +8,23 @@ begin;
 
 select plan(45);
 
+-- Recording is server-only (ADR-0069): record as the current test user through
+-- the service role's one recording path, then return to the caller's role.
+create function pg_temp.record_as_server(eng uuid, req jsonb, inf jsonb default null) returns uuid
+language plpgsql as $rec$
+declare
+  r uuid;
+  sub uuid := (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')::uuid;
+  prior text := current_user;
+begin
+  execute 'reset role';
+  execute 'set local role service_role';
+  r := public.record_architecture_intelligence_request_for(sub, eng, req, inf);
+  execute format('set local role %I', prior);
+  return r;
+end;
+$rec$;
+
 create function pg_temp.act_as(user_email text) returns void language plpgsql as $$
 begin
   execute 'reset role';
@@ -51,7 +68,7 @@ create function pg_temp.with_relationship(basis jsonb, eng uuid, el uuid) return
   from (select * from public.ai_context_relationships(eng, el) where not withheld limit 1) x;
 $$;
 create function pg_temp.record(basis jsonb, kind text default 'explanation') returns uuid language sql as $$
-  select public.record_architecture_intelligence_request('e0000000-0000-4000-8000-000000000001',
+  select pg_temp.record_as_server('e0000000-0000-4000-8000-000000000001',
     jsonb_set(pg_temp.request('persisted', (select id from public.engagement_ai_authorizations
       where engagement_id = 'e0000000-0000-4000-8000-000000000001' order by sequence_no desc limit 1)),
       '{inference_kind}', to_jsonb(kind)),
@@ -81,7 +98,7 @@ select hasnt_column('public', 'architecture_intelligence_requests', 'prompt_text
 -- of its relationships.
 select pg_temp.act_as('architect@tplco.test');
 select pg_temp.with_relationship(pg_temp.basis_for(:M, :CAP, 'working'), :M, :CAP) as basis \gset
-select lives_ok(format($$ select public.record_architecture_intelligence_request(%L, pg_temp.request('persisted', %L),
+select lives_ok(format($$ select pg_temp.record_as_server(%L, pg_temp.request('persisted', %L),
   pg_temp.inference(%L)) $$, 'e0000000-0000-4000-8000-000000000001', :'auth', :'basis'), 'an Architect records an inference');
 select is((select count(*)::int from public.architecture_inferences), 1, 'one inference');
 select is((select epistemic_status || '/' || producer from public.architecture_inferences), 'suggested/model',
@@ -100,33 +117,33 @@ select is((select state from public.architecture_inference_state(:M)), 'current'
 select request_id as first_request from public.architecture_inferences \gset
 
 -- Refusals on recording.
-select throws_ok(format($$ select public.record_architecture_intelligence_request(%L, pg_temp.request('persisted', %L),
+select throws_ok(format($$ select pg_temp.record_as_server(%L, pg_temp.request('persisted', %L),
   pg_temp.inference(%L)) $$, 'e0000000-0000-4000-8000-000000000001', :'auth',
   jsonb_set(:'basis'::jsonb, '{0,digest}', to_jsonb(repeat('b', 64)))), '23514', null,
   'a basis whose digest is not what DSA provided is refused');
-select throws_ok(format($$ select public.record_architecture_intelligence_request(%L, pg_temp.request('persisted', %L),
+select throws_ok(format($$ select pg_temp.record_as_server(%L, pg_temp.request('persisted', %L),
   pg_temp.inference(%L)) $$, 'e0000000-0000-4000-8000-000000000001', :'auth',
   jsonb_set(:'basis'::jsonb, '{0,data_class}', '"evidence_metadata"')), '23514', null, 'a relabelled class is refused');
-select throws_ok(format($$ select public.record_architecture_intelligence_request(%L, pg_temp.request('persisted', %L),
+select throws_ok(format($$ select pg_temp.record_as_server(%L, pg_temp.request('persisted', %L),
   pg_temp.inference(%L)) $$, 'e0000000-0000-4000-8000-000000000001', :'auth',
   jsonb_set(:'basis'::jsonb, '{0,record_id}', '"b3000000-0000-4000-8000-000000000a01"')), '23514', null,
   'another engagement''s record cannot be a basis');
-select throws_ok(format($$ select public.record_architecture_intelligence_request(%L, pg_temp.request('persisted', %L),
+select throws_ok(format($$ select pg_temp.record_as_server(%L, pg_temp.request('persisted', %L),
   pg_temp.inference(%L, '["R9"]')) $$, 'e0000000-0000-4000-8000-000000000001', :'auth', :'basis'), '23514', null,
   'a claim citing something not provided is refused');
-select throws_ok(format($$ select public.record_architecture_intelligence_request(%L, pg_temp.request('persisted', %L),
+select throws_ok(format($$ select pg_temp.record_as_server(%L, pg_temp.request('persisted', %L),
   pg_temp.inference(%L, '[]')) $$, 'e0000000-0000-4000-8000-000000000001', :'auth', :'basis'), '23514', null,
   'an uncited claim is refused');
-select throws_ok(format($$ select public.record_architecture_intelligence_request(%L, pg_temp.request('persisted', %L),
+select throws_ok(format($$ select pg_temp.record_as_server(%L, pg_temp.request('persisted', %L),
   pg_temp.inference('[]')) $$, 'e0000000-0000-4000-8000-000000000001', :'auth'), '23514', null,
   'an inference without basis is refused');
-select throws_ok(format($$ select public.record_architecture_intelligence_request(%L, pg_temp.request('returned', %L),
+select throws_ok(format($$ select pg_temp.record_as_server(%L, pg_temp.request('returned', %L),
   pg_temp.inference(%L)) $$, 'e0000000-0000-4000-8000-000000000001', :'auth', :'basis'), '23514', null,
   'only a persisted outcome carries an inference');
-select throws_ok(format($$ select public.record_architecture_intelligence_request(%L, pg_temp.request('persisted', %L, 'ephemeral'),
+select throws_ok(format($$ select pg_temp.record_as_server(%L, pg_temp.request('persisted', %L, 'ephemeral'),
   pg_temp.inference(%L)) $$, 'e0000000-0000-4000-8000-000000000001', :'auth', :'basis'), '23514', null,
   'an ephemeral request never persists');
-select throws_ok(format($$ select public.record_architecture_intelligence_request(%L,
+select throws_ok(format($$ select pg_temp.record_as_server(%L,
   jsonb_set(pg_temp.request('persisted', %L), '{inference_kind}', '"link_suggestion"'), pg_temp.inference(%L)) $$,
   'e0000000-0000-4000-8000-000000000001', :'auth', :'basis'), '23514', null,
   'link_suggestion is not an approved kind (B-15)');
@@ -137,9 +154,9 @@ select throws_ok($$ insert into public.architecture_inferences (engagement_id) v
 
 -- A Researcher without use: only a refusal can be recorded, and nothing read.
 select pg_temp.act_as('researcher@tplco.test');
-select lives_ok(format($$ select public.record_architecture_intelligence_request(%L, pg_temp.request('refused_capability', null, 'ephemeral')) $$,
+select lives_ok(format($$ select pg_temp.record_as_server(%L, pg_temp.request('refused_capability', null, 'ephemeral')) $$,
   'e0000000-0000-4000-8000-000000000001'), 'S4: the refusal is audited');
-select throws_ok(format($$ select public.record_architecture_intelligence_request(%L, pg_temp.request('returned', %L, 'ephemeral')) $$,
+select throws_ok(format($$ select pg_temp.record_as_server(%L, pg_temp.request('returned', %L, 'ephemeral')) $$,
   'e0000000-0000-4000-8000-000000000001', :'auth'), '42501', null, '... but not a model outcome');
 select is((select count(*)::int from public.architecture_inferences), 0, 'OD-11: a Researcher reads no inference');
 select is((select count(*)::int from public.architecture_inference_basis), 0, '... and no basis');
@@ -152,10 +169,10 @@ select public.set_engagement_ai_authorization(:M, 'authorized',
   array['published_architecture', 'working_architecture', 'project_intelligence', 'evidence_metadata'], 'openai', 'us',
   'synthetic_evaluation', 'Budget raised', null, 50);
 select pg_temp.act_as('architect@tplco.test');
-select throws_ok(format($$ select public.record_architecture_intelligence_request(%L, pg_temp.request('persisted', %L),
+select throws_ok(format($$ select pg_temp.record_as_server(%L, pg_temp.request('persisted', %L),
   pg_temp.inference(%L)) $$, 'e0000000-0000-4000-8000-000000000001', :'auth', :'basis'), '42501', null,
   'a new authorization during the request refuses persistence');
-select lives_ok(format($$ select public.record_architecture_intelligence_request(%L,
+select lives_ok(format($$ select pg_temp.record_as_server(%L,
   pg_temp.request('authorization_withdrawn', %L, 'persist')) $$, 'e0000000-0000-4000-8000-000000000001', :'auth'),
   '... and the withdrawal is audited');
 

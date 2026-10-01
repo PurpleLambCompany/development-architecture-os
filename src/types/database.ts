@@ -7683,6 +7683,7 @@ export type Database = {
           p_provider_key: string;
           p_requested_model: string;
           p_subject: Json;
+          p_tool_contract_version: string;
         };
         Returns: {
           inference_id: string;
@@ -8371,6 +8372,15 @@ export type Database = {
       };
       record_architecture_intelligence_request: {
         Args: { p_engagement_id: string; p_inference?: Json; p_request: Json };
+        Returns: string;
+      };
+      record_architecture_intelligence_request_for: {
+        Args: {
+          p_engagement_id: string;
+          p_inference?: Json;
+          p_request: Json;
+          p_requested_by: string;
+        };
         Returns: string;
       };
       record_checkpoint_achieved: {

@@ -23,3 +23,7 @@ DSA OS is not a self-serve product. Every account belongs to TPLCo or a client o
 ## Amendment (2026-10-01): Architecture Intelligence does not use the service role
 
 Phase 7B.1 adds no service-role use. The Intelligence Gateway, the Tool Contract and the recording operation run with the requesting user's own session, so RLS and the definer functions' capability checks decide every read and write (ADR-0062, ADR-0063). The provider credential (`ARCHITECTURE_INTELLIGENCE_API_KEY`) is a separate server-only secret, read only by `src/domain/architecture-intelligence/server.ts` (which imports `server-only`), and is never sent to the browser or stored in the database.
+
+## Amendment (Phase 7B.2 Step A review, 2026-10-01): one server-only recording call
+
+The service-role client gains exactly one use beyond invitations: `server.ts` calls `record_architecture_intelligence_request_for`, the only way to record an Architecture Intelligence request, for the requester returned by `supabase.auth.getUser()` (ADR-0069 amendment). The service role holds no privilege on the Architecture Intelligence tables and executes no other Architecture Intelligence function; every check in that operation runs as the requester. Reads, the Tool Contract, Keep and judgments remain on the user's session. No new secret is added.

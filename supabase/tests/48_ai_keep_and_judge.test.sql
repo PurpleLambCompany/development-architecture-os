@@ -10,6 +10,23 @@ begin;
 
 select plan(45);
 
+-- Recording is server-only (ADR-0069): record as the current test user through
+-- the service role's one recording path, then return to the caller's role.
+create function pg_temp.record_as_server(eng uuid, req jsonb, inf jsonb default null) returns uuid
+language plpgsql as $rec$
+declare
+  r uuid;
+  sub uuid := (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')::uuid;
+  prior text := current_user;
+begin
+  execute 'reset role';
+  execute 'set local role service_role';
+  r := public.record_architecture_intelligence_request_for(sub, eng, req, inf);
+  execute format('set local role %I', prior);
+  return r;
+end;
+$rec$;
+
 create function pg_temp.act_as(user_email text) returns void language plpgsql as $$
 begin
   execute 'reset role';
@@ -30,7 +47,7 @@ create function pg_temp.request(outcome text, mode text default 'ephemeral') ret
   select jsonb_build_object('outcome', outcome, 'mode', mode, 'inference_kind', 'explanation',
     'subject_type', 'impact_trace', 'subject_element_id', 'b3000000-0000-4000-8000-000000000204',
     'authorization_id', pg_temp.auth(), 'prompt_id', 'explanation', 'prompt_version', 'v2',
-    'generation_policy_version', 'v2', 'tool_contract_version', '1', 'provider_key', 'fake',
+    'generation_policy_version', 'v2', 'tool_contract_version', '2', 'provider_key', 'fake',
     'requested_model', 'dsa-fake-model-1', 'resolved_model', 'dsa-fake-model-1',
     'input_tokens', 1200, 'output_tokens', 300, 'estimated_cost_usd', 0.01,
     'manifest', '[{"record_type": "element_working"}]'::jsonb, 'tool_calls', '[]'::jsonb);
@@ -50,7 +67,7 @@ $$;
 -- An ephemeral interpretation returned to its requester: held, not an inference.
 create function pg_temp.returned(assertion text default 'CAP-004 bears on the founding team.') returns uuid
 language sql as $$
-  select public.record_architecture_intelligence_request('e0000000-0000-4000-8000-000000000001',
+  select pg_temp.record_as_server('e0000000-0000-4000-8000-000000000001',
     pg_temp.request('returned'), pg_temp.inference(assertion));
 $$;
 create function pg_temp.kept_count() returns int language sql as $$
@@ -78,18 +95,18 @@ select is((select count(*)::int from public.pending_architecture_inferences wher
 select ok((select expires_at <= created_at + interval '30 minutes' from public.pending_architecture_inferences
   where request_id = :'r1'), 'for at most thirty minutes');
 select pg_temp.act_as('architect@tplco.test');
-select throws_ok(format($$ select public.record_architecture_intelligence_request(%L, pg_temp.request('returned', 'persist'),
+select throws_ok(format($$ select pg_temp.record_as_server(%L, pg_temp.request('returned', 'persist'),
   pg_temp.inference()) $$, 'e0000000-0000-4000-8000-000000000001'), '23514', null,
   'only an ephemeral request is held for keeping');
-select throws_ok(format($$ select public.record_architecture_intelligence_request(%L, pg_temp.request('nothing_to_add'),
+select throws_ok(format($$ select pg_temp.record_as_server(%L, pg_temp.request('nothing_to_add'),
   pg_temp.inference()) $$, 'e0000000-0000-4000-8000-000000000001'), '23514', null,
   'nothing to add carries no inference');
-select lives_ok(format($$ select public.record_architecture_intelligence_request(%L, pg_temp.request('nothing_to_add')) $$,
+select lives_ok(format($$ select pg_temp.record_as_server(%L, pg_temp.request('nothing_to_add')) $$,
   'e0000000-0000-4000-8000-000000000001'), 'nothing to add is audited');
-select lives_ok(format($$ select public.record_architecture_intelligence_request(%L,
+select lives_ok(format($$ select pg_temp.record_as_server(%L,
   pg_temp.request('returned') || '{"interpret_again": true}') $$, 'e0000000-0000-4000-8000-000000000001'),
   'interpret again is recorded on the request');
-select throws_ok(format($$ select public.record_architecture_intelligence_request(%L,
+select throws_ok(format($$ select pg_temp.record_as_server(%L,
   pg_temp.request('returned') || '{"interpret_again": "yes"}') $$, 'e0000000-0000-4000-8000-000000000001'),
   '23514', null, '... only as a boolean');
 
@@ -200,7 +217,7 @@ select throws_ok(format($$ select public.keep_architecture_inference(%L, %L) $$,
 
 -- An evaluation-harness row was never kept, so it is not judged.
 select pg_temp.act_as('architect@tplco.test');
-select public.record_architecture_intelligence_request(:M, pg_temp.request('persisted', 'persist'),
+select pg_temp.record_as_server(:M, pg_temp.request('persisted', 'persist'),
   pg_temp.inference('A harness row, never shown.')) is not null as harness \gset
 reset role;
 select id as h1 from public.architecture_inferences where assertion = 'A harness row, never shown.' \gset

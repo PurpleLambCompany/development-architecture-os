@@ -22,7 +22,8 @@ import { drawerFromQuery, gatewaySubject, kindFor } from "./subjects";
 
 /**
  * Architecture Intelligence experience server actions (7B.2). Each acts as
- * the signed-in user, never the service role:
+ * the signed-in user; the only service-role use is interpret's recording,
+ * made server-side for that user through server.ts (ADR-0069):
  *
  * - interpret: a person's explicit request. It re-runs the gate and the
  *   availability rule (a screen that is out of date cannot invoke) and

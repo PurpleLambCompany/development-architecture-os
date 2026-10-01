@@ -41,9 +41,10 @@ import { validateOutput } from "./validation";
  * → subject and anchors → model loop (re-checking before every send) →
  * validation → evaluated-model check → persistence → audit. Nothing is sent
  * before the anchors, refusals read nothing for the model, and every
- * invocation leaves exactly one metadata-only audit record. Every database
- * call runs as the requesting user; the Tool Contract cannot write, and the
- * only write is the recording operation.
+ * invocation leaves exactly one metadata-only audit record. Every read runs
+ * as the requesting user; the Tool Contract cannot write, and the only write
+ * is the recording operation, which the store makes through the server-only
+ * path for that user (ADR-0069).
  *
  * The Gateway holds no business rule that is not in the database or a
  * reviewed prompt or plan, never falls back to another provider or model,

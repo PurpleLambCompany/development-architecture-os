@@ -1,5 +1,5 @@
 -- =============================================================================
--- Phase 7B.2: Architecture Intelligence Experience. Migration 5 of 8.
+-- Phase 7B.2: Architecture Intelligence Experience. Migration 5 of 9.
 -- Read models for availability, reuse, Suggested interpretations, the
 -- kept-interpretations register and an inference's detail (principle 23,
 -- IX-13, IX-14, IX-17, IX-18; PD-10 to PD-16; proposal §9, §16, §20, §26;
@@ -342,7 +342,8 @@ create function public.current_architecture_inference(
   p_subject          jsonb,
   p_prompt_version   text,
   p_provider_key     text,
-  p_requested_model  text
+  p_requested_model  text,
+  p_tool_contract_version text
 )
 returns table (inference_id uuid, resolved_model text)
 language plpgsql
@@ -363,7 +364,8 @@ begin
   end if;
   k := private.latest_kept_inference(p_engagement_id, p_kind, p_subject);
   if k.id is null or k.prompt_version is distinct from p_prompt_version or k.provider_key is distinct from p_provider_key
-     or k.requested_model is distinct from p_requested_model then
+     or k.requested_model is distinct from p_requested_model
+     or k.tool_contract_version is distinct from p_tool_contract_version then
     return;
   end if;
   select s.state into state from public.architecture_inference_state(p_engagement_id, k.id) s;
@@ -660,12 +662,12 @@ revoke all on function private.ai_person_name(uuid) from public, anon, authentic
 revoke all on function private.ai_element_governance_date(uuid, uuid) from public, anon, authenticated;
 
 revoke all on function public.architecture_intelligence_availability(uuid, text, jsonb) from public, anon;
-revoke all on function public.current_architecture_inference(uuid, text, jsonb, text, text, text) from public, anon;
+revoke all on function public.current_architecture_inference(uuid, text, jsonb, text, text, text, text) from public, anon;
 revoke all on function public.architecture_inference_detail(uuid, uuid) from public, anon;
 revoke all on function public.suggested_interpretations(uuid) from public, anon;
 revoke all on function public.kept_architecture_inferences(uuid, text, text) from public, anon;
 grant execute on function public.architecture_intelligence_availability(uuid, text, jsonb) to authenticated;
-grant execute on function public.current_architecture_inference(uuid, text, jsonb, text, text, text) to authenticated;
+grant execute on function public.current_architecture_inference(uuid, text, jsonb, text, text, text, text) to authenticated;
 grant execute on function public.architecture_inference_detail(uuid, uuid) to authenticated;
 grant execute on function public.suggested_interpretations(uuid) to authenticated;
 grant execute on function public.kept_architecture_inferences(uuid, text, text) to authenticated;

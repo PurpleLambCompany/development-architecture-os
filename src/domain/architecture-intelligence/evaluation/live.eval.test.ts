@@ -18,8 +18,8 @@ import {
   type GatewayResult,
   type ProviderSettings,
 } from "../gateway";
-import { GENERATION_POLICY, PROMPT_MANIFEST } from "../prompts/manifest";
-import { supabaseStore } from "../store";
+import { currentPrompt, GENERATION_POLICY, PROMPT_MANIFEST } from "../prompts/manifest";
+import { supabaseStore, trustedRecording } from "../store";
 import { TOOL_CONTRACT_VERSION } from "../tools/registry";
 import {
   PRE_MODEL_OUTCOMES,
@@ -86,6 +86,22 @@ async function as(email: string): Promise<Client> {
   return client;
 }
 
+// The server-only recording path (ADR-0069), as the DSA server uses it.
+let serverClient: Client | null = null;
+function server(): Client {
+  serverClient ??= createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SECRET_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
+  return serverClient;
+}
+async function storeFor(email: string) {
+  const client = await as(email);
+  const { data } = await client.auth.getUser();
+  return supabaseStore(client, trustedRecording(server, data.user!.id));
+}
+
 const realProvider = process.env.AI_EVAL_PROVIDER === "openai" ? providerConfig() : null;
 
 type Row = { case: string; kind: string; outcome: string; checks: string; model: string };
@@ -106,7 +122,7 @@ async function run(
     ? new OpenAIAdapter({ apiKey: realProvider.apiKey, baseUrl: realProvider.baseUrl })
     : new FakeModelAdapter(steps);
   const deps: GatewayDeps = {
-    store: supabaseStore(await as(email)),
+    store: await storeFor(email),
     adapter,
     provider: real ? realProvider : (options.provider ?? FAKE_PROVIDER),
     mode: options.mode ?? (() => processingMode()),
@@ -286,9 +302,12 @@ describe.skipIf(!enabled)(
     afterAll(() => {
       const path = process.env.AI_EVAL_REPORT;
       if (!path) return;
-      const prompts = Object.entries(PROMPT_MANIFEST).map(
-        ([k, v]) => `| ${k} | ${v[0]!.promptVersion} | \`${v[0]!.contentHash}\` |`,
-      );
+      // The prompt each kind is sent with now (an earlier version is kept
+      // in the manifest only to verify inferences recorded under it).
+      const prompts = (Object.keys(PROMPT_MANIFEST) as InferenceKind[]).map((k) => {
+        const p = currentPrompt(k);
+        return `| ${k} | ${p.promptVersion} | \`${p.contentHash}\` |`;
+      });
       const lines = [
         `# Architecture Intelligence evaluation: ${realProvider ? "provider" : "pipeline (fake adapter)"}, ${new Date().toISOString().slice(0, 10)}`,
         "",

@@ -12,7 +12,13 @@ import type { DataClass } from "../types";
  * and resolved by the Gateway within the engagement.
  */
 
-export const TOOL_CONTRACT_VERSION = "1";
+/**
+ * Version 2 (7B.2, ADR-0063 amendment): an Edge item's basis variant is
+ * `rule_key#md5(fingerprint)`, so the contract's emitted identity changed
+ * even though its functions and definitions did not. Reuse never crosses a
+ * Tool Contract version.
+ */
+export const TOOL_CONTRACT_VERSION = "2";
 
 export const TOOL_FUNCTIONS = [
   "ai_context_element",

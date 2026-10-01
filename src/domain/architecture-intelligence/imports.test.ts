@@ -39,7 +39,9 @@ describe("module boundaries (proposal §10.1, §29.2)", () => {
       (f) => !/\/(actions|queries)\.ts$/.test(f) && !f.startsWith(experience),
     )) {
       for (const i of imports(file)) {
-        expect(i, file).not.toMatch(/actions|@\/lib\/supabase\/admin|next\/cache|next\/navigation/);
+        expect(i, file).not.toMatch(/actions|next\/cache|next\/navigation/);
+        // Only server.ts holds the service-role client, for the recording path alone.
+        if (!file.endsWith("/server.ts")) expect(i, file).not.toMatch(/@\/lib\/supabase\/admin/);
       }
     }
     // The action module records an authorization only; it never reaches the Gateway or a provider.
@@ -56,9 +58,32 @@ describe("module boundaries (proposal §10.1, §29.2)", () => {
     // The experience layer reaches the Gateway only through server.ts, never a provider or tool.
     for (const file of files(experience).filter((f) => !f.endsWith(".test.ts"))) {
       for (const i of imports(file)) {
-        expect(i, file).not.toMatch(/adapters|tools\/|test-overlay/);
+        expect(i, file).not.toMatch(/adapters|tools\/(?!registry$)|test-overlay/);
       }
     }
+  });
+
+  it("records only through the server-only path, for the verified user (ADR-0069)", () => {
+    const serverTs = readFileSync(join(moduleDir, "server.ts"), "utf8");
+    // The service-role client is created once, only to build the trusted recorder.
+    expect(serverTs.match(/createSupabaseAdminClient/g)).toHaveLength(2); // the import and the one use
+    expect(serverTs).toMatch(/trustedRecording\(createSupabaseAdminClient, requestedBy\)/);
+    // The requester comes from the Auth server's verification of the session.
+    expect(serverTs).toMatch(/await supabase\.auth\.getUser\(\)/);
+    const store = readFileSync(join(moduleDir, "store.ts"), "utf8");
+    // The trusted client makes exactly one call, to the recording path.
+    expect(store.match(/server\(\)\.rpc\(/g)).toHaveLength(1);
+    expect(store).toMatch(/server\(\)\.rpc\("record_architecture_intelligence_request_for"/);
+    // No module calls the user-scoped recording operation, which no API role may execute.
+    for (const file of all) {
+      if (file.endsWith(".test.ts")) continue;
+      expect(readFileSync(file, "utf8"), file).not.toMatch(
+        /rpc\(\s*"record_architecture_intelligence_request"/,
+      );
+    }
+    // The browser-facing actions never pass model text: Keep names a request id only.
+    const actions = readFileSync(join(moduleDir, "experience/actions.ts"), "utf8");
+    expect(actions).not.toMatch(/p_inference(?!_id)|assertion:/);
   });
 
   it("requests interpretations ephemerally from the application; only Keep persists (PD-3)", () => {

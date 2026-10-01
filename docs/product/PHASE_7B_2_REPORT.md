@@ -10,6 +10,8 @@
 
 Kerrick approved Step A on 2026-10-01 with decisions PD-1 to PD-22. See [`PHASE_7B_2_PROPOSAL.md`](PHASE_7B_2_PROPOSAL.md) and [`PHASE_7B_2_INTELLIGENCE_EXPERIENCE_RECONCILIATION.md`](PHASE_7B_2_INTELLIGENCE_EXPERIENCE_RECONCILIATION.md).
 
+**Step A review (2026-10-01).** Kerrick withheld merge on two issues, both now resolved: the recording trust boundary is closed by a server-only recording path (§4a), and `TOOL_CONTRACT_VERSION` is now `2` (§4b).
+
 Three invariants govern this step:
 
 1. The exact text shown is the text persisted.
@@ -153,14 +155,15 @@ A test-only overlay counts `dsa-fake-model-1` and `-2` as evaluated, for the cur
 
 ## 2. Files changed
 
-There are 96 files against `main`:
+There are 110 files against `main`:
 
-- **Migrations:** 8 (§3).
+- **Migrations:** 9 (§3).
 - **pgTAP:** 4 new suites:
   - `48_ai_keep_and_judge` (45 tests)
   - `49_ai_read_models` (38)
   - `50_ai_experience_no_mutation` (14)
   - `51_impact_trace_definer` (22)
+  - `52_ai_trusted_recording` (35)
 
   Existing suites were updated for the v2 vocabulary.
 
@@ -180,32 +183,57 @@ There are 96 files against `main`:
 
 ## 3. Schema changes
 
-| Migration                                         | Change                                                                                                                                               |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `20261008000000_ai_request_outcomes_v2`           | `nothing_to_add` outcome; `interpret_again` flag                                                                                                     |
-| `20261008000100_inference_keeping`                | `architecture_inferences.kept_at`; `pending_architecture_inferences` with its guard and purges; basis verification; the recording operation replaced |
-| `20261008000200_architecture_inference_judgments` | The judgment table, its guard and RLS; `record_architecture_inference_judgment`                                                                      |
-| `20261008000300_keep_architecture_inference`      | `keep_architecture_inference`, with an optional atomic judgment                                                                                      |
-| `20261008000400_ai_read_models`                   | Availability, reuse, inference detail, Suggested interpretations, the kept register                                                                  |
-| `20261008000500_deterministic_dossiers`           | `review_dossier`, `element_supports_and_exposures`                                                                                                   |
-| `20261008000600_ai_edge_item_identity`            | Defect fix: exact Edge-item identity in the Tool Contract (ADR-0063 amendment)                                                                       |
-| `20261008000700_impact_trace_definer`             | Defect fix, approved by Kerrick: `impact_trace` runs as its owner, with access unchanged (ADR-0055 amendment)                                        |
+| Migration                                         | Change                                                                                                                                                                                                                                           |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `20261008000000_ai_request_outcomes_v2`           | `nothing_to_add` outcome; `interpret_again` flag                                                                                                                                                                                                 |
+| `20261008000100_inference_keeping`                | `architecture_inferences.kept_at`; `pending_architecture_inferences` with its guard and purges; basis verification; the recording operation replaced                                                                                             |
+| `20261008000200_architecture_inference_judgments` | The judgment table, its guard and RLS; `record_architecture_inference_judgment`                                                                                                                                                                  |
+| `20261008000300_keep_architecture_inference`      | `keep_architecture_inference`, with an optional atomic judgment                                                                                                                                                                                  |
+| `20261008000400_ai_read_models`                   | Availability, reuse, inference detail, Suggested interpretations, the kept register                                                                                                                                                              |
+| `20261008000500_deterministic_dossiers`           | `review_dossier`, `element_supports_and_exposures`                                                                                                                                                                                               |
+| `20261008000600_ai_edge_item_identity`            | Defect fix: exact Edge-item identity in the Tool Contract (ADR-0063 amendment)                                                                                                                                                                   |
+| `20261008000700_impact_trace_definer`             | Defect fix, approved by Kerrick: `impact_trace` runs as its owner, with access unchanged (ADR-0055 amendment)                                                                                                                                    |
+| `20261008000800_trusted_recording`                | Step A review: the server-only recording path `record_architecture_intelligence_request_for`; the base operation executable by no API role; `service_role` stripped of every AI table privilege and every other AI function (ADR-0069 amendment) |
 
 ## 4. Security and RLS
 
-- **Writes.** The only writes are `record_architecture_intelligence_request`, `keep_architecture_inference` and `record_architecture_inference_judgment`. Each is proven to write only its own tables (`50_ai_experience_no_mutation`). The new read models and dossiers are proven read-only, and the governed-state fingerprint is unchanged after every read by a holder, a non-holder and a client.
+- **Writes.** The only writes are `record_architecture_intelligence_request` (reached only through the server-only path, §4a), `keep_architecture_inference` and `record_architecture_inference_judgment`. Each is proven to write only its own tables (`50_ai_experience_no_mutation`). The new read models and dossiers are proven read-only, and the governed-state fingerprint is unchanged after every read by a holder, a non-holder and a client.
 - **Pending table.** `pending_architecture_inferences` has no grants and is reached only through the two security-definer operations.
 - **Kept inferences.** Kept inferences and their judgments are readable only by holders.
   - For non-holders the read models return an empty set, so no heading or count renders.
   - Clients receive P0002.
 - **`impact_trace`** is now security definer. It still reads only when `can_read_architecture` holds for the start element's engagement. Every row it reads is bound to that engagement. `51_impact_trace_definer` compares it row for row with the invoker version for all 17 seed users.
 
+## 4a. The server-only recording boundary (Step A review)
+
+The flow is now: a person's request, the Intelligence Gateway, the validated model output, a trusted server recording path, a pending interpretation, the browser receiving the output with only a request id, and Keep or a judgment consuming that server-recorded output.
+
+**Mechanism.** One narrow, server-only database function, `record_architecture_intelligence_request_for(requested_by, engagement, request, inference)`, executable only by `service_role`. It refuses an unknown requester, sets the requester's identity for the length of the call (restoring the caller's afterwards, on success or failure) and calls the existing recording operation, so every check runs unchanged as that person: capability, engagement access, the authorisation version under the shared lock, data classes, basis digests re-emitted through the Tool Contract, the metadata-only audit allowlist, the thirty-minute expiry and single-use keeping. `server.ts` takes the requester from `supabase.auth.getUser()` (verified by the Auth server) and creates the service-role client only to make this one call, after the Gateway validated the output. No new secret: it uses the existing server-only `SUPABASE_SECRET_KEY`. Neither it nor the provider credential reaches the browser.
+
+**Privilege changes.**
+
+- `record_architecture_intelligence_request`: revoked from `public`, `anon`, `authenticated` and `service_role`. No browser session can call it.
+- `record_architecture_intelligence_request_for`: `service_role` only.
+- `service_role`: every privilege on the six AI tables revoked (including `TRUNCATE`), and execute revoked on every other public AI function (the Tool Contract, keeping, judging, authorising, the read models). Its only Architecture Intelligence authority is the one recording call.
+- Keep and judgment are unchanged: they run as the person and take only the request id (and an allowlisted judgment), never text.
+
+**Proofs that direct manufacturing is closed.**
+
+- `52_ai_trusted_recording` (35 pgTAP tests): the grants above; a holder (Architect, and Principal Architect in persist mode) calling the base operation, the server-only path, or inserting a pending row is refused (`42501`) and nothing is written; a forged audit row is refused; the server key cannot insert or truncate directly; through the server path an unknown person, a client, a person without the capability, a person without access to the engagement and a cross-engagement basis are all refused with nothing written; the legitimate path holds the output for the verified requester only; another holder's Keep is refused; the requester's Keep persists exactly the recorded text, once; keep-with-judgment persists that same text, and a judgment carrying text is refused; the caller's identity is unchanged after both a refused and a successful recording.
+- Suites 44 to 50 and 99 now record only through the server path; revocation racing a recording still serialises and refuses (`99_ai_concurrency`).
+- Vitest source scans: the admin client is created only in `server.ts`, only for the trusted recorder after `getUser()`; no module calls the base operation; the experience actions send no output; the trusted recorder calls only the server-only path, and a store without it refuses to record.
+- Browser session, direct calls with a signed-in Architect's and Principal Architect's own tokens: the base operation, the server-only path on their engagement and across engagements, a direct pending insert and a direct inference insert were all refused `42501`, and Keep of a request id with no held output was refused; request, pending and inference counts were unchanged.
+
+## 4b. Tool Contract version 2
+
+`TOOL_CONTRACT_VERSION` is `2` because the Edge-item variant now carries the fingerprint digest (ADR-0063 amendment). The definition hash pinned by `registry.test.ts` is unchanged, since tool names and argument schemas did not change. Every request and inference records `tool_contract_version = '2'`. Reuse (`current_architecture_inference`) now also requires the same Tool Contract version, proven in `49_ai_read_models`. The fake-provider evaluation report ([`2026-10-01-step-a-fake-adapter.md`](../evaluation/architecture-intelligence/2026-10-01-step-a-fake-adapter.md)) records version 2 and the current (v2) prompt version and hash for each kind; the Gateway, pgTAP fixtures and tests were updated.
+
 ## 5. Tests and checks
 
 | Check                                               | Result                                |
 | --------------------------------------------------- | ------------------------------------- |
-| Full pgTAP, on a freshly reset database             | **58 files, 1,973 tests, PASS**       |
-| Vitest                                              | **360 passed, 16 skipped** (46 files) |
+| Full pgTAP, on a freshly reset database             | **59 files, 2,009 tests, PASS**       |
+| Vitest                                              | **363 passed, 16 skipped** (47 files) |
 | Seed-only evaluation (`pnpm ai:eval`, fake adapter) | **16/16**                             |
 | Lint, typecheck, format check                       | Clean                                 |
 | `pnpm build`                                        | Clean                                 |
@@ -259,6 +287,19 @@ All 89 drawers showed "Not yet available: no model has been evaluated…".
   - A newly kept one was "still current".
 - **An unevaluated resolution** (`-3`) was refused as `model_not_evaluated`.
 
+### Pass 5: after the Step A review fixes
+
+Rerun on a freshly reset database with the fake provider, after the server-only recording path and Tool Contract version 2:
+
+- **Interpret, then Keep** (revision, impact trace, Review brief, tension, evidence bearing, realization reading): every shown assertion equalled the persisted text; every kept row records Tool Contract version 2 and prompt v2.
+- **Interpret, then judge:** judging kept the interpretation with a `not_material` judgment by the Architect, then suppressed it; Interpret again worked and recorded `interpret_again`.
+- **Direct-call manufacturing** from a signed-in session: refused, nothing written (§4a).
+- **Basis change:** "This interpretation's basis has changed. Interpret again."; nothing kept.
+- **Re-authorisation:** the hold was purged; "This interpretation can no longer be kept."; nothing kept. **Revocation:** the gate showed "not authorised".
+- **Capability loss:** Keep was refused and nothing was kept; layer 2 then disappeared.
+- **Resolved model changed** to `dsa-fake-model-2`: the kept model-1 interpretation became "produced with an earlier prompt or model" (not reused); a newly kept model-2 one was "still current".
+- **Non-holders** (Researcher, Project Administrator): clean on the register and four drawers. **Clients** (all ten client users and the advisor): redirected from internal URLs; no AI wording on any portal page.
+
 ### Roles
 
 - **Principal Architect and Architect** saw every surface.
@@ -287,8 +328,8 @@ All 89 drawers showed "Not yet available: no model has been evaluated…".
   - An internal page at phone width overflows horizontally (scroll width 606 px at 390 px), because of page-header actions and tables. The drawer sheet itself fits.
   - The element page returns 500 when opened with an initiative's id: `recordFields` has no statuses for `implementation_initiative`. Nothing links there; initiatives have their own page.
 - **Fake-provider text** is placeholder text. The acceptance shows states and integrity, not interpretation quality.
-- **Recording trust boundary (decision for Kerrick, inherited from 7B.1).** The recording operation is callable by any signed-in holder. A holder calling it directly, outside the application, could hold and keep text the Gateway never validated; the basis is still verified and the keep is attributed to them. The application path is exact: Keep sends only a request id. Closing this needs a server-only recording path (a server role or key), which changes the 7B.1 trust model. Recommended before Step B (ADR-0069).
-- **Tool Contract version.** The Edge-item identity fix changes the emitted variant (`rule_key#md5(fingerprint)`) without bumping `TOOL_CONTRACT_VERSION`. Bare keys still resolve as before, and no function or projection changed (ADR-0063 amendment).
+- **Recorded Tool Contract versions are not constrained in the database.** Only the server can record now, and it always records `2`; older test fixtures still record `1`.
+- **`ai_analysis` statements from promotion** are still created on the user's session (pre-existing, Phase 4 review gate applies). It is not an inference or a pending interpretation and is outside this change.
 - **Real-provider evaluation has not been done.** With any real provider configured, every drawer says "Not yet available".
 
 ## 9. Independent diff inspection
@@ -302,12 +343,14 @@ An independent read-only inspection of the full diff found no blocking issues. I
 
 Its findings:
 
-1. The recording trust boundary. This is documented in §8 for decision.
+1. The recording trust boundary. Closed at Step A review (§4a).
 2. Promotion of a never-kept row. Fixed, as defect 3.
 3. The register with AI off. Fixed, as defect 8.
 4. Reuse follows the last resolved model DSA has observed. This matches PD-13a.
 5. Migration header numbering. Fixed.
-6. The Tool Contract variant without a version bump. Noted in §8.
+6. The Tool Contract variant without a version bump. Version 2 at Step A review (§4b).
+
+A second independent inspection of the Step A review fixes found no blocking issues. Acted on: the server key's execute on other AI functions (revoked), the requester identity lasting past the call (restored), the admin client created eagerly (now created only to record), and stale comments and docs (corrected). Noted, not changed: the unconstrained recorded version string and the pre-existing `ai_analysis` statement path (§8).
 
 ## 10. CI state
 
