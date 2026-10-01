@@ -7,7 +7,7 @@
 -- =============================================================================
 begin;
 
-select plan(32);
+select plan(34);
 
 create function pg_temp.act_as(user_email text) returns void language plpgsql as $$
 begin
@@ -71,8 +71,14 @@ select throws_ok($$ select pg_temp.rec('returned', 0.02) $$, '42501', null, '...
 select throws_ok($$ select * from public.architecture_intelligence_budget('e0000000-0000-4000-8000-000000000001') $$,
   '42501', null, 'a Researcher does not see the budget');
 
+select is((select can_use::text || '/' || can_authorize::text || '/' || authorization_state
+           from public.architecture_intelligence_standing('e0000000-0000-4000-8000-000000000001')),
+  'false/false/authorized', 'a Researcher''s standing: neither use nor authorize');
+
 -- Who reads the audit: authorizers only.
 select pg_temp.act_as('principal@tplco.test');
+select is((select can_use::text || '/' || can_authorize::text || '/' || data_origin
+           from public.architecture_intelligence_standing(:M)), 'true/true/synthetic', 'the Principal Architect''s standing');
 select is((select count(*)::int from public.architecture_intelligence_requests where engagement_id = :M), 14,
   'the Principal Architect (authorizer) reads every row');
 select is((select requested_by from public.architecture_intelligence_requests where outcome = 'refused_capability'

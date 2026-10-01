@@ -7175,6 +7175,21 @@ export type Database = {
           monthly_budget_usd: number;
         }[];
       };
+      architecture_intelligence_standing: {
+        Args: { p_engagement_id: string };
+        Returns: {
+          authorization_id: string;
+          authorization_state: string;
+          can_authorize: boolean;
+          can_use: boolean;
+          data_classes: string[];
+          data_origin: string;
+          engagement_status: string;
+          monthly_budget_usd: number;
+          processing_region: string;
+          provider_key: string;
+        }[];
+      };
       assign_member_area: {
         Args: {
           p_domain?: Database["public"]["Enums"]["architecture_domain"];

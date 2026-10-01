@@ -144,3 +144,48 @@ $$;
 
 revoke all on function public.architecture_intelligence_budget(uuid) from public, anon;
 grant execute on function public.architecture_intelligence_budget(uuid) to authenticated;
+
+-- The requesting person's standing on the engagement, for the Gateway's
+-- checks before any data is read (proposal §10.2 steps 1 to 3) and for the
+-- engagement page: whether they may use or authorize, the engagement's data
+-- origin and status, and the authorization in force. Internal readers only,
+-- like the authorization record itself; it reads no architecture.
+create function public.architecture_intelligence_standing(p_engagement_id uuid)
+returns table (
+  can_use               boolean,
+  can_authorize         boolean,
+  data_origin           text,
+  engagement_status     text,
+  authorization_id      uuid,
+  authorization_state   text,
+  data_classes          text[],
+  provider_key          text,
+  processing_region     text,
+  monthly_budget_usd    numeric
+)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  a public.engagement_ai_authorizations;
+begin
+  if not private.can_read_architecture(p_engagement_id) then
+    raise exception 'Engagement not found' using errcode = 'P0002';
+  end if;
+  a := private.current_ai_authorization(p_engagement_id);
+  return query
+    select private.can_use_architecture_intelligence(p_engagement_id),
+           private.can_authorize_external_ai_processing(p_engagement_id),
+           e.data_origin, e.status::text, a.id, coalesce(a.state, 'not_authorized'),
+           case when a.state = 'authorized' then a.data_classes else '{}'::text[] end,
+           a.provider_key, a.processing_region,
+           case when a.state = 'authorized' then a.monthly_budget_usd end
+    from public.engagements e
+    where e.id = p_engagement_id;
+end;
+$$;
+
+revoke all on function public.architecture_intelligence_standing(uuid) from public, anon;
+grant execute on function public.architecture_intelligence_standing(uuid) to authenticated;

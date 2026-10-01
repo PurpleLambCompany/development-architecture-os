@@ -7,7 +7,7 @@
 -- =============================================================================
 begin;
 
-select plan(14);
+select plan(15);
 
 create function pg_temp.act_as(user_email text) returns void language plpgsql as $$
 begin
@@ -85,6 +85,8 @@ select ok(pg_temp.client_calls($$ select * from public.architecture_inference_st
   <@ array['42501', 'P0002'], 'no client reads inference state');
 select ok(pg_temp.client_calls($$ select * from public.architecture_intelligence_budget('e0000000-0000-4000-8000-000000000003') $$)
   <@ array['42501', 'P0002'], 'no client reads the budget');
+select ok(pg_temp.client_calls($$ select * from public.architecture_intelligence_standing('e0000000-0000-4000-8000-000000000001') $$)
+  <@ array['42501', 'P0002'], 'no client reads Architecture Intelligence standing');
 select ok(pg_temp.client_calls($$ select public.set_engagement_ai_authorization('e0000000-0000-4000-8000-000000000003',
   'not_authorized', '{}', null, null, null, null, 'x', null) $$) <@ array['42501', 'P0002'],
   'no client authorizes or revokes');
