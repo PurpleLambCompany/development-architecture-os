@@ -1,6 +1,6 @@
 # Phase 7B.1 end-of-phase report: Architecture Intelligence foundation
 
-**Status:** implemented on PR #11 (draft, unmerged), awaiting Kerrick's final acceptance. Approved 2026-10-01 with OD-1 to OD-17. Specification: [`PHASE_7B_1_PROPOSAL.md`](PHASE_7B_1_PROPOSAL.md) and [`PHASE_7B_CONCEPTUAL_RECONCILIATION.md`](PHASE_7B_CONCEPTUAL_RECONCILIATION.md) (Revision 2). **Phase 7B.2 has not started.**
+**Status:** accepted by Kerrick 2026-10-01 and merged (PR #11, squash `26a3e04` at accepted head `a9c9051`). Real-provider evaluation has not been done; real models remain fail-closed. Approved 2026-10-01 with OD-1 to OD-17. Specification: [`PHASE_7B_1_PROPOSAL.md`](PHASE_7B_1_PROPOSAL.md) and [`PHASE_7B_CONCEPTUAL_RECONCILIATION.md`](PHASE_7B_CONCEPTUAL_RECONCILIATION.md) (Revision 2). **Phase 7B.2 has not started.**
 
 The governing invariant, as Kerrick set it: **Architecture Intelligence cannot mutate governed DSA state.** It is enforced by the Tool Contract's design, database privileges and capabilities, RLS and function design, and proven by adversarial tests (§5). `STABLE` remains on the contract functions as defence in depth only.
 
