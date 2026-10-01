@@ -1,5 +1,5 @@
 -- =============================================================================
--- Phase 7B.2: Architecture Intelligence Experience. Migration 5 of 6.
+-- Phase 7B.2: Architecture Intelligence Experience. Migration 5 of 8.
 -- Read models for availability, reuse, Suggested interpretations, the
 -- kept-interpretations register and an inference's detail (principle 23,
 -- IX-13, IX-14, IX-17, IX-18; PD-10 to PD-16; proposal §9, §16, §20, §26;
@@ -460,7 +460,9 @@ begin
   if not private.can_use_architecture_intelligence(p_engagement_id) then
     raise exception 'You do not hold use_architecture_intelligence on this engagement' using errcode = '42501';
   end if;
-  select * into i from public.architecture_inferences where id = p_inference_id and engagement_id = p_engagement_id;
+  -- Only a kept interpretation has a detail; an evaluation-harness row was never shown.
+  select * into i from public.architecture_inferences
+  where id = p_inference_id and engagement_id = p_engagement_id and kept_at is not null;
   if i.id is null then
     raise exception 'Interpretation not found' using errcode = 'P0002';
   end if;

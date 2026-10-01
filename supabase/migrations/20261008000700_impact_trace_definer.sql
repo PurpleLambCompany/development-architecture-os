@@ -1,5 +1,5 @@
 -- =============================================================================
--- Phase 7B.2: Architecture Intelligence Experience. Defect fix found in
+-- Phase 7B.2: Architecture Intelligence Experience. Migration 8 of 8. Defect fix found in
 -- browser acceptance, approved by Kerrick on 2026-10-01: impact_trace timed
 -- out for an Architect.
 --

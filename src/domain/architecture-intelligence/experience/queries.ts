@@ -166,11 +166,12 @@ export async function getSuggestedInterpretations(engagementId: string) {
   return data;
 }
 
-/** The kept-interpretations register (PD-16); null for non-holders. */
+/** The kept-interpretations register (PD-16); null for non-holders and with AI off. */
 export async function getKeptRegister(
   engagementId: string,
   filter: { kind?: string | null; state?: string | null },
 ) {
+  if (deployment().mode === "off") return null;
   const supabase = await createSupabaseServerClient();
   const standing = await supabaseStore(supabase).standing(engagementId);
   if (!standing?.canUse) return null;

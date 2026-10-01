@@ -8,7 +8,7 @@
 -- =============================================================================
 begin;
 
-select plan(44);
+select plan(45);
 
 create function pg_temp.act_as(user_email text) returns void language plpgsql as $$
 begin
@@ -207,6 +207,8 @@ select id as h1 from public.architecture_inferences where assertion = 'A harness
 select pg_temp.act_as('architect@tplco.test');
 select throws_ok(format($$ select public.record_architecture_inference_judgment(%L, %L, 'investigating') $$, :M, :'h1'),
   'P0002', null, 'an interpretation that was never kept cannot be judged');
+select throws_ok(format($$ select public.architecture_inference_detail(%L, %L) $$, :M, :'h1'),
+  'P0002', null, '... nor opened, so it cannot be promoted');
 
 -- Capability loss between interpretation and keep.
 select pg_temp.returned() as r7 \gset

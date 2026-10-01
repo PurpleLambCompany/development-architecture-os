@@ -1,5 +1,5 @@
 -- =============================================================================
--- Phase 7B.2: Architecture Intelligence Experience. Migration 3 of 6.
+-- Phase 7B.2: Architecture Intelligence Experience. Migration 3 of 8.
 -- Judgments on kept inferences (IX-19, PD-6, PD-14, PD-15, PD-18; proposal
 -- §18; ADR-0070, ADR-0056 amendment).
 --

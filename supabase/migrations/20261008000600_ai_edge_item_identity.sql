@@ -1,5 +1,5 @@
 -- =============================================================================
--- Phase 7B.2: Architecture Intelligence Experience. Migration 7 of 7.
+-- Phase 7B.2: Architecture Intelligence Experience. Migration 7 of 8.
 -- Defect fix found in 7B.2 implementation: an Edge item could not be
 -- addressed exactly through the Tool Contract when two items share a rule
 -- and a subject (for example two `change_reaches` items on one element,

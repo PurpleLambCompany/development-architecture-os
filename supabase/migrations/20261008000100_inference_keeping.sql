@@ -1,5 +1,5 @@
 -- =============================================================================
--- Phase 7B.2: Architecture Intelligence Experience. Migration 2 of 6.
+-- Phase 7B.2: Architecture Intelligence Experience. Migration 2 of 8.
 -- Persistence intent: what makes keeping possible without a new secret
 -- (IX-12, PD-3, PD-4, PD-5, PD-21; proposal §14, §15; ADR-0069).
 --
@@ -15,7 +15,8 @@
 -- for thirty minutes. Keeping (migration 4) names only the request: the
 -- database supplies the content. That gives:
 --   - exact-output integrity: the only copy is the one the Gateway validated
---     and returned in the same call; nothing a client sends becomes content;
+--     and returned in the same call; Keep sends no content (see ADR-0069 on
+--     the recording operation's trust boundary, inherited from 7B.1);
 --   - requester binding: the row records the requester, and only they can
 --     keep it;
 --   - subject and kind binding: the request row fixes kind and subject;

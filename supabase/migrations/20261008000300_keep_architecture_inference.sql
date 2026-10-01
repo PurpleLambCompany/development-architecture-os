@@ -1,5 +1,5 @@
 -- =============================================================================
--- Phase 7B.2: Architecture Intelligence Experience. Migration 4 of 6.
+-- Phase 7B.2: Architecture Intelligence Experience. Migration 4 of 8.
 -- Keeping an interpretation, and keeping it by judging it, atomically
 -- (IX-12, PD-3, PD-4, PD-5, PD-21; proposal §14.3, §15; ADR-0069).
 --
