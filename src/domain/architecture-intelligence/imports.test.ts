@@ -33,10 +33,17 @@ describe("module boundaries (proposal §10.1, §29.2)", () => {
   });
 
   it("keeps the Gateway away from server actions and mutation modules", () => {
-    for (const file of files(moduleDir)) {
+    for (const file of files(moduleDir).filter((f) => !/\/(actions|queries)\.ts$/.test(f))) {
       for (const i of imports(file)) {
         expect(i, file).not.toMatch(/actions|@\/lib\/supabase\/admin|next\/cache|next\/navigation/);
       }
+    }
+    // The action module records an authorization only; it never reaches the Gateway or a provider.
+    for (const i of imports(join(moduleDir, "actions.ts"))) {
+      expect(i).not.toMatch(/^\.\/(gateway|server|adapters|store|tools)/);
+    }
+    for (const i of imports(join(moduleDir, "queries.ts"))) {
+      expect(i).not.toMatch(/^\.\/(gateway|server|adapters|tools)/);
     }
   });
 

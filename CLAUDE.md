@@ -24,9 +24,9 @@ Treat `DSA_OS_MASTER_BUILD_SPEC.md` as the authoritative product specification.
 If code and the specification conflict, surface the conflict before making an expensive architectural change.
 
 ## Current Build Phase
-**Phase 7A — Deterministic Development Edge: complete and merged (PR #9, squash `85ecf13`).** See `docs/product/PHASE_7A_PROPOSAL.md` (Revision 2, approved), `docs/product/PHASE_7_CONCEPTUAL_RECONCILIATION.md` and `docs/product/PHASE_7A_REPORT.md`.
+**Phase 7B.1 — Architecture Intelligence foundation: approved by Kerrick 2026-10-01 (OD-1 to OD-17), implemented on PR #11, awaiting his final acceptance.** See `docs/product/PHASE_7B_CONCEPTUAL_RECONCILIATION.md`, `docs/product/PHASE_7B_1_PROPOSAL.md` and `docs/product/PHASE_7B_1_REPORT.md`.
 
-Phases 1-7A are complete and merged. Phase 7A added deterministic intelligence only: no LLM or AI provider, no embeddings, no scoring, no notifications, no productivity data and no cross-engagement recurrence. **Phase 7B (Bounded AI Architecture Intelligence) has not started and remains on hold**: do not start it without Kerrick's explicit instruction, and do not build Pattern Library, Portfolio Intelligence or client-facing Architecture Intelligence.
+Phases 1-7A are complete and merged (Phase 7A: PR #9, squash `85ecf13`). Phase 7B.1 adds only the foundation: authorisation, capabilities, the read-only Tool Contract, the Gateway and adapter, the inference and basis model, the request audit, prompts and evaluation. Architecture Intelligence must never mutate governed DSA state. **Phase 7B.2 has not started and remains on hold**: no user-facing inference text, Explain, Edge projection, AI judgments or promotions, web search, file or image processing, embeddings, background AI, notifications, client-facing AI, Method recommendation, cross-engagement learning, Pattern Library, Development Environment Intelligence, MCP or provider-hosted agent state without Kerrick's explicit instruction.
 
 Only build the currently approved phase unless explicitly instructed otherwise.
 

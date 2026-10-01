@@ -20,6 +20,8 @@ function sources(path = dir): { file: string; text: string }[] {
   return readdirSync(path).flatMap((name) => {
     const full = join(path, name);
     if (statSync(full).isDirectory()) return sources(full);
+    // The page's own read models and its one authorization action are not reachable from the Gateway.
+    if (path === dir && ["actions.ts", "queries.ts", "schemas.ts"].includes(name)) return [];
     return name.endsWith(".ts") && !name.endsWith(".test.ts")
       ? [{ file: full, text: readFileSync(full, "utf8") }]
       : [];

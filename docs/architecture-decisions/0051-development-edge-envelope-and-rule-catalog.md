@@ -68,3 +68,7 @@ Q5 chose to extend and sit above: new rules live in their home namespace, and a 
 - The Intelligence Contract is enforced per item by the envelope and tested, not only documented.
 - A new rule is a new rule function row, a catalog row in both mirrors, and its tests. Removing a rule is equally local, because nothing is stored per rule except judgments keyed by text.
 - Phase 7A has no AI, no model producer, no scoring, no notification and no client-facing intelligence. The Phase 7B hold stands: the `producer` column and the reserved `suggested` status leave room without building anything.
+
+## Amendment (2026-10-01): model inferences are not Edge items in 7B.1
+
+Phase 7B.1 begins to use the reserved vocabulary, but outside the Edge: Architecture Intelligence inferences are stored in `public.architecture_inferences` with `producer = 'model'` and `epistemic_status = 'suggested'` fixed by check constraints (ADR-0064). Nothing in 7B.1 places an inference in the Edge envelope, changes the rule catalog, or shows inference text anywhere (OD-12). Edge projection of inferences remains a 7B.2 question and needs its own approval. The Edge is read by the Tool Contract (`ai_context_edge_item`) only as context, through the same per-field classification; practice-lens items are Method/IP and never leave DSA.

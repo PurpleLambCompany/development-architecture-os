@@ -19,3 +19,7 @@ DSA OS is not a self-serve product. Every account belongs to TPLCo or a client o
 
 - SSO (for example Google Workspace or Microsoft Entra for larger clients) can be added later without changing the membership model.
 - Hosted Supabase needs the same email templates, site URL and redirect allow-list as `supabase/config.toml`.
+
+## Amendment (2026-10-01): Architecture Intelligence does not use the service role
+
+Phase 7B.1 adds no service-role use. The Intelligence Gateway, the Tool Contract and the recording operation run with the requesting user's own session, so RLS and the definer functions' capability checks decide every read and write (ADR-0062, ADR-0063). The provider credential (`ARCHITECTURE_INTELLIGENCE_API_KEY`) is a separate server-only secret, read only by `src/domain/architecture-intelligence/server.ts` (which imports `server-only`), and is never sent to the browser or stored in the database.
