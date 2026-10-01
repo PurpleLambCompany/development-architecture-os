@@ -46,3 +46,13 @@ Each result carries its `category`, `depth`, `via_element_id`, `link_key`, `dire
 - The F6 omissions are reached (for example RSK-001 through `threatens` and CAP-005 through `gap_in` from CAP-001).
 - The matrix is governed data: changing a direction or a propagation is a migration with its mirror and tests.
 - There is no generic graph traversal, no graph visualization and no cross-engagement reach. Nothing is scored.
+
+## Amendment (Phase 7B.2, 2026-10-01): impact_trace runs as its owner
+
+Phase 7B.2 browser acceptance found that `impact_trace` timed out for an Architect. As a security-invoker function it re-ran the RLS policy of each of the twenty tables it reads for every row. On the seed's Meridian engagement, one call took about 4.5 seconds for a Principal Architect and about 9 seconds for an Architect (whose policies resolve an engagement role per row). That is past the 8-second statement timeout for signed-in users, so most Meridian element pages failed for Architects. The same call takes about 20 ms without per-row policies.
+
+Kerrick approved the fix on 2026-10-01. Migration `20261008000700_impact_trace_definer.sql` makes the function `security definer` and changes nothing else: the body, the walk, the modes and the grants are as decided above.
+
+- **Access is unchanged.** The start element is read only when `private.can_read_architecture` holds for its engagement. Every other row the walk reads is joined to that start: its engagement, an element reached from it, or a record on one. For a reader who can read the engagement's architecture, every policy on those tables already reduces to `can_read_architecture` of the row's engagement. The function therefore returns exactly what the invoker version returned to that reader, and nothing to anyone else, clients included.
+- **Proven, not argued.** `51_impact_trace_definer` recreates the invoker version from the live body. It compares both versions row for row for all 17 seed users (six internal roles, ten client members, one external advisor), over Meridian and Harbor subjects in both modes, and asserts that clients see nothing and that grants are unchanged. `32_impact_trace` still passes unchanged.
+- After the change, the Architect's call takes about 30 ms. Pages that show the trace also share one call per request with the trace drawer.

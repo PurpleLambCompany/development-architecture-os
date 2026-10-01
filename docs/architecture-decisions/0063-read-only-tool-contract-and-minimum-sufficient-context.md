@@ -30,3 +30,13 @@ Phase 7B.1 proposal §9 and §12; reconciliation decision B-20; Kerrick's OD-5, 
 ## Consequences
 
 A new tool is a migration, a registry entry, a contract version and tests. The contract never reads activity logs, finance, Method Library, Method Applications, lineage, DAM releases, Development Contexts, storage or client read models.
+
+## Amendment (Phase 7B.2, 2026-10-01): exact Edge-item identity
+
+A defect found during Phase 7B.2 implementation is corrected in migration `20261008000600_ai_edge_item_identity.sql`. When two Edge items shared a rule and a subject (for example two `change_reaches` items on one element, reached from different revisions), `private.ai_resolve` took the rule key as the variant and returned the item with the lowest fingerprint. `get_edge_item` with the other item's fingerprint then returned nothing, and "Explain significance" on that item ended `subject_not_found`.
+
+- **The variant may carry the fingerprint digest.** For record type `edge_item`, the variant may now be `rule_key#md5(fingerprint)`. `ai_resolve` returns that exact item while it still holds; otherwise it returns the rule's first item on the subject, so a changed item still reads as `edge_item_changed` in staleness, not as removed. A bare rule key resolves exactly as in 7B.1, so bases recorded before the fix are unaffected.
+- **`ai_context_edge_item` emits the exact variant** (`p_rule_key || '#' || md5(p_fingerprint)`) and still returns nothing for a fingerprint that no longer matches.
+- **Nothing else changes.** No Tool Contract function is added; no projection, class, withholding rule or digest changes; both functions stay read-only and pass the no-mutation proofs. The registry's tool definitions and argument schemas are unchanged, so `TOOL_CONTRACT_VERSION` is unchanged.
+
+Also in Phase 7B.2: the `review_brief` context plan permits `get_evidence` and `get_implementation_state` (PD-13b, ADR-0071), a plan change with no new function. The writing operations are now three, each proven to write only its own tables (`50_ai_experience_no_mutation`): `record_architecture_intelligence_request` (the request audit; an inference and its basis in `persist` mode; or a pending interpretation in `ephemeral` mode), `keep_architecture_inference` (the inference, its basis, the pending row it consumes and, when judging, the judgment) and `record_architecture_inference_judgment` (the judgment). The new read models and dossiers join the read-only proofs.

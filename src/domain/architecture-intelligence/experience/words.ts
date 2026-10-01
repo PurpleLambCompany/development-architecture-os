@@ -96,9 +96,13 @@ export const JUDGMENT_LABELS: Record<string, string> = {
 
 /** Suppression wording (IX-14), by the judgment that suppresses. */
 export function suppressionLine(kind: string, judgedOn: string): string {
-  return kind === "disagree"
-    ? `You disagreed with this interpretation on ${judgedOn}.`
-    : `You judged this interpretation not material on ${judgedOn}.`;
+  // Suppression is engagement-wide (PD-14): the line names the judgment, not
+  // the viewer; who judged is shown with the judgment below.
+  const what =
+    kind === "disagree"
+      ? "An architect disagreed with this interpretation"
+      : "This interpretation was judged not material";
+  return `${what} on ${judgedOn}. It is not offered again until the records it read change.`;
 }
 
 export const REALIZATION_READINGS: Record<string, string> = {

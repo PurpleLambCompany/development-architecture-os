@@ -242,8 +242,9 @@ declare
 begin
   perform private.require_inference_judgment_capability(p_engagement_id);
   perform pg_advisory_xact_lock(hashtextextended('ai_inference_judgment:' || p_engagement_id::text, 0));
+  -- Only a kept interpretation is judged; an evaluation-harness row was never shown to anyone.
   if not exists (select 1 from public.architecture_inferences
-                 where id = p_inference_id and engagement_id = p_engagement_id) then
+                 where id = p_inference_id and engagement_id = p_engagement_id and kept_at is not null) then
     raise exception 'Interpretation not found' using errcode = 'P0002';
   end if;
   state := private.inference_is_current(p_engagement_id, p_inference_id);

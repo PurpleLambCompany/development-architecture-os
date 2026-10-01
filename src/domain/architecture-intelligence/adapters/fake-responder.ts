@@ -44,9 +44,22 @@ function blocks(request: NormalizedModelRequest): DataBlock[] {
 
 function code(block: DataBlock | undefined): string {
   const c = (block?.content ?? {}) as Record<string, unknown>;
+  // A block names its record at the top level, or (an implementation or
+  // review context) inside its one nested record.
+  const nested = Object.values(c).find(
+    (x): x is { reference_code: string } =>
+      typeof x === "object" &&
+      x !== null &&
+      typeof (x as { reference_code?: unknown }).reference_code === "string",
+  );
   const v =
-    c.reference_code ?? c.subject_reference_code ?? c.reached_reference_code ?? c.review ?? null;
-  return typeof v === "string" ? v : (block?.handle ?? "the record");
+    c.reference_code ??
+    c.subject_reference_code ??
+    c.reached_reference_code ??
+    c.review ??
+    nested?.reference_code ??
+    null;
+  return typeof v === "string" ? v : "the record";
 }
 
 function kindOf(request: NormalizedModelRequest): string {

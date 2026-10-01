@@ -21,3 +21,12 @@ Phase 7B.1 proposal §18 and §19; reconciliation decisions B-8 and B-9; Kerrick
 ## Consequences
 
 Making a kind usable on a real model requires a real-provider evaluation, its report and a reviewed change adding the model to `evaluatedModels`.
+
+## Amendment (Phase 7B.2, 2026-10-01): version 2 prompts and the test manifest overlay
+
+Phase 7B.2 Step A (IX-15; PD-2, PD-13b, PD-19; ADR-0071, ADR-0073).
+
+- **Version 2 is current; version 1 is retired.** Every kind has a `v2.md` prompt and the generation policy has `generation-policy/v2.md`, each pinned by SHA-256, for output schema version 2 (interpretation or nothing to add). Every version 1 prompt is `retired`; the version 1 policy is kept as pinned history in `RETIRED_GENERATION_POLICIES`. Their files are unchanged, as versions are immutable. Version 1 was never evaluated on a real model.
+- **The evaluated list is still empty.** No version of any kind lists an evaluated model. No real-provider evaluation has been done, so every real-provider output is refused as `model_not_evaluated` until Step B adds a model through a reviewed change with its committed report.
+- **What a kind's evaluation now covers.** A real-provider evaluation of a version 2 prompt grades its silence behaviour (nothing to add with a one-sentence reason) as well as its interpretations, and for `review_brief` the widened plan (`get_evidence`, `get_implementation_state`).
+- **The test manifest overlay.** Under exactly the fake provider's non-production conditions, `testManifestOverlay` treats two fake models as evaluated for each kind's current prompt, for the `fake` provider only. It never lists a real provider, never covers a retired version and never changes `PROMPT_MANIFEST`; in every other configuration, including every production server, it does not exist (ADR-0073).

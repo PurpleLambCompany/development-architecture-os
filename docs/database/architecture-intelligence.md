@@ -1,6 +1,8 @@
-# Architecture Intelligence foundation (Phase 7B.1)
+# Architecture Intelligence (Phase 7B.1 foundation; Phase 7B.2 Step A experience)
 
-Migrations, in order:
+Phase 7B.1 built the foundation, documented first below. Phase 7B.2 Step A adds the experience on top of it, documented in [Phase 7B.2 Step A](#phase-7b2-step-a-the-experience). Real-provider evaluation has not been done: no model is in the evaluated manifest, and Step B activation has not occurred.
+
+Phase 7B.1 migrations, in order:
 
 | Migration                                                   | Holds                                                                                                                                                          |
 | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -16,12 +18,12 @@ The specification is [`docs/product/PHASE_7B_1_PROPOSAL.md`](../product/PHASE_7B
 
 ## Rules that hold throughout
 
-- **Architecture Intelligence cannot mutate governed DSA state.** The Tool Contract writes nothing; the only AI operation that writes, `record_architecture_intelligence_request`, writes only its three tables. This is proven by tests, not by volatility (see [No-mutation proofs](#no-mutation-proofs)).
+- **Architecture Intelligence cannot mutate governed DSA state.** The Tool Contract writes nothing. In 7B.1 the only AI operation that writes, `record_architecture_intelligence_request`, writes only its three tables; 7B.2 adds two writing operations, each proven to write only Architecture Intelligence tables (see [7B.2 no-mutation proofs](#7b2-no-mutation-proofs)). This is proven by tests, not by volatility (see [No-mutation proofs](#no-mutation-proofs)).
 - **Internal only.** Every table has internal-only policies; every function refuses a client (`P0002` or `42501`) or returns nothing. No client read model, snapshot or policy changed.
 - **One engagement per call.** Nothing reads across engagements; a record of another engagement is not found.
 - **Authorised to leave DSA is not automatically included in model context.** Authorisation makes a class eligible; a kind's context plan decides what is sent.
 - **Not in `activity_log`** (OD-10). Authorisations, requests and inferences are their own attributed, append-only records.
-- **Append-only.** Every new table has a guard: update and delete are refused for every role (`23514`), and inserts without the operation's marker are refused (`42501`). `authenticated` has select only.
+- **Append-only.** Every new table has a guard: update and delete are refused for every role (`23514`), and inserts without the operation's marker are refused (`42501`). `authenticated` has select only. The one exception, added in 7B.2, is `pending_architecture_inferences`: short-lived working state that no role can read and that its operations delete on keep, expiry and reauthorisation.
 
 ## Tables
 
@@ -78,3 +80,88 @@ The ten functions (`ai_context_element`, `_relationships`, `_impact`, `_revision
 ## Tests
 
 `41_ai_capabilities`, `42_ai_authorizations`, `43_ai_context`, `44_architecture_inferences`, `45_ai_requests`, `46_ai_client_boundary`, `47_ai_no_mutation`, `99_ai_concurrency` (uses `dblink`, cleans up its committed rows).
+
+## Phase 7B.2 Step A: the experience
+
+The specification is [`docs/product/PHASE_7B_2_PROPOSAL.md`](../product/PHASE_7B_2_PROPOSAL.md), governed by [`PHASE_7B_2_INTELLIGENCE_EXPERIENCE_RECONCILIATION.md`](../product/PHASE_7B_2_INTELLIGENCE_EXPERIENCE_RECONCILIATION.md) (IX-1 to IX-26). The decisions are ADR-0067 to ADR-0073, with amendments to ADR-0051, ADR-0056, ADR-0062, ADR-0063, ADR-0064, ADR-0065 and ADR-0066. Kerrick's answers are cited as PD-1 to PD-22. Every migration is additive; `edge_items`, `edge_judgments`, the rule catalog, client policies and snapshots are unchanged, and no Tool Contract function is added.
+
+| Migration                                             | Holds                                                                                                                                                                                                                                                                              |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `20261008000000_ai_request_outcomes_v2.sql`           | `nothing_to_add` in the request outcome check; `architecture_intelligence_requests.interpret_again`                                                                                                                                                                                |
+| `20261008000100_inference_keeping.sql`                | `architecture_inferences.kept_at`; `pending_architecture_inferences`, its guard and purges; `private.verify_inference_basis`, `private.insert_architecture_inference`; the recording operation replaced; `private.same_inference_subject`; `architecture_inference_state` replaced |
+| `20261008000200_architecture_inference_judgments.sql` | `architecture_inference_judgments`, its guard and RLS; `private.inference_latest_judgment`, `private.inference_is_current`, `private.record_inference_judgment_row`, `private.require_inference_judgment_capability`; `record_architecture_inference_judgment`                     |
+| `20261008000300_keep_architecture_inference.sql`      | `keep_architecture_inference`, with an optional judgment in the same transaction                                                                                                                                                                                                   |
+| `20261008000400_ai_read_models.sql`                   | Availability rules, reuse lookup, inference detail, Suggested interpretations, the kept register, and their private helpers                                                                                                                                                        |
+| `20261008000500_deterministic_dossiers.sql`           | `review_dossier`, `element_supports_and_exposures`                                                                                                                                                                                                                                 |
+| `20261008000600_ai_edge_item_identity.sql`            | Defect fix: `private.ai_resolve` and `ai_context_edge_item` address an Edge item exactly by `rule_key#md5(fingerprint)` (ADR-0063 amendment)                                                                                                                                       |
+| `20261008000700_impact_trace_definer.sql`             | Defect fix approved by Kerrick: `public.impact_trace` runs as its owner (performance only; access unchanged, proven by `51_impact_trace_definer`; ADR-0055 amendment)                                                                                                              |
+
+The seventh and eighth migrations were added during implementation and acceptance for two defects.
+
+### Rules that hold in 7B.2
+
+- **Nothing persists on generation.** The application calls the Gateway only in `ephemeral` mode, on a person's action. An inference is stored only when its requester keeps it, or judges it, which keeps it (ADR-0069).
+- **Exact shown text is persisted text.** Keeping names only the request; the database supplies the output it verified and held. No content a client sends becomes an inference.
+- **Reuse never crosses resolved model identity** (ADR-0068).
+- **Suggested interpretations stay secondary.** They are never counted, ranked, severity-styled or tiered, never in the overview or "Since you were away", and never presented as established (ADR-0051 amendment, ADR-0068).
+- **Non-holders learn nothing.** Every read model that returns anything about an inference refuses (`42501`) or returns an empty set to anyone without `use_architecture_intelligence`. The dossiers return the same rows to every internal reader whatever their AI standing.
+- **Not in `activity_log`** (OD-10, PD-18), including inference judgments.
+
+### Tables and columns
+
+| Table or column                                      | Holds                                                                                                                                                                     | Written by                                                                                            | Read by                                                    |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `architecture_intelligence_requests.interpret_again` | Whether a person deliberately asked again where a kept interpretation was reused or suppressed; default false                                                             | `record_architecture_intelligence_request`                                                            | as the table                                               |
+| `architecture_intelligence_requests.outcome`         | Now fifteen values, adding `nothing_to_add` (tokens and cost recorded; never an inference)                                                                                | `record_architecture_intelligence_request`                                                            | as the table                                               |
+| `architecture_inferences.kept_at`                    | When a person kept the inference; null for evaluation-harness rows                                                                                                        | `keep_architecture_inference`                                                                         | as the table                                               |
+| `pending_architecture_inferences`                    | A returned interpretation held for its requester for thirty minutes: request id (primary key), engagement, requester, verified output and basis, created and expiry times | `record_architecture_intelligence_request` (insert); keep, expiry and reauthorisation purges (delete) | **no role**: no grant, no policy                           |
+| `architecture_inference_judgments`                   | Append-only judgments on kept inferences: kind, reason, expiry, governed promotion target (typed same-engagement keys), who and when                                      | `record_architecture_inference_judgment`, `keep_architecture_inference` (with a judgment)             | current holders of `use_architecture_intelligence` (OD-11) |
+
+`pending_architecture_inferences` has RLS enabled and every privilege revoked from `public`, `anon` and `authenticated`. Its guard refuses update (`23514`), sets the requester and both times on insert (expiry is creation plus thirty minutes, also a check constraint), and refuses insert or delete outside the `dsa.ai_pending` marker (`42501`). `private.purge_expired_pending_inferences` runs in every recording and keep operation; the trigger `engagement_ai_authorizations_purge_pending` removes an engagement's pending rows whenever a new authorisation version is recorded.
+
+`architecture_inference_judgments` has a guard that refuses insert outside the `dsa.ai_inference_judgment` marker (`42501`), sets `judged_by` and `judged_at` from the session and clock, and refuses update and delete for every role (`23514`). `authenticated` has select only, through the policy "inference judgments: current use-capability holders".
+
+### Operations
+
+| Function                                   | Check                                                                                                                                                                                                                                                                                                                                                          | A client gets |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `record_architecture_intelligence_request` | As in 7B.1, plus: `interpret_again` (boolean) in the allowlist; `nothing_to_add` needs the use capability and carries no inference; a `returned` `ephemeral` request may carry its validated output, verified like a persisted inference (shared authorisation lock, full gate, same authorisation, re-emitted basis, cited handles) and held as a pending row | `P0002`       |
+| `keep_architecture_inference`              | Use; the caller's own unexpired pending row and `returned` `ephemeral` request; the full gate under the same authorisation version; every basis row re-emitted with the same class and digest. With a judgment: also `edit_architecture`, recorded in the same transaction. Inserts the inference with `kept_at` and deletes the pending row                   | `P0002`       |
+| `record_architecture_inference_judgment`   | Use and `edit_architecture`; engagement-scoped advisory lock; the inference must be `current` (stale and superseded refused, `23514`); kind, reason, deferral date and promotion target checked as for Edge judgments                                                                                                                                          | `P0002`       |
+
+Refusal messages that a person may see are written in governance language: "This interpretation can no longer be kept. Interpret again.", "This interpretation's basis has changed. Interpret again.", "This interpretation is stale: its basis has changed. Interpret again.", "A newer interpretation of this has been kept. Judge that one."
+
+### Read models
+
+All are `security definer`, `search_path = ''`, read-only, executable by `authenticated` only (revoked from `public` and `anon`), and refuse an engagement the caller cannot read (`P0002`). A subject is passed as jsonb with the 7B.1 subject keys: `type`, `element_id`, `second_element_id`, `version_id`, `rule_key`, `fingerprint`, `link_id`, `link_type`.
+
+| Function                                                                                            | Returns                                                                                                                                                                | Non-holder of use |
+| --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `architecture_intelligence_availability(eng, kind, subject)`                                        | Whether the kind's availability rule holds and its reason; the latest kept inference on that subject, its state and latest judgment; whether re-offering is suppressed | `42501`           |
+| `current_architecture_inference(eng, kind, subject, prompt_version, provider_key, requested_model)` | The reusable kept inference and its resolved model, or nothing                                                                                                         | `42501`           |
+| `architecture_inference_detail(eng, inference)`                                                     | One inference: output, subject, provenance (including the requester's display name), state and stale reasons, citation labels, judgments                               | `42501`           |
+| `suggested_interpretations(eng)`                                                                    | Current kept `tension`, `evidence_bearing`, `realization_reading` with no judgment, `investigating` or an expired deferral, ordered by governance date then keep time  | empty set         |
+| `kept_architecture_inferences(eng, kind?, state?)`                                                  | Every kept inference with state, stale reasons and latest judgment, newest kept first; no requester                                                                    | empty set         |
+| `review_dossier(eng, review)`                                                                       | The deterministic Review dossier (ADR-0072)                                                                                                                            | same rows         |
+| `element_supports_and_exposures(eng, element)`                                                      | Evidence with stance, underpinning Assumptions and their support, related open Risks, current Edge items (ADR-0072)                                                    | same rows         |
+
+`architecture_inference_state` is replaced: identical, except that supersession compares the full subject through `private.same_inference_subject` (ADR-0064 amendment).
+
+Private helpers, none executable by `authenticated`: `private.inference_matches`, `private.latest_kept_inference`, `private.ai_availability_rule` (the seven rules of ADR-0068), `private.ai_basis_label` (citation labels from identities only), `private.ai_person_name` (provenance only), `private.ai_element_governance_date` (ordering only, never ranking), and those of migrations `20261008000100` to `20261008000300` above.
+
+The processing mode, the evaluated-model manifest and the provider configuration are not visible to the database; the application combines them with these results (`composeGate`, ADR-0068, ADR-0073).
+
+### 7B.2 no-mutation proofs
+
+| Proof                                                                                                                                                               | Test                           |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| The new read models and dossiers contain no DML and succeed for a holder; a client's reads all refuse; every public table is unchanged after every read             | `50_ai_experience_no_mutation` |
+| Keeping and judging change only `architecture_inferences`, `architecture_inference_basis`, `architecture_inference_judgments` and `pending_architecture_inferences` | `50_ai_experience_no_mutation` |
+| Judging changes only `architecture_inference_judgments`; a refused keep changes nothing                                                                             | `50_ai_experience_no_mutation` |
+| Neither new table is registered with `activity_log`                                                                                                                 | `50_ai_experience_no_mutation` |
+| The 7B.1 proofs, updated for the replaced recording operation                                                                                                       | `47_ai_no_mutation`            |
+| No application module requests `persist`                                                                                                                            | `imports.test.ts`              |
+
+### 7B.2 tests
+
+`48_ai_keep_and_judge` (keep only by the requester, within thirty minutes, once, under the same authorisation and basis; keep and judge atomically; judgment kinds, required fields, promotion targets, append-only, stale refusal, capability, reads), `49_ai_read_models` (every availability rule true and false, suppression and its end on staleness, reuse and its end on a resolved-model change, Suggested interpretations and the register, the dossiers), `50_ai_experience_no_mutation`, and `45_ai_requests` (the request audit is touched only by the budget, the recording operation, keeping, which reads its own request, and the reuse lookup, which reads the latest resolved model; never an aggregate). Vitest: `gate.test.ts`, `subjects.test.ts`, `test-overlay.test.ts`, `schemas.test.ts` (version 2 outputs) and the extended Gateway and import tests.

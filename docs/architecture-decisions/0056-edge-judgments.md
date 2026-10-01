@@ -83,3 +83,13 @@ The judgment row preserves the originating Edge item (rule, subject, fingerprint
 - A promotion names its governed promotion target by kind and typed reference, not as "the created element", so a destination that is not an element (an acceptance criterion) is recorded with the same integrity. Adding a destination is a migration that extends the closed vocabulary and adds its typed column; no generic link can do it silently.
 - A draft Risk, Decision or Review, or a proposed criterion, that is a promotion target cannot be deleted while the judgment exists.
 - Judgment kinds are text, so a later phase could add one by migration. Phase 7A adds no AI, no scoring, no productivity data and no notification.
+
+## Amendment (Phase 7B.2, 2026-10-01): the sibling table for inference judgments
+
+Phase 7B.2 Step A (IX-19, PD-6, PD-14, PD-15, PD-18; ADR-0070) gives kept Architecture Intelligence inferences the same judgment vocabulary in a sibling table, `public.architecture_inference_judgments`. `edge_judgments` and every operation above are unchanged, and are not used for inferences.
+
+- **Producer-neutral semantics.** The five kinds keep their meanings. `disagree` reads "the producer is wrong for this case": for a rule it is rule feedback (above); for an inference it is interpretation feedback, retained as evaluation data about prompts and models, and it suppresses re-offering like `not_material` (OD-17: `contest` is `disagree`; no new kind).
+- **The same promotion vocabulary.** The closed `promotion_target_kind` list and typed same-engagement references are reused unchanged; promotion from an inference also runs only through the governed operation, and is recorded only once the governed record exists.
+- **Capability.** Judging an inference requires `use_architecture_intelligence` and `edit_architecture` (PD-6); judging an Edge item still requires `edit_architecture` alone.
+- **Never crossed.** A judgment on an inference never judges an Edge item, and the reverse. In the intelligence drawer the two are separate forms in layer 3 (ADR-0067).
+- **Logging differs deliberately.** `edge_judgments` stays registered with `private.log_activity`. Inference judgments are not in `activity_log` (OD-10, PD-18); the table is itself the attributed record. Neither is ever aggregated by person.

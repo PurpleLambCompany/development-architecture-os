@@ -8,7 +8,7 @@
 -- =============================================================================
 begin;
 
-select plan(43);
+select plan(44);
 
 create function pg_temp.act_as(user_email text) returns void language plpgsql as $$
 begin
@@ -197,6 +197,16 @@ select is((select count(*)::int from public.pending_architecture_inferences wher
 select pg_temp.act_as('architect@tplco.test');
 select throws_ok(format($$ select public.keep_architecture_inference(%L, %L) $$, :M, :'r6'), '23514', null,
   '... so they cannot be kept');
+
+-- An evaluation-harness row was never kept, so it is not judged.
+select pg_temp.act_as('architect@tplco.test');
+select public.record_architecture_intelligence_request(:M, pg_temp.request('persisted', 'persist'),
+  pg_temp.inference('A harness row, never shown.')) is not null as harness \gset
+reset role;
+select id as h1 from public.architecture_inferences where assertion = 'A harness row, never shown.' \gset
+select pg_temp.act_as('architect@tplco.test');
+select throws_ok(format($$ select public.record_architecture_inference_judgment(%L, %L, 'investigating') $$, :M, :'h1'),
+  'P0002', null, 'an interpretation that was never kept cannot be judged');
 
 -- Capability loss between interpretation and keep.
 select pg_temp.returned() as r7 \gset
