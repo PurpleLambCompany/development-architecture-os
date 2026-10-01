@@ -32,7 +32,7 @@ export type SupportsAndExposures = {
     reference_code: string;
     title: string;
     risk_status: string;
-    severity: string | null;
+    severity: number | null;
   }[];
   edge: {
     item_key: string;

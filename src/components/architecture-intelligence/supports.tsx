@@ -14,7 +14,8 @@ import { FactList, FactSection } from "./layer1";
  * evidence link opens its drawer.
  */
 
-const words = (v: string | null | undefined) => (v ? v.replaceAll("_", " ") : "—");
+const words = (v: unknown) =>
+  v === null || v === undefined || v === "" ? "—" : String(v).replaceAll("_", " ");
 
 export function SupportsAndExposuresPanel({
   slug,
@@ -86,10 +87,7 @@ export function SupportsAndExposuresPanel({
               items={data.risks.map((r) => (
                 <span key={r.element_id}>
                   {el(r.element_id, r.reference_code)} {r.title}{" "}
-                  <span className="text-xs text-ink-subtle">
-                    · {words(r.risk_status)}
-                    {r.severity ? `, recorded severity ${words(r.severity)}` : ""}
-                  </span>
+                  <span className="text-xs text-ink-subtle">· {words(r.risk_status)}</span>
                 </span>
               ))}
             />

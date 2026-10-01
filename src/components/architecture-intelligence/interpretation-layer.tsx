@@ -91,11 +91,13 @@ export function InterpretationLayer(props: Props) {
   const [result, setResult] = useState<InterpretResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [busy, setBusy] = useState<"interpret" | "keep" | null>(null);
   const { gate, kept, suppressed } = props;
 
   const ask = () => {
     if (gate.state === "offered" && gate.large && !window.confirm(LARGE_REQUEST_CONFIRM)) return;
     setError(null);
+    setBusy("interpret");
     startTransition(async () => {
       const r = await interpret(props.engagementId, {
         subject: props.subjectQuery,
@@ -109,6 +111,7 @@ export function InterpretationLayer(props: Props) {
 
   const keep = (requestId: string) => {
     setError(null);
+    setBusy("keep");
     startTransition(async () => {
       const r = await keepInterpretation(props.engagementId, requestId);
       if (!r.ok) {
@@ -126,7 +129,7 @@ export function InterpretationLayer(props: Props) {
 
   const askButton = (label: string) => (
     <Button type="button" size="sm" variant="secondary" disabled={pending} onClick={ask}>
-      {pending ? "Interpreting…" : label}
+      {pending && busy === "interpret" ? "Interpreting…" : label}
     </Button>
   );
 
@@ -149,7 +152,7 @@ export function InterpretationLayer(props: Props) {
               disabled={pending}
               onClick={() => keep(result.requestId!)}
             >
-              {props.keepLabel}
+              {pending && busy === "keep" ? "Keeping…" : props.keepLabel}
             </Button>
             {canAsk ? askButton("Interpret again") : null}
           </div>

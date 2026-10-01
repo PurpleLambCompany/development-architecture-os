@@ -10,6 +10,7 @@ import {
   REALIZATION_READINGS,
 } from "@/domain/architecture-intelligence/experience/words";
 import { formatDateTime } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 /**
  * An interpretation, rendered calmly and apart from governed records: no
@@ -150,8 +151,8 @@ export function InterpretationBody({
 }) {
   const pv = view.provenance;
   return (
-    <div className={dimmed ? "space-y-3 opacity-60" : "space-y-3"}>
-      <p className="font-serif text-base text-ink">{view.assertion}</p>
+    <div className={cn("space-y-3 border-l-2 border-rule pl-3", dimmed && "opacity-60")}>
+      <p className="text-sm text-ink">{view.assertion}</p>
       <ul className="space-y-1.5">
         {view.claims.map((c, i) => (
           <li key={i} className="text-sm text-ink">

@@ -331,7 +331,8 @@ export async function SubjectDrawer(props: DrawerProps) {
           r.relationship_type === "validates",
       );
       const revisions = await getElementRevisions(engagementId);
-      const words = (v: string | null | undefined) => (v ? v.replaceAll("_", " ") : "—");
+      const words = (v: unknown) =>
+        v === null || v === undefined || v === "" ? "—" : String(v).replaceAll("_", " ");
       return (
         <IntelligenceDrawer
           {...common}

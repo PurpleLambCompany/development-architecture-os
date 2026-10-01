@@ -19,7 +19,8 @@ const COMPARE_WORDS: Record<string, string> = {
   no_capture: "will be examined at the hold",
 };
 
-const words = (v: string | null | undefined) => (v ? v.replaceAll("_", " ") : "—");
+const words = (v: unknown) =>
+  v === null || v === undefined || v === "" ? "—" : String(v).replaceAll("_", " ");
 
 export function ReviewDossierView({
   dossier,
