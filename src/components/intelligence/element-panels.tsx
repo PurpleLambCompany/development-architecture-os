@@ -291,10 +291,13 @@ export function ImpactPanel({
   slug,
   element,
   trace,
+  drawerHref,
 }: {
   slug: string;
   element: { id: string; reference_code: string | null };
   trace: ImpactTraceRow[];
+  /** The drawer that reads this trace (7B.2 §6.3). */
+  drawerHref?: string;
 }) {
   const code = element.reference_code ?? "this element";
   // Hubs collapse (§7.3 rule 6): two or more records reached through one
@@ -351,6 +354,17 @@ export function ImpactPanel({
     <Panel
       title="Impact trace"
       description="What a change to this element may bear on, by the governed direction of each relationship. Structural parents and requirements are followed two steps; everything else one. A trace to read, not a score."
+      actions={
+        drawerHref && trace.length > 0 ? (
+          <Link
+            href={drawerHref}
+            scroll={false}
+            className="text-sm text-ink-muted hover:text-ink hover:underline"
+          >
+            What this reaches
+          </Link>
+        ) : null
+      }
     >
       {trace.length === 0 ? (
         <EmptyState title="Nothing reached" />
@@ -397,6 +411,7 @@ export function BearingPanel({
   edgeItems,
   canJudge,
   servesOutcomes,
+  explain = false,
 }: {
   slug: string;
   engagementId: string;
@@ -408,6 +423,8 @@ export function BearingPanel({
   canJudge: boolean;
   /** The D-38 fact: Intended Outcomes this element serves. A fact, never a condition. */
   servesOutcomes: number;
+  /** Offer each Edge item's drawer (the page hosts it). */
+  explain?: boolean;
 }) {
   const active = rows.filter(isActiveRecord);
   const events = groupEdgeItems(edgeItems);
@@ -474,6 +491,7 @@ export function BearingPanel({
                 engagementId={engagementId}
                 event={event}
                 canJudge={canJudge}
+                explain={explain}
               />
             ))}
           </div>

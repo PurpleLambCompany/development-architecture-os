@@ -9,6 +9,23 @@ begin;
 
 select plan(34);
 
+-- Recording is server-only (ADR-0069): record as the current test user through
+-- the service role's one recording path, then return to the caller's role.
+create function pg_temp.record_as_server(eng uuid, req jsonb, inf jsonb default null) returns uuid
+language plpgsql as $rec$
+declare
+  r uuid;
+  sub uuid := (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')::uuid;
+  prior text := current_user;
+begin
+  execute 'reset role';
+  execute 'set local role service_role';
+  r := public.record_architecture_intelligence_request_for(sub, eng, req, inf);
+  execute format('set local role %I', prior);
+  return r;
+end;
+$rec$;
+
 create function pg_temp.act_as(user_email text) returns void language plpgsql as $$
 begin
   execute 'reset role';
@@ -28,7 +45,7 @@ create function pg_temp.req(outcome text, cost numeric default 0, extra jsonb de
     'input_tokens', case when cost > 0 then 1000 else 0 end, 'estimated_cost_usd', cost) || extra;
 $$;
 create function pg_temp.rec(outcome text, cost numeric default 0, extra jsonb default '{}') returns uuid language sql as $$
-  select public.record_architecture_intelligence_request('e0000000-0000-4000-8000-000000000001',
+  select pg_temp.record_as_server('e0000000-0000-4000-8000-000000000001',
     pg_temp.req(outcome, cost, extra));
 $$;
 
@@ -101,9 +118,13 @@ select is((select count(*)::int from public.architecture_intelligence_requests),
 
 -- Never aggregated per person: no function returns request data grouped by
 -- requester, and the only read model over requests is the budget.
-select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-           where n.nspname = 'public' and p.prosrc ilike '%architecture_intelligence_requests%'),
-  2, 'only the budget and the recording operation touch the request audit');
+-- 7B.2 adds two readers of single rows, never aggregates: keeping reads its
+-- own request, and reuse reads the latest resolved model (ADR-0069, -0070).
+select set_eq($$ select p.proname::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                 where n.nspname = 'public' and p.prosrc ilike '%architecture_intelligence_requests%' $$,
+  array['architecture_intelligence_budget', 'record_architecture_intelligence_request', 'keep_architecture_inference',
+        'current_architecture_inference'],
+  'only the budget, the recording operation, keeping and reuse touch the request audit');
 select ok(not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
            where n.nspname in ('public', 'private') and p.prosrc ilike '%architecture_intelligence_requests%'
              and p.prosrc ~* 'group\s+by[^;]*requested_by'), 'nothing groups requests by person');

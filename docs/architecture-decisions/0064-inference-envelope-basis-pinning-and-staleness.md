@@ -23,3 +23,14 @@ Phase 7B.1 proposal §13 to §17; reconciliation decisions B-7, B-11, B-12, B-13
 ## Consequences
 
 Inference judgments, promotion and any user-facing display are 7B.2. A real-provider output can be persisted only once its resolved model is evaluated (ADR-0062).
+
+## Amendment (Phase 7B.2, 2026-10-01): persistence intent, `kept_at`, supersession and reuse
+
+Phase 7B.2 Step A (IX-12, IX-13, IX-19; PD-3, PD-7, PD-13a, PD-21; ADR-0068 to ADR-0070) changes when an inference is stored, not what one is. The envelope, kinds, basis rows, checks and computed staleness reasons are unchanged.
+
+- **Persistence intent.** On the application path an inference is stored only when its requester keeps it, or judges it, which keeps it (ADR-0069). The stored row is exactly the output that was validated and shown, supplied by the database from a pending interpretation; it is never regenerated and never text a browser sent. It is written by `keep_architecture_inference` through the same verification as the recording operation. Rows written by the recording operation in `persist` mode now come only from the evaluation harness.
+- **`kept_at`.** `architecture_inferences.kept_at` records when a person kept it; generation time stays `requested_at`, so provenance shows both. It is null for harness rows. Every read model for people (availability, reuse, Suggested interpretations, the register) considers kept rows only.
+- **Supersession compares the full subject.** `architecture_inference_state` is replaced so that an inference is superseded only by a later inference of the same kind on the same full subject (`private.same_inference_subject`: every subject column, including a pair's second element, a revision's version, an Edge item's rule and fingerprint, and an evidence link). The 7B.1 comparison matched only the first element. The newest kept interpretation stays current; earlier ones remain as history and are never overwritten or deleted (PD-7).
+- **Reuse.** A kept, current inference is shown in place of a new request when kind, full subject, prompt version, provider, requested model and resolved model all match, and never across a change of resolved model (ADR-0068).
+- **Judgments.** The judgment lifecycle deferred above now exists in `architecture_inference_judgments` (ADR-0070), with `disagree` reused for contest (OD-17). A stale or superseded inference cannot be judged.
+- **Display.** Inference text is now shown, only in layer 2 of the intelligence drawer and in the Suggested and register lists, to holders of `use_architecture_intelligence` (ADR-0067). Stale reasons are shown in plain words, one phrase per reason.

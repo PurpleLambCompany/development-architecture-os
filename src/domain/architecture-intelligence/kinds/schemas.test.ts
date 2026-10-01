@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { INFERENCE_KINDS } from "../types";
-import { KIND_SCHEMAS, referencedHandles } from "./schemas";
+import {
+  KIND_SCHEMAS,
+  NOTHING_TO_ADD_REASON_MAX,
+  OUTPUT_SCHEMAS,
+  referencedHandles,
+} from "./schemas";
 
 const base = {
   assertion: "A.",
@@ -74,5 +79,54 @@ describe("inference kind schemas (proposal §13, §14)", () => {
       payload: { points: [{ about: "R2", why: "x", cites: ["R3"] }] },
     });
     expect(referencedHandles("review_brief", out).sort()).toEqual(["R1", "R2", "R3"]);
+  });
+});
+
+describe("version 2 outputs: interpretation or nothing to add (ADR-0071, PD-8)", () => {
+  const envelope = (kind: (typeof INFERENCE_KINDS)[number]) => ({
+    ...base,
+    payload: payloads[kind],
+  });
+  it.each(INFERENCE_KINDS)("%s accepts exactly one of interpretation and reason", (kind) => {
+    const s = OUTPUT_SCHEMAS[kind];
+    expect(
+      s.safeParse({ result: "interpretation", interpretation: envelope(kind), reason: null })
+        .success,
+    ).toBe(true);
+    expect(
+      s.safeParse({
+        result: "nothing_to_add",
+        interpretation: null,
+        reason: "Nothing beyond the facts.",
+      }).success,
+    ).toBe(true);
+    expect(
+      s.safeParse({ result: "interpretation", interpretation: envelope(kind), reason: "x" })
+        .success,
+    ).toBe(false);
+    expect(
+      s.safeParse({ result: "interpretation", interpretation: null, reason: null }).success,
+    ).toBe(false);
+    expect(
+      s.safeParse({ result: "nothing_to_add", interpretation: envelope(kind), reason: "x" })
+        .success,
+    ).toBe(false);
+    expect(
+      s.safeParse({ result: "nothing_to_add", interpretation: null, reason: null }).success,
+    ).toBe(false);
+    expect(
+      s.safeParse({ result: "nothing_to_add", interpretation: null, reason: "" }).success,
+    ).toBe(false);
+    expect(
+      s.safeParse({
+        result: "nothing_to_add",
+        interpretation: null,
+        reason: "x".repeat(NOTHING_TO_ADD_REASON_MAX + 1),
+      }).success,
+    ).toBe(false);
+    expect(
+      s.safeParse({ result: "nothing_to_add", interpretation: null, reason: "x", score: 1 })
+        .success,
+    ).toBe(false);
   });
 });

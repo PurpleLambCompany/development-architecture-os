@@ -21,8 +21,11 @@ describe("evaluation cases against the fake adapter (CI runner, proposal §19.3)
       // Exactly one audit record, whatever the outcome.
       expect(store.records).toHaveLength(1);
       expect(store.records[0]!.request.outcome).toBe(c.expect);
-      // An inference only when persisted.
-      expect(store.records[0]!.inference !== null).toBe(c.expect === "persisted");
+      // An inference only when persisted, or (7B.2) the exact output held
+      // for keeping when returned on the application path (ADR-0069).
+      expect(store.records[0]!.inference !== null).toBe(
+        c.expect === "persisted" || (c.expect === "returned" && c.mode === "ephemeral"),
+      );
       // Nothing but Tool Contract reads and the recording operation.
       expect(store.toolCalls.every((call) => call.fn.startsWith("ai_context_"))).toBe(true);
     });

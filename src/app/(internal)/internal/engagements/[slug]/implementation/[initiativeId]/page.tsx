@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   citeEvidenceOnElement,
@@ -64,6 +65,9 @@ import { ActivityList } from "@/components/architecture/activity-list";
 import { escalateFields, requiredNoteFields, triageFields } from "@/components/intelligence/fields";
 import { CriteriaPanel } from "@/components/methodology/criteria-panel";
 import { criterionPromotionFor } from "@/domain/edge/promotion";
+import { SubjectDrawer } from "@/components/architecture-intelligence/drawers";
+import { pageDrawer } from "@/domain/architecture-intelligence/experience/subjects";
+import { inferencePromotionFromQuery } from "@/domain/architecture-intelligence/experience/promotion";
 import { PracticePanel } from "@/components/methodology/practice-panel";
 import { ActionButton, ActionForm, type FieldSpec } from "@/components/ui/action-form";
 import { PageHeader } from "@/components/ui/page-header";
@@ -133,6 +137,26 @@ export default async function InitiativeDetailPage({
   const element = architecture.byId.get(initiativeId);
   const row = registerRows.find((r) => r.element_id === initiativeId);
   if (!element || !row || element.kind !== "implementation_initiative") notFound();
+  const criterionInference = await (async () => {
+    const p = await inferencePromotionFromQuery(
+      engagement.id,
+      query,
+      (id) => architecture.byId.get(id)?.reference_code,
+    );
+    return p && p.elementId === element.id
+      ? {
+          engagementId: engagement.id,
+          slug,
+          elementKind: element.kind,
+          inferenceId: p.inferenceId,
+          line: p.line,
+        }
+      : null;
+  })();
+  const intelligence = pageDrawer(
+    `/internal/engagements/${slug}/implementation/${initiativeId}`,
+    query,
+  );
 
   const nameOf = memberNames(engagement);
   const frozen = element.lifecycle === "retired" || element.lifecycle === "superseded";
@@ -699,6 +723,7 @@ export default async function InitiativeDetailPage({
           elementId: element.id,
           elementKind: element.kind,
         })}
+        inferencePromotion={criterionInference}
       />
 
       <ContextualEdgePanel
@@ -706,6 +731,16 @@ export default async function InitiativeDetailPage({
         engagementId={engagement.id}
         items={edgeItems}
         canJudge={canEdit}
+        explain
+        extraAction={
+          <Link
+            href={intelligence.open({ drawer: "initiative", elementId: element.id })}
+            scroll={false}
+            className="text-sm text-ink-muted hover:underline"
+          >
+            Realization facts
+          </Link>
+        }
         title="Correspondence"
         description="Whether this initiative still corresponds to the architecture it implements: revisions to its targets, criteria agreed or changed, checkpoints and validation. Each line is a prompt to look, never a verdict."
         empty="Nothing on the Edge bears on this initiative."
@@ -762,6 +797,19 @@ export default async function InitiativeDetailPage({
       <div className="text-right">
         <ReferenceCode code={element.reference_code} />
       </div>
+
+      {intelligence.drawer &&
+      (intelligence.drawer.drawer === "edge" ||
+        (intelligence.drawer.drawer === "initiative" &&
+          intelligence.drawer.elementId === initiativeId)) ? (
+        <SubjectDrawer
+          engagementId={engagement.id}
+          slug={slug}
+          subject={intelligence.drawer}
+          closeHref={intelligence.closeHref}
+          canJudge={canEdit}
+        />
+      ) : null}
     </div>
   );
 }

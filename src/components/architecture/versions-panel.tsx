@@ -96,6 +96,7 @@ export function VersionsPanel({
   canPublish,
   nameOf,
   today,
+  revisionHref,
 }: {
   slug: string;
   element: LoadedElement;
@@ -103,6 +104,8 @@ export function VersionsPanel({
   canPublish: boolean;
   nameOf: (id: string | null) => string;
   today: string;
+  /** The drawer for a substantive revision to this version, or null (7B.2 §6.3). */
+  revisionHref?: (versionId: string) => string | null;
 }) {
   const latest = element.latestVersion;
   const latestApproval = latest ? approvals.find((a) => a.element_version_id === latest.id) : null;
@@ -156,7 +159,21 @@ export function VersionsPanel({
                     <br />
                     {nameOf(v.published_by)}
                   </Td>
-                  <Td className="text-ink-muted">{v.change_summary || "—"}</Td>
+                  <Td className="text-ink-muted">
+                    {v.change_summary || "—"}
+                    {revisionHref?.(v.id) ? (
+                      <>
+                        {" "}
+                        <Link
+                          href={revisionHref(v.id)!}
+                          scroll={false}
+                          className="text-xs whitespace-nowrap hover:text-ink hover:underline"
+                        >
+                          What changed
+                        </Link>
+                      </>
+                    ) : null}
+                  </Td>
                   <Td>
                     <ApprovalDetail
                       approval={approvals.find((a) => a.element_version_id === v.id)}

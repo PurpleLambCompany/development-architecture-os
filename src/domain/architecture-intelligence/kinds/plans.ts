@@ -125,12 +125,18 @@ export const CONTEXT_PLANS: Record<InferenceKind, ContextPlan> = {
   review_brief: {
     subjectTypes: ["element"],
     requiredClasses: ["published_architecture"],
+    // 7B.2 (PD-13b): evidence and implementation state, so the brief can
+    // cite every section of the deterministic Review dossier. A context-plan
+    // change, evaluated with the version 2 prompt; no new Tool Contract
+    // function, and the evidence summary stays excluded (OD-5).
     permittedTools: [
       "get_element",
       "get_edge_item",
       "get_project_intelligence",
       "get_acceptance_criteria",
       "get_revision",
+      "get_evidence",
+      "get_implementation_state",
     ],
     maxToolCalls: MAX_TOOL_CALLS,
     maxContextTokens: 32000,

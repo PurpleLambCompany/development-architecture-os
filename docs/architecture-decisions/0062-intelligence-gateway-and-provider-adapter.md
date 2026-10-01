@@ -8,7 +8,7 @@ Phase 7B.1 proposal §10, §11, §23 and §24; reconciliation decision B-3; Kerr
 
 ## Decision
 
-**One path.** `src/domain/architecture-intelligence/gateway.ts` is the only path from a person's request to a provider. It runs as the requesting user (never the service role, ADR-0005 amendment) and is reached from the application only through `server.ts`, which imports `server-only`. In 7B.1 no application route calls it (OD-12); only the evaluation harness does.
+**One path.** `src/domain/architecture-intelligence/gateway.ts` is the only path from a person's request to a provider. It runs as the requesting user (never the service role, ADR-0005 amendment; since 7B.2 it records through one server-only call, see the Step A review amendment below) and is reached from the application only through `server.ts`, which imports `server-only`. In 7B.1 no application route calls it (OD-12); only the evaluation harness does.
 
 **Pipeline.** mode → capability → authorisation, engagement status, provider, region and required classes → model eligibility and budget → prompt → subject and anchors → model loop → validation → evaluated-model check → persistence → audit. Steps before the anchors read nothing for the model and send nothing. Every invocation writes exactly one metadata-only audit record (ADR-0066).
 
@@ -29,3 +29,17 @@ Phase 7B.1 proposal §10, §11, §23 and §24; reconciliation decision B-3; Kerr
 ## Consequences
 
 Adding a provider means an adapter, an evaluation report per kind and an authorisation naming it. The Gateway contains no business rule that is not in the database, a reviewed prompt or a reviewed context plan.
+
+## Amendment (Phase 7B.2, 2026-10-01): the application path, holding for keeping, and the fake provider
+
+Phase 7B.2 Step A (IX-12, IX-16, IX-25; PD-2, PD-3, PD-4, PD-17; ADR-0067 to ADR-0073) adds an application route to the Gateway. The pipeline, the re-check before every send, the bounded loop, no repair, no fallback and the evaluated-models rule are unchanged.
+
+- **Ephemeral only, on a person's action.** The `interpret` server action (`experience/actions.ts`) is the only application caller. It re-runs the gate and the availability rule, then calls the Gateway through `server.ts` in `ephemeral` mode, as the requesting user. No model call happens without a person's explicit action, and a source scan (`imports.test.ts`) proves no application module requests `persist`, which remains for the evaluation harness on synthetic engagements only.
+- **Holding for keeping.** A valid ephemeral interpretation is recorded as `returned` together with its validated output, which `record_architecture_intelligence_request` verifies like a persisted inference and holds, unreadable, for its requester for thirty minutes (`KEEP_WINDOW_MS`; ADR-0069). If holding is refused, the request ends `authorization_withdrawn` (`42501`) or `invalid_output`, and nothing is shown. An evaluation run's ephemeral output is still never held.
+- **Silence.** A valid `nothing_to_add` answer from an evaluated model ends as outcome `nothing_to_add`, its reason returned and never stored (ADR-0071).
+- **Large requests.** `isLargeRequest` compares the existing pre-send estimate with half the per-request ceiling (PD-17). Above it, the person confirms before anything is sent; no figure is shown.
+- **Providers.** `activeProvider` selects a configured real provider or, only under ADR-0073's conditions (provider `fake`, mode `synthetic_only`, `NODE_ENV` not `production`), the deterministic fake, with the test manifest overlay as its evaluated-model check. Naming `fake` outside those conditions selects nothing; it never falls back to a real provider.
+
+## Amendment (Phase 7B.2 Step A review, 2026-10-01): server-only recording
+
+The Gateway still reads, plans, calls the Tool Contract and re-checks as the requesting user. Recording alone changes: the Gateway's store records through `record_architecture_intelligence_request_for`, executable only by `service_role`, for the requester the Auth server verified, and that operation runs every recording check as that person (ADR-0069 amendment, migration `20261008000800`). The user-session client can no longer record. A model's output therefore reaches storage only after the Gateway validated it.

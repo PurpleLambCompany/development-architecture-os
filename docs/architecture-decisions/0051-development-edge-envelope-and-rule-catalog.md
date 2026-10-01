@@ -72,3 +72,13 @@ Q5 chose to extend and sit above: new rules live in their home namespace, and a 
 ## Amendment (2026-10-01): model inferences are not Edge items in 7B.1
 
 Phase 7B.1 begins to use the reserved vocabulary, but outside the Edge: Architecture Intelligence inferences are stored in `public.architecture_inferences` with `producer = 'model'` and `epistemic_status = 'suggested'` fixed by check constraints (ADR-0064). Nothing in 7B.1 places an inference in the Edge envelope, changes the rule catalog, or shows inference text anywhere (OD-12). Edge projection of inferences remains a 7B.2 question and needs its own approval. The Edge is read by the Tool Contract (`ai_context_edge_item`) only as context, through the same per-field classification; practice-lens items are Method/IP and never leave DSA.
+
+## Amendment (Phase 7B.2, 2026-10-01): Suggested interpretations beside the envelope
+
+Phase 7B.2 Step A (IX-17, PD-15; ADR-0068) adds a projected section of **stored** model inferences beside the Edge, never inside it. The envelope is unchanged: `edge_items`, the rule catalog, tiers, ordering, fingerprints and `producer` values are exactly as above, and no rule reads an inference.
+
+- `public.suggested_interpretations(engagement)` returns kept `tension`, `evidence_bearing` and `realization_reading` inferences (`producer = 'model'`, `epistemic_status = 'suggested'`) that are current and whose latest judgment is none, `investigating`, or a deferral whose date has come. It returns an empty set to anyone without `use_architecture_intelligence`.
+- The Engagement Edge shows them in a separate **Suggested interpretations** section below every tier, described as "Interpretations kept by architects on this engagement. Suggested, not established by DSA's rules." The section and its heading are absent for non-holders and when processing is `off`.
+- They are never mixed into the envelope, never tiered, counted, ranked or severity-styled, never judged through `edge_judgments` (they have their own table, ADR-0070), and never appear in the overview's Development Edge section, the "Since you were away" briefing, contextual Edge panels or whole-event judgment. They are ordered by the subject's nearest governance date and then keep time, never by importance.
+- `suggested` remains a status no rule produces. A kept `explanation` or `review_brief` is never projected; it appears only in its subject's intelligence drawer (ADR-0067).
+- The Edge item drawer (ADR-0067) reads the envelope and catalog as its deterministic layer ("Why am I seeing this?"). "Explain significance" is offered on an item only by the availability rule of ADR-0068, which reads the envelope and changes nothing.

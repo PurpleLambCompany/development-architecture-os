@@ -16,6 +16,10 @@ import { EdgeEventCard } from "@/components/edge/edge-event";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState, Panel } from "@/components/ui/panel";
 import { cn } from "@/lib/utils";
+import { SubjectDrawer } from "@/components/architecture-intelligence/drawers";
+import { SuggestedInterpretations } from "@/components/architecture-intelligence/suggested";
+import { getSuggestedInterpretations } from "@/domain/architecture-intelligence/experience/queries";
+import { pageDrawer } from "@/domain/architecture-intelligence/experience/subjects";
 
 export default async function EdgePage({
   params,
@@ -35,10 +39,12 @@ export default async function EdgePage({
       : null;
   const judgedView = query.view === "judged";
 
-  const [items, mark] = await Promise.all([
+  const [items, mark, suggested] = await Promise.all([
     getEdgeItems(engagement.id, { includeJudged: judgedView }),
     getBriefingMark(engagement.id),
+    judgedView ? null : getSuggestedInterpretations(engagement.id),
   ]);
+  const intelligence = pageDrawer(`/internal/engagements/${slug}/edge`, query);
   const window = briefingWindow(mark, new Date());
   const changes = judgedView
     ? []
@@ -141,6 +147,7 @@ export default async function EdgePage({
                 engagementId={engagement.id}
                 event={event}
                 canJudge={canEdit && !judgedView}
+                explain
               />
             </div>
           ))}
@@ -167,11 +174,24 @@ export default async function EdgePage({
                 engagementId={engagement.id}
                 event={event}
                 canJudge={canEdit && !judgedView}
+                explain
               />
             </div>
           ))
         )}
       </Panel>
+
+      {suggested ? <SuggestedInterpretations slug={slug} rows={suggested} /> : null}
+
+      {intelligence.drawer?.drawer === "edge" ? (
+        <SubjectDrawer
+          engagementId={engagement.id}
+          slug={slug}
+          subject={intelligence.drawer}
+          closeHref={intelligence.closeHref}
+          canJudge={canEdit}
+        />
+      ) : null}
     </div>
   );
 }

@@ -9,6 +9,23 @@ begin;
 
 select plan(15);
 
+-- Recording is server-only (ADR-0069): record as the current test user through
+-- the service role's one recording path, then return to the caller's role.
+create function pg_temp.record_as_server(eng uuid, req jsonb, inf jsonb default null) returns uuid
+language plpgsql as $rec$
+declare
+  r uuid;
+  sub uuid := (nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub')::uuid;
+  prior text := current_user;
+begin
+  execute 'reset role';
+  execute 'set local role service_role';
+  r := public.record_architecture_intelligence_request_for(sub, eng, req, inf);
+  execute format('set local role %I', prior);
+  return r;
+end;
+$rec$;
+
 create function pg_temp.act_as(user_email text) returns void language plpgsql as $$
 begin
   execute 'reset role';
@@ -32,7 +49,7 @@ grant select on clients to authenticated;
 
 -- An inference on Meridian and on Harbor, so there is something to leak.
 select pg_temp.act_as('architect@tplco.test');
-select public.record_architecture_intelligence_request(e, jsonb_build_object('outcome', 'persisted', 'mode', 'persist',
+select pg_temp.record_as_server(e, jsonb_build_object('outcome', 'persisted', 'mode', 'persist',
     'inference_kind', 'explanation', 'subject_type', 'element', 'subject_element_id', el,
     'authorization_id', (select id from public.engagement_ai_authorizations where engagement_id = e
                          order by sequence_no desc limit 1),
@@ -90,7 +107,7 @@ select ok(pg_temp.client_calls($$ select * from public.architecture_intelligence
 select ok(pg_temp.client_calls($$ select public.set_engagement_ai_authorization('e0000000-0000-4000-8000-000000000003',
   'not_authorized', '{}', null, null, null, null, 'x', null) $$) <@ array['42501', 'P0002'],
   'no client authorizes or revokes');
-select ok(pg_temp.client_calls($$ select public.record_architecture_intelligence_request('e0000000-0000-4000-8000-000000000003',
+select ok(pg_temp.client_calls($$ select pg_temp.record_as_server('e0000000-0000-4000-8000-000000000003',
   '{"outcome": "returned", "mode": "ephemeral", "inference_kind": "explanation"}') $$) <@ array['42501', 'P0002'],
   'no client records a model outcome');
 select is((select count(*)::int from public.architecture_intelligence_requests where requested_by in

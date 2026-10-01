@@ -46,7 +46,7 @@ import {
   getStewardship,
 } from "@/domain/intelligence/queries";
 import { recordsBearingOn } from "@/domain/intelligence/register";
-import { getEdgeItems, getImpactTrace } from "@/domain/edge/queries";
+import { getEdgeItems, getElementRevisions, getImpactTrace } from "@/domain/edge/queries";
 import { ContextualEdgePanel } from "@/components/edge/edge-panel";
 import { clientMembersWith } from "@/domain/intelligence/views";
 import { RECORD_KINDS } from "@/domain/architecture/vocabulary";
@@ -98,6 +98,11 @@ import { ActionButton, ActionForm } from "@/components/ui/action-form";
 import { ButtonLink } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { DetailList, EmptyState, Panel } from "@/components/ui/panel";
+import { SubjectDrawer } from "@/components/architecture-intelligence/drawers";
+import { SupportsAndExposuresPanel } from "@/components/architecture-intelligence/supports";
+import { getSupportsAndExposures } from "@/domain/architecture-intelligence/experience/layer1-queries";
+import { pageDrawer } from "@/domain/architecture-intelligence/experience/subjects";
+import { inferencePromotionFromQuery } from "@/domain/architecture-intelligence/experience/promotion";
 
 export default async function ElementPage({
   params,
@@ -129,6 +134,8 @@ export default async function ElementPage({
     implementationRows,
     reviewRows,
     deliverableRows,
+    supports,
+    revisions,
   ] = await Promise.all([
     getElementDetail(engagement.id, element.id),
     listEvidence(engagement.id),
@@ -146,6 +153,8 @@ export default async function ElementPage({
     getImplementationRegister(engagement.id),
     getReviewRegister(engagement.id),
     getDeliverableRegister(engagement.id),
+    getSupportsAndExposures(engagement.id, element.id),
+    getElementRevisions(engagement.id, element.id),
   ]);
 
   const preview = query.preview === "1" ? await previewClientSnapshot(element.id) : null;
@@ -197,6 +206,26 @@ export default async function ElementPage({
             : [],
         ),
       );
+  const criterionInference = await (async () => {
+    const p = await inferencePromotionFromQuery(
+      engagement.id,
+      query,
+      (id) => architecture.byId.get(id)?.reference_code,
+    );
+    return p && p.elementId === element.id
+      ? {
+          engagementId: engagement.id,
+          slug,
+          elementKind: element.kind,
+          inferenceId: p.inferenceId,
+          line: p.line,
+        }
+      : null;
+  })();
+  const intelligence = pageDrawer(`${base}/architecture/elements/${element.id}`, query);
+  const substantive = new Set(
+    revisions.filter((r) => r.change_type === "substantive_revision").map((r) => r.version_id),
+  );
   const member = (m: { id: string; user_id: string }) => ({
     value: m.id,
     label: nameOf(m.user_id),
@@ -445,6 +474,7 @@ export default async function ElementPage({
           today={today}
           edgeItems={edgeItems}
           canJudge={canEdit}
+          explain
           servesOutcomes={
             architecture.relationships.filter(
               (r) =>
@@ -464,6 +494,7 @@ export default async function ElementPage({
           engagementId={engagement.id}
           items={edgeItems}
           canJudge={canEdit}
+          explain
           {...(element.kind === "decision"
             ? {
                 title: "Reflected in architecture?",
@@ -475,6 +506,19 @@ export default async function ElementPage({
             : {})}
         />
       ) : null}
+
+      <SupportsAndExposuresPanel
+        slug={slug}
+        data={supports}
+        evidenceHref={(linkId, linkType) =>
+          intelligence.open({
+            drawer: "evidence",
+            elementId: element.id,
+            linkId,
+            linkType: linkType as "statement_link" | "element_link",
+          })
+        }
+      />
 
       <DecisionPanel
         element={element}
@@ -503,6 +547,9 @@ export default async function ElementPage({
         canEdit={canEdit}
         canPublish={canPublish}
         frozen={frozen}
+        pairHref={(otherId) =>
+          intelligence.open({ drawer: "pair", elementId: element.id, secondElementId: otherId })
+        }
       />
 
       <ImplementationPanel
@@ -540,7 +587,12 @@ export default async function ElementPage({
       />
 
       {isRecord ? <HistoryPanel history={history} /> : null}
-      <ImpactPanel slug={slug} element={element} trace={impact} />
+      <ImpactPanel
+        slug={slug}
+        element={element}
+        trace={impact}
+        drawerHref={intelligence.open({ drawer: "trace", elementId: element.id })}
+      />
 
       <VersionsPanel
         slug={slug}
@@ -549,6 +601,11 @@ export default async function ElementPage({
         canPublish={canPublish}
         nameOf={nameOf}
         today={today}
+        revisionHref={(versionId) =>
+          substantive.has(versionId)
+            ? intelligence.open({ drawer: "revision", elementId: element.id, versionId })
+            : null
+        }
       />
 
       {element.object ? (
@@ -564,6 +621,7 @@ export default async function ElementPage({
             elementId: element.id,
             elementKind: element.kind,
           })}
+          inferencePromotion={criterionInference}
         />
       ) : null}
 
@@ -585,6 +643,17 @@ export default async function ElementPage({
         >
           <ActivityList events={detail.activity} />
         </Panel>
+      ) : null}
+
+      {intelligence.drawer &&
+      ["edge", "revision", "trace", "pair", "evidence"].includes(intelligence.drawer.drawer) ? (
+        <SubjectDrawer
+          engagementId={engagement.id}
+          slug={slug}
+          subject={intelligence.drawer}
+          closeHref={intelligence.closeHref}
+          canJudge={canEdit}
+        />
       ) : null}
     </div>
   );

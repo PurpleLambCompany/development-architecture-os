@@ -2,14 +2,20 @@ import { z } from "zod";
 import type { InferenceKind } from "../types";
 
 /**
- * Output schemas for the five inference kinds (proposal §13, §14, ADR-0064).
+ * Output schemas for the five inference kinds (proposal §13, §14, ADR-0064;
+ * output schema version 2, 7B.2 ADR-0071).
  * Strict objects: a field for significance, severity, priority, rank, score
  * or confidence cannot be returned, because no such field exists. Handles
  * (R1, R2, or R1.statements for part of a record) refer only to data issued
  * in the invocation; the Gateway checks that after parsing.
  */
 
-export const OUTPUT_SCHEMA_VERSION = "1";
+/**
+ * Version 2 (7B.2, IX-15): every kind's output is either an interpretation
+ * (the version 1 envelope, unchanged) or a statement that DSA's records do
+ * not support one. See OUTPUT_SCHEMAS below.
+ */
+export const OUTPUT_SCHEMA_VERSION = "2";
 
 export const handle = z.string().regex(/^R[0-9]{1,3}(\.[a-z_]{1,40})?$/);
 
@@ -74,6 +80,46 @@ export const KIND_SCHEMAS = {
         .max(8),
     }),
   ),
+} as const satisfies Record<InferenceKind, z.ZodType>;
+
+/** The longest "nothing to add" reason a model may give (PD-8). */
+export const NOTHING_TO_ADD_REASON_MAX = 300;
+
+/**
+ * The version 2 output for one kind (ADR-0071). Structured-output providers
+ * require an object at the root, so the union is expressed as one strict
+ * object whose `result` decides which of `interpretation` and `reason` is
+ * present: an interpretation carries the version 1 envelope and no reason;
+ * nothing to add carries a reason of at most 300 characters and no
+ * interpretation, so no claims, handles or payload.
+ */
+function silenceable<E extends z.ZodType>(interpretation: E) {
+  return z
+    .strictObject({
+      result: z.enum(["interpretation", "nothing_to_add"]),
+      interpretation: interpretation.nullable(),
+      reason: z.string().min(1).max(NOTHING_TO_ADD_REASON_MAX).nullable(),
+    })
+    .superRefine((value, ctx) => {
+      const o = value as { result: string; interpretation: unknown; reason: string | null };
+      const ok =
+        o.result === "interpretation"
+          ? o.interpretation !== null && o.reason === null
+          : o.interpretation === null && o.reason !== null;
+      if (!ok)
+        ctx.addIssue({
+          code: "custom",
+          message: "An interpretation has no reason; nothing to add has no interpretation",
+        });
+    });
+}
+
+export const OUTPUT_SCHEMAS = {
+  explanation: silenceable(KIND_SCHEMAS.explanation),
+  tension: silenceable(KIND_SCHEMAS.tension),
+  evidence_bearing: silenceable(KIND_SCHEMAS.evidence_bearing),
+  review_brief: silenceable(KIND_SCHEMAS.review_brief),
+  realization_reading: silenceable(KIND_SCHEMAS.realization_reading),
 } as const satisfies Record<InferenceKind, z.ZodType>;
 
 export type KindOutput<K extends InferenceKind> = z.output<(typeof KIND_SCHEMAS)[K]>;

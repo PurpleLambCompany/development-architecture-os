@@ -86,18 +86,26 @@ select is((select array_agg(sequence_no order by sequence_no) from public.engage
 select extensions.dblink_exec('a', 'begin');
 select * from extensions.dblink('a', $f$select public.set_engagement_ai_authorization('e0000000-0000-4000-8000-000000000001',
   'not_authorized', '{}', null, null, null, null, 'Client paused external processing.', null)::text$f$) as r(x text);
-select extensions.dblink_send_query('c', $f$select public.record_architecture_intelligence_request('e0000000-0000-4000-8000-000000000001',
+-- The holder's session builds the request and its basis as the holder
+-- (before the revocation commits it still sees the old authorization); the
+-- server role, which reads no AI table, then records it for them.
+create temporary table race_args as
+select r.req, r.inf from extensions.dblink('c', $f$select
   jsonb_build_object('outcome', 'persisted', 'mode', 'persist', 'inference_kind', 'explanation', 'subject_type', 'element',
     'subject_element_id', 'b3000000-0000-4000-8000-000000000204',
     'authorization_id', (select id from public.engagement_ai_authorizations
       where engagement_id = 'e0000000-0000-4000-8000-000000000001' order by sequence_no desc limit 1),
     'prompt_id', 'explanation', 'prompt_version', 'v1', 'generation_policy_version', 'v1', 'tool_contract_version', '1',
-    'provider_key', 'fake', 'requested_model', 'f', 'resolved_model', 'f'),
+    'provider_key', 'fake', 'requested_model', 'f', 'resolved_model', 'f')::text,
   jsonb_build_object('output_schema_version', '1', 'assertion', 'A.', 'prompt_content_hash', repeat('a', 64),
     'claims', '[{"text": "c", "cites": ["R1"]}]'::jsonb,
     'basis', (select jsonb_agg(jsonb_build_object('handle', 'R1', 'record_type', record_type, 'record_id', record_id,
       'version_id', version_id, 'data_class', data_class, 'digest', digest, 'origin', 'anchor'))
-      from public.ai_context_element('e0000000-0000-4000-8000-000000000001', 'b3000000-0000-4000-8000-000000000204'))))::text$f$);
+      from public.ai_context_element('e0000000-0000-4000-8000-000000000001', 'b3000000-0000-4000-8000-000000000204')))::text$f$) as r(req text, inf text);
+select extensions.dblink_exec('c', 'set role service_role');
+select extensions.dblink_send_query('c', format(
+  'select public.record_architecture_intelligence_request_for(auth.uid(), %L, %L::jsonb, %L::jsonb)::text',
+  'e0000000-0000-4000-8000-000000000001', (select req from race_args), (select inf from race_args)));
 select pg_sleep(0.5);
 select ok(extensions.dblink_is_busy('c') = 1, 'the recording waits for the revocation');
 select extensions.dblink_exec('a', 'commit');

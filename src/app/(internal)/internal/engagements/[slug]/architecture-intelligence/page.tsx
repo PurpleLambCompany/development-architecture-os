@@ -12,7 +12,12 @@ import {
   BASIS_KIND_LABELS,
   DATA_CLASS_LABELS,
 } from "@/domain/architecture-intelligence/schemas";
-import { DATA_CLASSES } from "@/domain/architecture-intelligence/types";
+import { DATA_CLASSES, INFERENCE_KINDS } from "@/domain/architecture-intelligence/types";
+import { getKeptRegister } from "@/domain/architecture-intelligence/experience/queries";
+import {
+  KeptInterpretationsRegister,
+  REGISTER_STATES,
+} from "@/components/architecture-intelligence/register";
 import { ArchitectureNav } from "@/components/architecture/architecture-nav";
 import { ActionForm } from "@/components/ui/action-form";
 import { PageHeader } from "@/components/ui/page-header";
@@ -22,15 +27,17 @@ import { Table, Td, Th } from "@/components/ui/table";
 import { formatDate, formatDateTime, personName } from "@/lib/format";
 
 /**
- * Architecture Intelligence on one engagement (proposal §26). 7B.1 shows
- * only governance: the external-processing authorization, its history and,
- * for authorizers, request metadata and cost. There is no inference text,
- * no request button and nothing a client can reach (OD-12).
+ * Architecture Intelligence on one engagement (proposal §26). Governance:
+ * the external-processing authorization, its history and, for authorizers,
+ * request metadata and cost. 7B.2 adds the kept-interpretations register for
+ * holders of use_architecture_intelligence (PD-16): no request button here,
+ * nothing per person, and nothing a client can reach (OD-12).
  */
 
 const OUTCOME_LABELS: Record<string, string> = {
   persisted: "Recorded",
   returned: "Returned, not recorded",
+  nothing_to_add: "Nothing to add",
   refused_mode: "Refused: not enabled",
   refused_capability: "Refused: no use capability",
   refused_authorization: "Refused: not authorised",
@@ -67,8 +74,18 @@ const usd = (n: number | string | null) =>
 
 export default async function ArchitectureIntelligencePage({
   params,
+  searchParams,
 }: PageProps<"/internal/engagements/[slug]/architecture-intelligence">) {
   const { slug } = await params;
+  const query = await searchParams;
+  const registerKind =
+    typeof query.kind === "string" && (INFERENCE_KINDS as readonly string[]).includes(query.kind)
+      ? query.kind
+      : null;
+  const registerState =
+    typeof query.state === "string" && (REGISTER_STATES as readonly string[]).includes(query.state)
+      ? query.state
+      : null;
   const { engagement } = await getInternalArchitectureContext(slug);
   const [standing, history] = await Promise.all([
     getArchitectureIntelligenceStanding(engagement.id),
@@ -78,6 +95,14 @@ export default async function ArchitectureIntelligencePage({
   const authorized = current?.state === "authorized";
   const mode = process.env.ARCHITECTURE_INTELLIGENCE_MODE;
   const budget = standing?.canAuthorize ? await getMonthBudget(engagement.id) : null;
+  const kept = await getKeptRegister(engagement.id, { kind: registerKind, state: registerState });
+  const registerHref = (next: { kind?: string | null; state?: string | null }) => {
+    const merged = { kind: registerKind, state: registerState, ...next };
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries(merged)) if (v) p.set(k, v);
+    const qs = p.toString();
+    return `/internal/engagements/${slug}/architecture-intelligence${qs ? `?${qs}` : ""}#kept`;
+  };
   const [requests, outcomes] = standing?.canAuthorize
     ? await Promise.all([
         getRecentRequests(engagement.id),
@@ -336,6 +361,18 @@ export default async function ArchitectureIntelligencePage({
             </Table>
           )}
         </Panel>
+      ) : null}
+
+      {kept ? (
+        <div id="kept">
+          <KeptInterpretationsRegister
+            slug={slug}
+            rows={kept}
+            kind={registerKind}
+            state={registerState}
+            href={registerHref}
+          />
+        </div>
       ) : null}
     </div>
   );

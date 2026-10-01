@@ -19,7 +19,9 @@ const dir = join(process.cwd(), "src/domain/architecture-intelligence");
 function sources(path = dir): { file: string; text: string }[] {
   return readdirSync(path).flatMap((name) => {
     const full = join(path, name);
-    if (statSync(full).isDirectory()) return sources(full);
+    // The experience module sits above the Gateway (it calls server.ts); the Gateway never imports it.
+    if (statSync(full).isDirectory())
+      return name === "experience" && path === dir ? [] : sources(full);
     // The page's own read models and its one authorization action are not reachable from the Gateway.
     if (path === dir && ["actions.ts", "queries.ts", "schemas.ts"].includes(name)) return [];
     return name.endsWith(".ts") && !name.endsWith(".test.ts")
@@ -69,7 +71,8 @@ describe("no path from a model to a mutation", () => {
     const allowedRpc = new Set([
       "architecture_intelligence_standing",
       "architecture_intelligence_budget",
-      "record_architecture_intelligence_request",
+      // The one write, through the server-only recording path (ADR-0069).
+      "record_architecture_intelligence_request_for",
     ]);
     for (const { file, text } of sources()) {
       expect(text, file).not.toMatch(/\.(insert|upsert|delete)\(/);

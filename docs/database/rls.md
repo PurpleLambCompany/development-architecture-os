@@ -155,3 +155,26 @@ Both are architecture authority: overrides only by Principal Architects on the e
 | `architecture_inference_basis`       | current holders of `use_architecture_intelligence`              | **never**    |
 
 All four are append-only (`23514` on update or delete for every role) and written only by their operations. Tests: `41`–`47`, `99_ai_concurrency`.
+
+## Phase 7B.2 Step A: the Architecture Intelligence experience
+
+Everything in Phase 7B.2 Step A is internal. No client policy, client read model, snapshot or client-callable behaviour changes; a client calling any new function receives `P0002` or an empty set. No capability is added. See [architecture-intelligence.md](architecture-intelligence.md#phase-7b2-step-a-the-experience).
+
+| Table                              | Readers                                                    | Client users |
+| ---------------------------------- | ---------------------------------------------------------- | ------------ |
+| `architecture_inference_judgments` | current holders of `use_architecture_intelligence` (OD-11) | **never**    |
+| `pending_architecture_inferences`  | **no role** (no grant, no policy)                          | **never**    |
+
+| Operation or read model                                                                                     | Requires                                                                                                                       |
+| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `record_architecture_intelligence_request_for`                                                              | `service_role` only (the server); then every recording check runs as the verified requester                                    |
+| `record_architecture_intelligence_request`                                                                  | no API role (reached only through the line above)                                                                              |
+| `keep_architecture_inference`                                                                               | `use_architecture_intelligence`, being the requester, the same authorisation version; with a judgment also `edit_architecture` |
+| `record_architecture_inference_judgment`                                                                    | `use_architecture_intelligence` and `edit_architecture` (PD-6)                                                                 |
+| `architecture_intelligence_availability`, `current_architecture_inference`, `architecture_inference_detail` | `use_architecture_intelligence` (else `42501`)                                                                                 |
+| `suggested_interpretations`, `kept_architecture_inferences`                                                 | `use_architecture_intelligence` (else an empty set, so non-holders see no heading or count)                                    |
+| `review_dossier`, `element_supports_and_exposures`                                                          | `can_read_architecture` only; the same rows for every internal reader whatever their AI standing                               |
+
+Both new tables are guarded: `architecture_inference_judgments` is append-only (`23514` on update or delete for every role); `pending_architecture_inferences` refuses update and allows insert and delete only inside its operations' marker (`42501`). Neither is in `activity_log`. Edge judgments remain logged and still require only `edit_architecture`. Tests: `48`–`50`, with `45` and `47` extended.
+
+**Server-only recording (Step A review, migration `20261008000800`).** No signed-in session can write a request, a pending interpretation or an inference: the base recording operation is executable by no API role, and the server-only path is executable only by `service_role`. `service_role` has every privilege on the six Architecture Intelligence tables revoked (including `TRUNCATE`) and execute on every other Architecture Intelligence function revoked, so the server key can record only through that one operation, which runs every capability, authorisation, basis and expiry check as the requester. Proven by `52_ai_trusted_recording`.

@@ -34,8 +34,11 @@ export const getEdgeItems = cache(
   },
 );
 
-/** The governed impact trace (on demand: Yes and Weak links, evidence, lineage, approvals). */
-export async function getImpactTrace(elementId: string): Promise<ImpactTraceRow[]> {
+/**
+ * The governed impact trace (on demand: Yes and Weak links, evidence, lineage, approvals).
+ * Cached per request, so a page and its drawer share one call.
+ */
+export const getImpactTrace = cache(async (elementId: string): Promise<ImpactTraceRow[]> => {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("impact_trace", {
     p_element_id: elementId,
@@ -43,7 +46,7 @@ export async function getImpactTrace(elementId: string): Promise<ImpactTraceRow[
   });
   if (error) throw error;
   return data ?? [];
-}
+});
 
 export async function getDevelopmentChanges(
   engagementId: string,
