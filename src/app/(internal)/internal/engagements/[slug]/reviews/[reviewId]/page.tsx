@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   publishElement,
@@ -40,6 +41,11 @@ import { PracticePanel } from "@/components/methodology/practice-panel";
 import { ActionButton, ActionForm } from "@/components/ui/action-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { DetailList, EmptyState, Panel } from "@/components/ui/panel";
+import { ReviewDossierView } from "@/components/architecture-intelligence/dossier";
+import { SubjectDrawer } from "@/components/architecture-intelligence/drawers";
+import { getReviewDossier } from "@/domain/architecture-intelligence/experience/layer1-queries";
+import { viewerUsesIntelligence } from "@/domain/architecture-intelligence/experience/queries";
+import { ACTION_LABELS, pageDrawer } from "@/domain/architecture-intelligence/experience/subjects";
 import { StatusTag } from "@/components/ui/status-tag";
 
 /**
@@ -50,8 +56,10 @@ import { StatusTag } from "@/components/ui/status-tag";
  */
 export default async function ReviewDetailPage({
   params,
+  searchParams,
 }: PageProps<"/internal/engagements/[slug]/reviews/[reviewId]">) {
   const { slug, reviewId } = await params;
+  const query = await searchParams;
   const { engagement, canEdit, canPublish, canManageReviews } =
     await getInternalArchitectureContext(slug);
   const [
@@ -63,6 +71,8 @@ export default async function ReviewDetailPage({
     capture,
     edgeItems,
     revisions,
+    dossier,
+    usesIntelligence,
   ] = await Promise.all([
     loadArchitecture(engagement.id),
     getReviewRegister(engagement.id),
@@ -72,7 +82,10 @@ export default async function ReviewDetailPage({
     getReviewCapture(reviewId),
     getEdgeItems(engagement.id),
     getElementRevisions(engagement.id),
+    getReviewDossier(engagement.id, reviewId),
+    viewerUsesIntelligence(engagement.id),
   ]);
+  const intelligence = pageDrawer(`/internal/engagements/${slug}/reviews/${reviewId}`, query);
   const element = architecture.byId.get(reviewId);
   const row = registerRows.find((r) => r.element_id === reviewId);
   if (!element || !row || element.kind !== "review") notFound();
@@ -224,6 +237,34 @@ export default async function ReviewDetailPage({
         />
       </Panel>
 
+      {dossier && (row.review_status === "scheduled" || row.review_status === "held") ? (
+        <Panel
+          title="Dossier"
+          description={
+            held
+              ? "What this Review examined, at the versions it captured, and what has moved since. Exact records and versions; nothing summarised or ranked."
+              : "What this Review will examine and what has moved since each element was last reviewed. Exact records and versions; nothing summarised or ranked."
+          }
+          actions={
+            usesIntelligence ? (
+              <Link
+                href={intelligence.open({ drawer: "review", elementId: reviewId })}
+                scroll={false}
+                className="text-sm text-ink-muted hover:text-ink hover:underline"
+              >
+                {ACTION_LABELS.review_brief}
+              </Link>
+            ) : null
+          }
+        >
+          <ReviewDossierView
+            dossier={dossier}
+            slug={slug}
+            edgeHref={`/internal/engagements/${slug}/edge?view=judged`}
+          />
+        </Panel>
+      ) : null}
+
       <Panel
         title="Participants"
         actions={
@@ -330,6 +371,7 @@ export default async function ReviewDetailPage({
         engagementId={engagement.id}
         items={reviewItems}
         canJudge={canEdit}
+        explain
         title={held ? "Since this Review was held" : "Before this Review"}
         description={
           held
@@ -527,6 +569,18 @@ export default async function ReviewDetailPage({
       <div className="text-right">
         <ReferenceCode code={element.reference_code} />
       </div>
+
+      {intelligence.drawer &&
+      (intelligence.drawer.drawer === "edge" ||
+        (intelligence.drawer.drawer === "review" && intelligence.drawer.elementId === reviewId)) ? (
+        <SubjectDrawer
+          engagementId={engagement.id}
+          slug={slug}
+          subject={intelligence.drawer}
+          closeHref={intelligence.closeHref}
+          canJudge={canEdit}
+        />
+      ) : null}
     </div>
   );
 }

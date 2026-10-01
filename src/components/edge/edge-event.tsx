@@ -20,6 +20,7 @@ import {
   type EpistemicStatus,
 } from "@/domain/edge/rules";
 import { itemLine, linkWords } from "@/domain/edge/words";
+import { drawerQuery } from "@/domain/architecture-intelligence/experience/subjects";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { ReferenceCode } from "@/components/architecture/badges";
 import { ActionForm } from "@/components/ui/action-form";
@@ -96,11 +97,14 @@ function ConsequenceRow({
   line,
   canJudge,
   sharedJudgment = false,
+  explain = false,
 }: {
   slug: string;
   engagementId: string;
   line: EdgeConsequence;
   canJudge: boolean;
+  /** Offer the item's drawer, "Why am I seeing this?" (7B.2 §6.3), on pages that host it. */
+  explain?: boolean;
   /** The event shows one judgment act for all its items; don't repeat it per line. */
   sharedJudgment?: boolean;
 }) {
@@ -129,7 +133,26 @@ function ConsequenceRow({
           <StatusTag tone="attention">Escalated or critical</StatusTag>
         ) : null}
       </div>
-      <p className="mt-0.5 text-sm text-ink-muted">{itemLine(item)}</p>
+      <p className="mt-0.5 text-sm text-ink-muted">
+        {itemLine(item)}
+        {explain && item.subject_type === "element" ? (
+          <>
+            {" "}
+            <Link
+              href={`?${drawerQuery({
+                drawer: "edge",
+                elementId: item.subject_id,
+                ruleKey: item.rule_key,
+                fingerprint: item.fingerprint,
+              })}`}
+              scroll={false}
+              className="text-xs whitespace-nowrap text-ink-subtle hover:text-ink hover:underline"
+            >
+              Why am I seeing this?
+            </Link>
+          </>
+        ) : null}
+      </p>
       {line.items.length > 1 ? (
         <p className="mt-0.5 text-xs text-ink-subtle">
           {line.items.every((i) => i === item || i.rule_key === CHANGE_REACHES_KEY)
@@ -198,6 +221,7 @@ export function EdgeEventCard({
   canJudge,
   compact = false,
   eventJudgment = true,
+  explain = false,
 }: {
   slug: string;
   engagementId: string;
@@ -210,6 +234,8 @@ export function EdgeEventCard({
    * lines the reader cannot see.
    */
   eventJudgment?: boolean;
+  /** Offer each item's drawer (the page hosts it). */
+  explain?: boolean;
 }) {
   const heading = eventHeading(event);
   const triggerHref = event.triggerSubjectId
@@ -288,7 +314,7 @@ export function EdgeEventCard({
                 engagementId={engagementId}
                 line={line}
                 canJudge={canJudge}
-
+                explain={explain}
                 sharedJudgment={sharedJudgment}
               />
             ))}
@@ -307,7 +333,7 @@ export function EdgeEventCard({
                     engagementId={engagementId}
                     line={line}
                     canJudge={canJudge}
-
+                    explain={explain}
                     sharedJudgment={sharedJudgment}
                   />
                 ))}

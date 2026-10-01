@@ -10,6 +10,11 @@ import { getEscalations, getSignals } from "@/domain/intelligence/queries";
 import { EscalationsPanel } from "@/components/intelligence/escalations-panel";
 import { createReview } from "@/domain/reviews/actions";
 import { promoteToReview } from "@/domain/edge/actions";
+import { promoteInferenceToReview } from "@/domain/architecture-intelligence/experience/actions";
+import {
+  bringTextField,
+  inferencePromotionFromQuery,
+} from "@/domain/architecture-intelligence/experience/promotion";
 import { promotionFromQuery } from "@/domain/edge/promotion";
 import { edgeRuleLabel } from "@/domain/edge/rules";
 import { REVIEW_TYPES, REVIEW_TYPE_LABELS, reviewStatus } from "@/domain/reviews/catalog";
@@ -45,6 +50,14 @@ export default async function ReviewsPage({
   // Promotion from the Development Edge (ADR-0056): scheduling the Review is
   // the governed operation; the Edge item is then judged "promoted" to it.
   const promoting = canManageReviews ? promotionFromQuery(query) : null;
+  // Promotion from a kept interpretation (IX-20): scheduling is the governed act.
+  const promotingInference = canManageReviews
+    ? await inferencePromotionFromQuery(
+        engagement.id,
+        query,
+        (id) => architecture.byId.get(id)?.reference_code,
+      )
+    : null;
   const promotedFrom = promoting
     ? [edgeRuleLabel(promoting.ruleKey), architecture.byId.get(promoting.subjectId)?.reference_code]
         .filter(Boolean)
@@ -83,9 +96,11 @@ export default async function ReviewsPage({
       <Panel
         title="Review sessions"
         description={
-          promotedFrom
-            ? `Promoted from the Development Edge (${promotedFrom}). The item is marked promoted once this Review is scheduled.`
-            : "Executive and Architecture Reviews: scheduled, held and cancelled, with their agenda and participants."
+          promotingInference
+            ? `Promoted from a kept interpretation (${promotingInference.line}). The interpretation is marked promoted once this Review is scheduled.`
+            : promotedFrom
+              ? `Promoted from the Development Edge (${promotedFrom}). The item is marked promoted once this Review is scheduled.`
+              : "Executive and Architecture Reviews: scheduled, held and cancelled, with their agenda and participants."
         }
         actions={
           canManageReviews ? (
@@ -105,20 +120,34 @@ export default async function ReviewsPage({
                   hint: "YYYY-MM-DDTHH:mm",
                 },
                 { name: "summary", label: "Summary", type: "textarea" },
+                ...(promotingInference ? [bringTextField] : []),
               ]}
               defaultValues={{
                 reviewType: "executive_review",
                 ...(promotedFrom
                   ? { summary: `Raised from the Development Edge: ${promotedFrom}.` }
                   : {}),
+                ...(promotingInference
+                  ? {
+                      summary: `Raised from a kept interpretation: ${promotingInference.line}.`,
+                      bringInterpretationText: "no",
+                    }
+                  : {}),
               }}
               action={
-                promoting
-                  ? promoteToReview.bind(null, engagement.id, slug, promoting)
-                  : createReview.bind(null, engagement.id)
+                promotingInference
+                  ? promoteInferenceToReview.bind(
+                      null,
+                      engagement.id,
+                      slug,
+                      promotingInference.inferenceId,
+                    )
+                  : promoting
+                    ? promoteToReview.bind(null, engagement.id, slug, promoting)
+                    : createReview.bind(null, engagement.id)
               }
               submitLabel="Schedule review"
-              trigger={promoting ? undefined : "Schedule a review"}
+              trigger={promoting || promotingInference ? undefined : "Schedule a review"}
             />
           ) : null
         }

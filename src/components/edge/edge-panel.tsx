@@ -17,6 +17,8 @@ export function ContextualEdgePanel({
   description = "Conditions and changes bearing on this record, from deterministic rules over governed records. Each is a prompt to look, never a conclusion.",
   empty = "Nothing on the Edge bears on this record.",
   children,
+  explain = false,
+  extraAction,
 }: {
   slug: string;
   engagementId: string;
@@ -26,6 +28,10 @@ export function ContextualEdgePanel({
   description?: string;
   empty?: string;
   children?: React.ReactNode;
+  /** Offer each item's drawer (the page hosts it). */
+  explain?: boolean;
+  /** A further header link beside "Open the Edge" (e.g. a deterministic drawer). */
+  extraAction?: React.ReactNode;
 }) {
   const events = groupEdgeItems(items);
   return (
@@ -33,12 +39,15 @@ export function ContextualEdgePanel({
       title={title}
       description={description}
       actions={
-        <Link
-          href={`/internal/engagements/${slug}/edge`}
-          className="text-sm text-ink-muted hover:underline"
-        >
-          Open the Edge
-        </Link>
+        <span className="flex flex-wrap gap-4">
+          {extraAction}
+          <Link
+            href={`/internal/engagements/${slug}/edge`}
+            className="text-sm text-ink-muted hover:underline"
+          >
+            Open the Edge
+          </Link>
+        </span>
       }
     >
       {children}
@@ -54,6 +63,7 @@ export function ContextualEdgePanel({
               engagementId={engagementId}
               event={event}
               canJudge={canJudge}
+              explain={explain}
             />
           ))}
         </div>

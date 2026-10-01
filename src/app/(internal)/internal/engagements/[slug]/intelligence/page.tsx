@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { createRecord } from "@/domain/architecture/actions";
 import { promoteEdgeItem } from "@/domain/edge/actions";
+import { promoteInferenceToRecord } from "@/domain/architecture-intelligence/experience/actions";
+import {
+  bringTextField,
+  inferencePromotionFromQuery,
+} from "@/domain/architecture-intelligence/experience/promotion";
 import { promotionFromQuery } from "@/domain/edge/promotion";
 import { edgeRuleLabel } from "@/domain/edge/rules";
 import { RECORD_KIND_LABELS, type RecordKind } from "@/domain/architecture/catalog";
@@ -57,6 +62,15 @@ export default async function IntelligencePage({
   // Promotion from the Development Edge (ADR-0056): the new record is an
   // ordinary governed record; the Edge item is judged "promoted" to it.
   const promoting = creating ? promotionFromQuery(query) : null;
+  // Promotion from a kept interpretation (IX-20): a Risk or a Decision only.
+  const promotingInference =
+    creating === "risk" || creating === "decision"
+      ? await inferencePromotionFromQuery(
+          engagement.id,
+          query,
+          (id) => architecture.byId.get(id)?.reference_code,
+        )
+      : null;
   const promotedFrom = promoting
     ? [edgeRuleLabel(promoting.ruleKey), architecture.byId.get(promoting.subjectId)?.reference_code]
         .filter(Boolean)
@@ -122,9 +136,11 @@ export default async function IntelligencePage({
           <Panel
             title={`New ${RECORD_KIND_LABELS[creating].toLowerCase()}`}
             description={
-              promotedFrom
-                ? `Promoted from the Development Edge (${promotedFrom}). The item is marked promoted once this record is created.`
-                : undefined
+              promotingInference
+                ? `Promoted from a kept interpretation (${promotingInference.line}). The interpretation is marked promoted once this record is created.`
+                : promotedFrom
+                  ? `Promoted from the Development Edge (${promotedFrom}). The item is marked promoted once this record is created.`
+                  : undefined
             }
           >
             <ActionForm
@@ -134,6 +150,7 @@ export default async function IntelligencePage({
                   creating,
                   live.map((e) => ({ value: e.id, label: elementOptionLabel(e) })),
                 ),
+                ...(promotingInference ? [bringTextField] : []),
               ]}
               defaultValues={{
                 ...newElementDefaults,
@@ -144,11 +161,25 @@ export default async function IntelligencePage({
                 ...(promotedFrom
                   ? { summary: `Raised from the Development Edge: ${promotedFrom}.` }
                   : {}),
+                ...(promotingInference
+                  ? {
+                      summary: `Raised from a kept interpretation: ${promotingInference.line}.`,
+                      bringInterpretationText: "no",
+                    }
+                  : {}),
               }}
               action={
-                promoting
-                  ? promoteEdgeItem.bind(null, engagement.id, slug, creating, promoting)
-                  : createRecord.bind(null, engagement.id, creating)
+                promotingInference && (creating === "risk" || creating === "decision")
+                  ? promoteInferenceToRecord.bind(
+                      null,
+                      engagement.id,
+                      slug,
+                      creating,
+                      promotingInference.inferenceId,
+                    )
+                  : promoting
+                    ? promoteEdgeItem.bind(null, engagement.id, slug, creating, promoting)
+                    : createRecord.bind(null, engagement.id, creating)
               }
               submitLabel={`Create ${RECORD_KIND_LABELS[creating].toLowerCase()}`}
             />

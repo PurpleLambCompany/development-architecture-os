@@ -142,3 +142,21 @@ export function activeProvider(
   const config = providerConfig(env);
   return config ? { kind: "openai", config } : null;
 }
+
+/**
+ * The provider and requested model the environment names, whether or not a
+ * credential or a complete configuration is present. The interpretation
+ * layer uses it only to say whether that model has been evaluated (7B.2
+ * proposal §5.2 item 4), so the governance state is honest before anything
+ * could be sent. Nothing is sent on the strength of this alone.
+ */
+export function configuredModel(
+  env: Record<string, string | undefined> = process.env,
+): { providerKey: string; requestedModel: string } | null {
+  const providerKey = env.ARCHITECTURE_INTELLIGENCE_PROVIDER;
+  if (providerKey !== "openai" && providerKey !== "fake") return null;
+  const requestedModel =
+    env.ARCHITECTURE_INTELLIGENCE_MODEL ||
+    (providerKey === "fake" ? FAKE_PROVIDER_DEFAULT_MODEL : "");
+  return requestedModel ? { providerKey, requestedModel } : null;
+}

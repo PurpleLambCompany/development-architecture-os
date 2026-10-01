@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   addRelationship,
   deleteRelationship,
@@ -64,6 +65,7 @@ export function RelationshipsPanel({
   canPublish,
   frozen,
   locked,
+  pairHref,
 }: {
   engagementId: string;
   slug: string;
@@ -77,6 +79,8 @@ export function RelationshipsPanel({
    * reason shown in place (a held Review's closed examined set, ADR-0054).
    */
   locked?: { types: RelationshipTypeKey[]; reason: string };
+  /** The drawer that reads this element and a related one side by side (7B.2 §6.3). */
+  pairHref?: (otherId: string) => string;
 }) {
   const isLocked = (key: string) => locked?.types.includes(key as RelationshipTypeKey) ?? false;
   const rows = architecture.relationships
@@ -152,6 +156,15 @@ export function RelationshipsPanel({
                       ) : null}
                     </span>
                     <span className="flex items-center gap-2">
+                      {pairHref && !r.retired_at ? (
+                        <Link
+                          href={pairHref(other!.id)}
+                          scroll={false}
+                          className="text-xs text-ink-muted hover:text-ink hover:underline"
+                        >
+                          Side by side
+                        </Link>
+                      ) : null}
                       {r.client_visibility === "internal" ? <InternalMark /> : null}
                       <RelationshipState r={r} />
                       {isLocked(r.relationship_type) ? null : (

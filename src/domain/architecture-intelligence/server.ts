@@ -8,7 +8,7 @@ import {
 } from "./adapters/fake-responder";
 import { OpenAIAdapter } from "./adapters/openai";
 import type { ModelAdapter } from "./adapters/types";
-import { activeProvider, processingMode } from "./config";
+import { activeProvider, configuredModel, processingMode } from "./config";
 import {
   invokeArchitectureIntelligence,
   type GatewayResult,
@@ -36,6 +36,8 @@ export type Deployment = {
   mode: ProcessingMode;
   /** The provider in force, without its credential, or null. */
   provider: ProviderSettings | null;
+  /** The provider and model the environment names, even without a credential. */
+  configured: { providerKey: string; requestedModel: string } | null;
   isEvaluatedModel: EvaluatedModelCheck;
 };
 
@@ -56,6 +58,7 @@ export function deployment(): Deployment {
           timeoutMs: active.config.timeoutMs,
         }
       : null,
+    configured: configuredModel(),
     isEvaluatedModel: overlay ?? isEvaluatedModel,
   };
 }

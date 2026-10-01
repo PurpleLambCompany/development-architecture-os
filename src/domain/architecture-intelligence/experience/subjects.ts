@@ -246,3 +246,23 @@ export function drawerForInference(row: {
       return null;
   }
 }
+
+/**
+ * A page's drawer state: the drawer it was opened with (if any), the URL
+ * that closes it (keeping the page's own parameters), and how to open one.
+ */
+export function pageDrawer(
+  pagePath: string,
+  query: Record<string, string | string[] | undefined>,
+): {
+  drawer: DrawerSubject | null;
+  closeHref: string;
+  open: (subject: DrawerSubject) => string;
+} {
+  const rest = withoutDrawer(query).toString();
+  return {
+    drawer: drawerFromQuery(query),
+    closeHref: rest ? `${pagePath}?${rest}` : pagePath,
+    open: (subject) => `${pagePath}?${drawerQuery(subject)}`,
+  };
+}

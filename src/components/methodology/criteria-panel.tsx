@@ -12,7 +12,9 @@ import { getElementCriteria, getStandardCriterionOptions } from "@/domain/method
 import { promoteToCriterion } from "@/domain/edge/actions";
 import { getCriterionPromotions } from "@/domain/edge/queries";
 import { edgeRuleLabel } from "@/domain/edge/rules";
+import type { ElementKind } from "@/domain/architecture/catalog";
 import type { CriterionPromotion } from "@/domain/edge/promotion";
+import { promoteInferenceToCriterion } from "@/domain/architecture-intelligence/experience/actions";
 import { formatDate } from "@/lib/format";
 import { ActionButton, ActionForm, type FieldSpec } from "@/components/ui/action-form";
 import { EmptyState, Panel } from "@/components/ui/panel";
@@ -41,6 +43,7 @@ export async function CriteriaPanel({
   evidenceOptions,
   inherited = [],
   promotion,
+  inferencePromotion,
 }: {
   elementId: string;
   /** Criteria are agreed only on a published element. */
@@ -52,6 +55,14 @@ export async function CriteriaPanel({
   inherited?: InheritedCriterion[];
   /** Opened from the Development Edge to promote an item into a criterion. */
   promotion?: CriterionPromotion | null;
+  /** A kept interpretation being promoted into a proposed criterion here (IX-20). */
+  inferencePromotion?: {
+    engagementId: string;
+    slug: string;
+    elementKind: ElementKind;
+    inferenceId: string;
+    line: string;
+  } | null;
 }) {
   const [criteria, standardOptions] = await Promise.all([
     getElementCriteria(elementId),
@@ -59,6 +70,8 @@ export async function CriteriaPanel({
   ]);
   const promotedFrom = await getCriterionPromotions(criteria.map((c) => c.id));
   const promoting = canEdit && promotion ? promotion : null;
+  const promotingInference =
+    canEdit && !promoting && inferencePromotion ? inferencePromotion : null;
   const open = criteria.filter((c) => c.state === "proposed" || c.state === "agreed");
   const closed = criteria.filter((c) => c.state === "superseded" || c.state === "withdrawn");
   const proposalFields = [
@@ -86,12 +99,14 @@ export async function CriteriaPanel({
       <Panel
         title="Acceptance criteria"
         description={
-          promoting
-            ? `Promoted from the Development Edge (${edgeRuleLabel(promoting.item.ruleKey)}). Proposing records the criterion as the item's promotion; agreement is still recorded separately.`
-            : "What must be true for this to be accepted, agreed with the client. Agreed text is frozen."
+          promotingInference
+            ? `Promoted from a kept interpretation (${promotingInference.line}). Proposing records the criterion as the interpretation's promotion; agreement is still recorded separately.`
+            : promoting
+              ? `Promoted from the Development Edge (${edgeRuleLabel(promoting.item.ruleKey)}). Proposing records the criterion as the item's promotion; agreement is still recorded separately.`
+              : "What must be true for this to be accepted, agreed with the client. Agreed text is frozen."
         }
         actions={
-          canEdit && !promoting ? (
+          canEdit && !promoting && !promotingInference ? (
             <ActionForm
               trigger="Propose a criterion"
               submitLabel="Propose"
@@ -103,6 +118,27 @@ export async function CriteriaPanel({
         }
       >
         <div className="space-y-4">
+          {promotingInference ? (
+            <section className="space-y-2 rounded-sm border border-rule p-4">
+              <p className="text-sm text-ink-muted">
+                Write the criterion in your own words. It is proposed, not agreed, and internal only
+                unless you choose otherwise.
+              </p>
+              <ActionForm
+                submitLabel="Propose"
+                action={promoteInferenceToCriterion.bind(
+                  null,
+                  promotingInference.engagementId,
+                  promotingInference.slug,
+                  promotingInference.elementKind,
+                  elementId,
+                  promotingInference.inferenceId,
+                )}
+                fields={proposalFields}
+                defaultValues={{ body: "", clientVisible: "no", informing: "" }}
+              />
+            </section>
+          ) : null}
           {promoting ? (
             <section className="space-y-2 rounded-sm border border-rule p-4">
               <p className="text-sm text-ink-muted">
