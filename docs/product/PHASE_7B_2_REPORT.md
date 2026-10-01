@@ -1,12 +1,12 @@
 # Phase 7B.2 Step A report: Architecture Intelligence Experience
 
-**Status:** Step A was implemented and accepted against the fake provider. It awaits Kerrick's final acceptance on draft PR #13, which is unmerged. **Step B activation has not occurred.**
+**Status:** Step A was implemented, verified against the fake provider and **accepted by Kerrick on 2026-10-01** (PR #13). **Step B activation has not occurred** and requires Kerrick's separate explicit authorization.
 
 - No credential was added.
 - No real provider was called.
 - No model is in the evaluated-model manifest.
 - No real engagement content was processed through a model.
-- The Phase 7B.2 hold remains in the status docs until final acceptance.
+- The status docs record Step A as accepted and Step B as on hold.
 
 Kerrick approved Step A on 2026-10-01 with decisions PD-1 to PD-22. See [`PHASE_7B_2_PROPOSAL.md`](PHASE_7B_2_PROPOSAL.md) and [`PHASE_7B_2_INTELLIGENCE_EXPERIENCE_RECONCILIATION.md`](PHASE_7B_2_INTELLIGENCE_EXPERIENCE_RECONCILIATION.md).
 
@@ -364,9 +364,9 @@ See the PR checks for the head commit.
 - No real provider was called.
 - No model was added to the evaluated-model manifest.
 - No real engagement content was processed.
-- The 7B.2 hold remains in `CLAUDE.md` and the README status until final acceptance.
-- PR #13 stays a draft and unmerged.
+- `CLAUDE.md` and the README record Step A as accepted and Step B as on hold.
+- PR #13 contains only the accepted Step A scope and its closeout status updates.
 
 ## 12. Recommended next step
 
-Kerrick's final acceptance of Step A on PR #13. After that, a separate decision on Step B: a governed seed/synthetic-only real-provider evaluation, manual grading, a committed evaluation report and a reviewed manifest change.
+Merge PR #13 on Kerrick's instruction. After that, a separate decision on Step B: a governed seed/synthetic-only real-provider evaluation, manual grading, a committed evaluation report and a reviewed manifest change.
