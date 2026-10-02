@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { z } from "zod";
 import {
   DOMAIN_LABELS,
   RECORD_KIND_LABELS,
@@ -34,6 +35,7 @@ export default async function ClientElementPage({
 }: PageProps<"/portal/[slug]/architecture/[elementId]">) {
   const { slug, elementId } = await params;
   const query = await searchParams;
+  if (!z.uuid().safeParse(elementId).success) notFound();
   const { viewer, engagement, capabilities, canView, canRespond } =
     await getClientArchitectureContext(slug);
   if (!canView) notFound();

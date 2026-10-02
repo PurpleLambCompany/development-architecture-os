@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { z } from "zod";
 import { getApproachGuidance } from "@/domain/methodology/queries";
 import { formatDate, formatDateTime } from "@/lib/format";
 import {
@@ -25,6 +26,7 @@ import {
   type RecordKind,
 } from "@/domain/architecture/catalog";
 import { getInternalArchitectureContext, memberNames } from "@/domain/architecture/context";
+import { internalElementHref } from "@/domain/architecture/links";
 import { describeAttributes } from "@/domain/architecture/object-types";
 import {
   getElementDetail,
@@ -110,11 +112,23 @@ export default async function ElementPage({
 }: PageProps<"/internal/engagements/[slug]/architecture/elements/[elementId]">) {
   const { slug, elementId } = await params;
   const query = await searchParams;
+  if (!z.uuid().safeParse(elementId).success) notFound();
   const { engagement, canEdit, canPublish, canManageRequests } =
     await getInternalArchitectureContext(slug);
   const architecture = await loadArchitecture(engagement.id);
   const element = architecture.byId.get(elementId);
   if (!element) notFound();
+  // C1: the three Phase 5 kinds have their own canonical page, which this
+  // route cannot render; version links (above) carry the version forward.
+  if (
+    element.kind === "review" ||
+    element.kind === "deliverable" ||
+    element.kind === "implementation_initiative"
+  ) {
+    const versionParam =
+      typeof query.version === "string" ? `?version=${encodeURIComponent(query.version)}` : "";
+    redirect(`${internalElementHref(slug, element.kind, element.id)}${versionParam}`);
+  }
 
   const isRecord = !element.object;
   const [

@@ -8,10 +8,12 @@ import {
   PROVENANCE_LABELS,
   type AiReviewState,
   type ApprovalState,
+  type ElementKind,
   type ElementLifecycle,
   type MaturityState,
   type ProvenanceType,
 } from "@/domain/architecture/catalog";
+import { internalElementHref } from "@/domain/architecture/links";
 import { StatusTag } from "@/components/ui/status-tag";
 import { cn } from "@/lib/utils";
 
@@ -75,19 +77,24 @@ export function ReferenceCode({ code }: { code: string | null }) {
   );
 }
 
-/** A link to an element's page: reference code and title. */
+/**
+ * A link to an element's page: reference code and title. Routes to the
+ * element's canonical page (C1) whenever the caller's element carries its
+ * kind; callers that pass only an id, code and title keep linking to the
+ * generic route, which still renders every kind but the three Phase 5 ones.
+ */
 export function ElementLink({
   slug,
   element,
   className,
 }: {
   slug: string;
-  element: { id: string; reference_code: string | null; title: string };
+  element: { id: string; kind?: ElementKind; reference_code: string | null; title: string };
   className?: string;
 }) {
   return (
     <Link
-      href={`/internal/engagements/${slug}/architecture/elements/${element.id}`}
+      href={internalElementHref(slug, element.kind ?? "object", element.id)}
       className={cn("group inline-flex items-baseline gap-2", className)}
     >
       <ReferenceCode code={element.reference_code} />

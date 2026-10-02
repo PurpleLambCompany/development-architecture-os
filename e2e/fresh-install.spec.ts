@@ -16,9 +16,10 @@ import { clearMailbox, confirmationLink } from "./support/mailbox";
  *
  * Covered: G-1 and G-2 (Workstream A, Increment 2), G-3, part of G-4
  * (create and publish), G-6 and G-7 (Workstream B, Increment 3), the
- * client-visibility part of G-8, and part of G-10. Deferred until their
- * workstreams land: G-4's evidence and relationships and G-5 (D), G-8's
- * invoice and payment (F), G-9 (C) and the rest of G-10 (E).
+ * client-visibility part of G-8, G-9 (Workstream C, Increment 4), and part
+ * of G-10. Deferred until their workstreams land: G-4's evidence and
+ * relationships and G-5 (D), G-8's invoice and payment (F), and the rest of
+ * G-10 (E).
  *
  * Starts from an unseeded database (no organizations, no users). The only
  * step outside the app is the documented local bootstrap command (D6); from
@@ -56,9 +57,12 @@ const OTHER_ENGAGEMENT = { title: "Southbank Housing Program", slug: "southbank-
 const practicePath = `/internal/organizations/${PRACTICE.slug}`;
 const engagementPath = `/internal/engagements/${ENGAGEMENT.slug}`;
 const portalPath = `/portal/${ENGAGEMENT.slug}`;
+const otherEngagementPath = `/internal/engagements/${OTHER_ENGAGEMENT.slug}`;
 const fullName = (person: { first: string; last: string }) => `${person.first} ${person.last}`;
-/** Set by G-7, read by the C1 boundary. */
+/** Set by G-7 and G-6/G-8, read by G-9. */
 let deliverableId = "";
+let reviewId = "";
+let initiativeId = "";
 
 /** Marks an assertion that pins a known V1-A dead end, and the workstream that closes it. */
 function boundary(workstream: string, description: string) {
@@ -466,6 +470,7 @@ test("G-6: a review is scheduled, corrected, held, published and shown to the cl
   await page.getByRole("button", { name: "Schedule review" }).click();
   await page.getByRole("link", { name: REVIEW }).first().click();
   await expect(page.getByRole("heading", { name: REVIEW })).toBeVisible();
+  reviewId = new URL(page.url()).pathname.split("/").pop()!;
 
   // B2: the review's own fields are corrected on its page.
   await page.getByRole("button", { name: "Edit review fields" }).click();
@@ -507,6 +512,7 @@ test("G-8 (part): an initiative is published and shown to the client", async ({ 
   await page.getByRole("button", { name: "Create initiative" }).click();
   await page.getByRole("link", { name: INITIATIVE }).first().click();
   await expect(page.getByRole("heading", { name: INITIATIVE })).toBeVisible();
+  initiativeId = new URL(page.url()).pathname.split("/").pop()!;
   await publish(page, 1, "First publication.");
 
   const lead = await signedInPage(browser, CLIENT_LEAD.email, TEST_PASSWORD);
@@ -525,18 +531,94 @@ test("G-8 (part): an initiative is published and shown to the client", async ({ 
   await expect(contributor.getByText(INITIATIVE, { exact: true })).toHaveCount(0);
 });
 
-test("C1 boundary: the generic element route still fails for a deliverable", async ({
+test("G-9: every record kind reaches its canonical page, invalid and foreign ids fail safely, and links stay inside their engagement", async ({
   browser,
 }) => {
-  boundary("C1", "the generic element route returns a server error for a deliverable's id");
   const page = await signedInPage(browser, ARCHITECT.email, TEST_PASSWORD);
-  // Control: the same route opens an architecture object.
+
+  // Ordinary architecture-element route: unaffected control.
   await page.goto(`${engagementPath}/architecture/capability`);
   await page.getByRole("link", { name: CAPABILITY }).first().click();
   await expect(page.getByRole("heading", { name: CAPABILITY, exact: true })).toBeVisible();
   expect(new URL(page.url()).pathname).toMatch(/\/architecture\/elements\/[0-9a-f-]{36}$/);
-  const response = await page.goto(`${engagementPath}/architecture/elements/${deliverableId}`);
+
+  // C1: the generic route redirects each Phase 5 kind to its own page instead
+  // of failing, and a version link on that page carries the version along.
+  let response = await page.goto(`${engagementPath}/architecture/elements/${deliverableId}`);
+  expect(response?.status()).toBe(200);
+  expect(new URL(page.url()).pathname).toBe(`${engagementPath}/deliverables/${deliverableId}`);
+  response = await page.goto(`${engagementPath}/architecture/elements/${reviewId}`);
+  expect(response?.status()).toBe(200);
+  expect(new URL(page.url()).pathname).toBe(`${engagementPath}/reviews/${reviewId}`);
+  response = await page.goto(`${engagementPath}/architecture/elements/${initiativeId}`);
+  expect(response?.status()).toBe(200);
+  expect(new URL(page.url()).pathname).toBe(`${engagementPath}/implementation/${initiativeId}`);
+
+  await page.goto(`${engagementPath}/deliverables/${deliverableId}`);
+  const v1Href = (await page.getByRole("link", { name: "v1", exact: true }).getAttribute("href"))!;
+  expect(v1Href).toBe(
+    `${engagementPath}/deliverables/${deliverableId}?version=${v1Href.split("?version=")[1]}`,
+  );
+  response = await page.goto(
+    `${engagementPath}/architecture/elements/${deliverableId}?version=${v1Href.split("?version=")[1]}`,
+  );
+  expect(response?.status()).toBe(200);
+  expect(new URL(page.url()).pathname + new URL(page.url()).search).toBe(v1Href);
+  await expect(page.getByRole("heading", { name: "Version 1 as published" })).toBeVisible();
+
+  // Broken links fixed (#4): the initiative's capability shows the
+  // initiative through a direct link to its own page, not the generic route.
+  await page.goto(`${engagementPath}/architecture/capability`);
+  await page.getByRole("link", { name: CAPABILITY }).first().click();
+  const implementationLink = page.getByRole("link", { name: new RegExp(INITIATIVE) }).first();
+  await expect(implementationLink).toBeVisible();
+  expect(await implementationLink.getAttribute("href")).toBe(
+    `${engagementPath}/implementation/${initiativeId}`,
+  );
+
+  // C2: malformed and well-formed-but-unknown ids fail the same way (404),
+  // on every dynamic record route, internal and in the portal.
+  const unknown = "00000000-0000-4000-8000-000000000000";
+  for (const base of [
+    `${engagementPath}/architecture/elements`,
+    `${engagementPath}/deliverables`,
+    `${engagementPath}/reviews`,
+    `${engagementPath}/implementation`,
+  ]) {
+    expect((await page.goto(`${base}/not-a-uuid`))?.status()).toBe(404);
+    expect((await page.goto(`${base}/${unknown}`))?.status()).toBe(404);
+  }
+
+  // Cross-engagement: this review's id does not exist under another
+  // engagement's path, whether the generic route or its own canonical one.
+  expect(
+    (await page.goto(`${otherEngagementPath}/architecture/elements/${deliverableId}`))?.status(),
+  ).toBe(404);
+  expect((await page.goto(`${otherEngagementPath}/deliverables/${deliverableId}`))?.status()).toBe(
+    404,
+  );
+
+  // Client: a malformed or unknown id in the portal fails the same way, and
+  // never as the framework's own crash page.
+  const lead = await signedInPage(browser, CLIENT_LEAD.email, TEST_PASSWORD);
+  expect((await lead.goto(`${portalPath}/architecture/not-a-uuid`))?.status()).toBe(404);
+  expect((await lead.goto(`${portalPath}/architecture/${unknown}`))?.status()).toBe(404);
+  await expect(lead.getByText("This page does not exist")).toBeVisible();
+});
+
+test("C3: an unexpected error shows the calm boundary, not the framework's own page", async ({
+  browser,
+}) => {
+  const page = await signedInPage(browser, ARCHITECT.email, TEST_PASSWORD);
+  let response = await page.goto("/internal/e2e-force-error");
   expect(response?.status()).toBe(500);
+  await expect(page.getByRole("heading", { name: "Something went wrong" })).toBeVisible();
+  await expect(page.getByText(/could not be prepared/)).toBeVisible();
+
+  const lead = await signedInPage(browser, CLIENT_LEAD.email, TEST_PASSWORD);
+  response = await lead.goto("/portal/e2e-force-error");
+  expect(response?.status()).toBe(500);
+  await expect(lead.getByRole("heading", { name: "Something went wrong" })).toBeVisible();
 });
 
 test("G-10 (part): the login page offers no password recovery", async ({ page }) => {

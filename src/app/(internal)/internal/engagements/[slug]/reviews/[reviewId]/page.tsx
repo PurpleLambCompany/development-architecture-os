@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { z } from "zod";
 import {
   publishElement,
   retireElement,
@@ -7,8 +8,10 @@ import {
   submitForReview,
 } from "@/domain/architecture/actions";
 import { getInternalArchitectureContext, memberNames } from "@/domain/architecture/context";
+import { internalElementHref } from "@/domain/architecture/links";
 import {
   getElementDetail,
+  getVersionSnapshot,
   listBaselines,
   listEvidence,
   loadArchitecture,
@@ -46,7 +49,7 @@ import { ElementLink, LifecycleTag, ReferenceCode } from "@/components/architect
 import { elementTypeLabel } from "@/components/architecture/relationships-panel";
 import { RelationshipsPanel } from "@/components/architecture/relationships-panel";
 import { StatementsPanel } from "@/components/architecture/statements-panel";
-import { VersionsPanel } from "@/components/architecture/versions-panel";
+import { VersionSnapshotPanel, VersionsPanel } from "@/components/architecture/versions-panel";
 import { ActivityList } from "@/components/architecture/activity-list";
 import { PracticePanel } from "@/components/methodology/practice-panel";
 import { ActionButton, ActionForm } from "@/components/ui/action-form";
@@ -72,6 +75,7 @@ export default async function ReviewDetailPage({
 }: PageProps<"/internal/engagements/[slug]/reviews/[reviewId]">) {
   const { slug, reviewId } = await params;
   const query = await searchParams;
+  if (!z.uuid().safeParse(reviewId).success) notFound();
   const { engagement, canEdit, canPublish, canManageReviews } =
     await getInternalArchitectureContext(slug);
   const [
@@ -105,6 +109,10 @@ export default async function ReviewDetailPage({
   const element = architecture.byId.get(reviewId);
   const row = registerRows.find((r) => r.element_id === reviewId);
   if (!element || !row || element.kind !== "review") notFound();
+
+  const versionId = typeof query.version === "string" ? query.version : null;
+  const shownVersion = versionId ? element.versions.find((v) => v.id === versionId) : null;
+  const versionSnapshot = shownVersion ? await getVersionSnapshot(shownVersion.id) : null;
 
   const nameOf = memberNames(engagement);
   const status = reviewStatus(row.review_status);
@@ -179,6 +187,16 @@ export default async function ReviewDetailPage({
         }
       />
       <ArchitectureNav slug={slug} current="reviews" />
+
+      {shownVersion && versionSnapshot ? (
+        <VersionSnapshotPanel
+          versionNo={shownVersion.version_no}
+          publishedAt={shownVersion.published_at}
+          snapshot={versionSnapshot}
+          closeHref={internalElementHref(slug, "review", element.id)}
+          titleOf={(id) => architecture.byId.get(id)?.title ?? null}
+        />
+      ) : null}
 
       <Panel
         title="Session"
@@ -306,7 +324,7 @@ export default async function ReviewDetailPage({
         ) : null}
       </Panel>
 
-      {dossier && (row.review_status === "scheduled" || row.review_status === "held") ? (
+      {row.review_status === "scheduled" || row.review_status === "held" ? (
         <Panel
           title="Dossier"
           description={
@@ -326,11 +344,15 @@ export default async function ReviewDetailPage({
             ) : null
           }
         >
-          <ReviewDossierView
-            dossier={dossier}
-            slug={slug}
-            edgeHref={`/internal/engagements/${slug}/edge?view=judged`}
-          />
+          {dossier ? (
+            <ReviewDossierView
+              dossier={dossier}
+              slug={slug}
+              edgeHref={`/internal/engagements/${slug}/edge?view=judged`}
+            />
+          ) : (
+            <EmptyState title="The dossier could not be prepared" />
+          )}
         </Panel>
       ) : null}
 

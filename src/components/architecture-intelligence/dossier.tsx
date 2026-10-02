@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { ReferenceCode } from "@/components/architecture/badges";
 import type { ReviewDossier } from "@/domain/architecture-intelligence/experience/layer1-queries";
+import { internalElementHref } from "@/domain/architecture/links";
 import { EDGE_TIER_LABELS, type EdgeTier } from "@/domain/edge/items";
 import { edgeRuleLabel } from "@/domain/edge/rules";
 import { formatDate, formatDateTime } from "@/lib/format";
+import type { Database } from "@/types/database";
 import { FactList, FactSection } from "./layer1";
+
+type ElementKind = Database["public"]["Enums"]["element_kind"];
 
 /**
  * The deterministic Review dossier (7B.2 proposal §8). Exact: every line names
@@ -31,9 +35,12 @@ export function ReviewDossierView({
   slug: string;
   edgeHref: string;
 }) {
+  // The examined set names each element's kind; a changed element not in it
+  // (a dependency, say) has no specialized page, so the generic route is correct for it.
+  const kindOf = new Map(dossier.examined.map((x) => [x.element_id, x.kind as ElementKind]));
   const el = (id: string, code: string) => (
     <Link
-      href={`/internal/engagements/${slug}/architecture/elements/${id}`}
+      href={internalElementHref(slug, kindOf.get(id) ?? "object", id)}
       className="hover:underline"
     >
       <ReferenceCode code={code} />

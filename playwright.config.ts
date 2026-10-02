@@ -49,6 +49,10 @@ export default defineConfig({
       BUSINESS_TIME_ZONE: "America/Chicago",
       ARCHITECTURE_INTELLIGENCE_MODE: "off",
       NEXT_TELEMETRY_DISABLED: "1",
+      // Enables the two __e2e__/force-error routes that prove the error
+      // boundaries (C3). Never set outside this suite, so a real deployment
+      // gets the ordinary not-found page from those routes instead.
+      E2E_TEST_ROUTES: "1",
     },
   },
 });
