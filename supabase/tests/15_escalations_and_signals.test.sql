@@ -187,7 +187,7 @@ select throws_ok($$ select public.dismiss_intelligence_signal('e0000000-0000-400
 select throws_ok($$ select public.dismiss_intelligence_signal('e0000000-0000-4000-8000-000000000001', 'review_overdue',
   'b3000000-0000-4000-8000-000000000505', null, 'x', '') $$, '23514', null, 'with a reason');
 select throws_ok($$ select public.dismiss_intelligence_signal('e0000000-0000-4000-8000-000000000001', 'review_overdue',
-  'b3000000-0000-4000-8000-000000000505', null, 'x', 'Reason', current_date) $$,
+  'b3000000-0000-4000-8000-000000000505', null, 'x', 'Reason', (now() at time zone 'America/Chicago')::date) $$,
   '23514', null, 'expiring in the future');
 select lives_ok($$ select public.dismiss_intelligence_signal('e0000000-0000-4000-8000-000000000001', f.rule_key,
   f.element_id, f.client_action_id, f.fingerprint, 'Waiting on the November board meeting.')

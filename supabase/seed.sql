@@ -1573,7 +1573,8 @@ select pg_temp.act_as('10000000-0000-4000-8000-000000000002');  -- Principal Arc
 select public.set_engagement_ai_authorization(e, 'authorized',
   array['published_architecture', 'working_architecture', 'project_intelligence', 'evidence_metadata'],
   'openai', 'us', 'synthetic_evaluation', 'Seed evaluation: synthetic engagement',
-  'All engagement data is made up; authorized for the 7B.1 evaluation harness only.', 25, current_date)
+  'All engagement data is made up; authorized for the 7B.1 evaluation harness only.', 25,
+  null)  -- the business date (America/Chicago), not current_date (UTC), which runs ahead each evening
 from unnest(array['e0000000-0000-4000-8000-000000000001', 'e0000000-0000-4000-8000-000000000003']::uuid[]) e;
 
 select set_config('request.jwt.claims', '', false);

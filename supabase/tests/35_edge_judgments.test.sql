@@ -86,7 +86,7 @@ select throws_ok(format($$ select public.record_edge_judgment(%L, 'realization_w
 
 -- Deferred needs a future date and returns when it expires.
 select throws_ok(format($$ select public.record_edge_judgment(%L, 'operational_not_validated', 'element', %L, %L,
-                                                             'deferred', 'After the council meets.', current_date) $$,
+                                                             'deferred', 'After the council meets.', (now() at time zone 'America/Chicago')::date) $$,
                         'e0000000-0000-4000-8000-000000000003', pg_temp.h('IMP-001'),
                         pg_temp.fp(:H, 'operational_not_validated', pg_temp.h('IMP-001'))),
   '23514', 'A deferral needs a future date', 'a deferral needs a future date');
