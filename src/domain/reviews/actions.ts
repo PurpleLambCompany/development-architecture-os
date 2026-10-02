@@ -12,6 +12,7 @@ import {
   createReviewSchema,
   holdReviewSchema,
   recordValidationSchema,
+  updateReviewSchema,
 } from "./schemas";
 
 /**
@@ -54,6 +55,34 @@ export async function createReview(engagementId: string, input: unknown) {
       ...(v.summary ? { p_summary: v.summary } : {}),
     }),
   );
+}
+
+/** Direct edit of a review's own working fields (manage_reviews, V1-A B2). */
+export async function updateReview(elementId: string, input: unknown) {
+  return run(updateReviewSchema, input, async (supabase, v) => {
+    const result = await supabase
+      .from("reviews")
+      .update({
+        review_type: v.reviewType,
+        scheduled_for: v.scheduledFor,
+        baseline_id: v.baselineId,
+        summary: v.summary,
+      })
+      .eq("element_id", elementId)
+      .select("element_id");
+    if (result.error || result.data?.length) return result;
+    // Row-level security filtered the update out: no manage_reviews.
+    return {
+      data: null,
+      error: {
+        code: "42501",
+        message: "No permission",
+        details: "",
+        hint: "",
+        name: "PostgrestError",
+      } as PostgrestError,
+    };
+  });
 }
 
 export async function addReviewParticipant(reviewElementId: string, input: unknown) {

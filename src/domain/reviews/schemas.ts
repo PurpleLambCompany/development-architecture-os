@@ -36,6 +36,14 @@ export const createReviewSchema = z.object({
   summary: text(4000),
 });
 
+/** Direct edits to a review's own working fields (manage_reviews, V1-A B2). */
+export const updateReviewSchema = z.object({
+  reviewType: z.enum(REVIEW_TYPES, "Choose the kind of review"),
+  scheduledFor: optionalDateTime,
+  baselineId: optionalId,
+  summary: text(4000),
+});
+
 export const addParticipantSchema = z.object({
   engagementMemberId: id,
   role: z.enum(REVIEW_PARTICIPANT_ROLES).default("attendee"),

@@ -1,6 +1,6 @@
 # ADR-0074: Practice administration and architectural authority
 
-**Status:** Accepted for implementation (V1-A Increment 2, Workstream A; plan decisions D1-D7 accepted by Kerrick 2026-10-02). Not yet merged or accepted as built.
+**Status:** Accepted (V1-A Increment 2, Workstream A; plan decisions D1-D7 accepted by Kerrick 2026-10-02; merged in PR #18).
 
 ## Context
 

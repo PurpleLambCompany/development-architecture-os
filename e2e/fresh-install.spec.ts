@@ -15,10 +15,10 @@ import { clearMailbox, confirmationLink } from "./support/mailbox";
  * Fresh installation (V1-A Gate A, browser run 1; plan §6.3).
  *
  * Covered: G-1 and G-2 (Workstream A, Increment 2), G-3, part of G-4
- * (create and publish), part of G-7 (create and publish a deliverable), and
- * part of G-10. Deferred until their workstreams land: G-4's evidence and
- * relationships and G-5 (D), G-6 and the rest of G-7 (B), G-8 (B), G-9 (C)
- * and the rest of G-10 (E).
+ * (create and publish), G-6 and G-7 (Workstream B, Increment 3), the
+ * client-visibility part of G-8, and part of G-10. Deferred until their
+ * workstreams land: G-4's evidence and relationships and G-5 (D), G-8's
+ * invoice and payment (F), G-9 (C) and the rest of G-10 (E).
  *
  * Starts from an unseeded database (no organizations, no users). The only
  * step outside the app is the documented local bootstrap command (D6); from
@@ -28,7 +28,8 @@ import { clearMailbox, confirmationLink } from "./support/mailbox";
  * (docs/product/V1_A_WORKFLOW_CLOSURE_PROPOSAL.md §4). Those assertions are
  * expected to fail when the workstream lands; that PR updates them.
  *
- * Authorization is proven in pgTAP (60_practice_administration); this suite
+ * Authorization is proven in pgTAP (60_practice_administration,
+ * 62_client_records_and_files); this suite
  * proves the workflows are usable and that people meet the refusals where
  * the product says they will.
  */
@@ -45,11 +46,19 @@ const CLIENT_ORG = { name: "Northwind Civic Trust", slug: "northwind" };
 const ENGAGEMENT = { title: "Northwind Regional Program", slug: "northwind-regional" };
 const CAPABILITY = "Community stewardship";
 const DELIVERABLE = "Northwind Executive Summary";
+const REVIEW = "Northwind Scope Review";
+const INITIATIVE = "Stewardship council";
+const CONTRIBUTOR = { email: "contributor@northwind.test", first: "Omar", last: "Reyes" };
+const OTHER_LEAD = { email: "lead@southbank.test", first: "Lena", last: "Ortiz" };
+const OTHER_ORG = { name: "Southbank Housing Trust", slug: "southbank" };
+const OTHER_ENGAGEMENT = { title: "Southbank Housing Program", slug: "southbank-housing" };
 
 const practicePath = `/internal/organizations/${PRACTICE.slug}`;
 const engagementPath = `/internal/engagements/${ENGAGEMENT.slug}`;
 const portalPath = `/portal/${ENGAGEMENT.slug}`;
 const fullName = (person: { first: string; last: string }) => `${person.first} ${person.last}`;
+/** Set by G-7, read by the C1 boundary. */
+let deliverableId = "";
 
 /** Marks an assertion that pins a known V1-A dead end, and the workstream that closes it. */
 function boundary(workstream: string, description: string) {
@@ -334,44 +343,198 @@ test("the client lead sees the published capability in the portal", async ({ bro
   await expect(page.getByRole("heading", { name: CAPABILITY })).toBeVisible();
 });
 
-test("G-7 (part): a deliverable is created and published but cannot reach the client", async ({
+test("B: a Client Contributor and another client's lead are set up", async ({ browser }) => {
+  const page = await signedInPage(browser, PRINCIPAL.email, TEST_PASSWORD);
+  await page.goto(`/internal/organizations/${CLIENT_ORG.slug}`);
+  await invite(page, CONTRIBUTOR, "Client Contributor");
+  const contributor = await newPage(browser);
+  await acceptInvitation(contributor, await confirmationLink(CONTRIBUTOR.email, /invit/i));
+  await expect(contributor).toHaveURL(/\/portal/);
+  await page.goto(engagementPath);
+  // Staffed without contributor areas: they see only what their areas reach.
+  await addToTeam(page, fullName(CONTRIBUTOR), "Client Contributor", "Client Contributor");
+
+  await page.goto("/internal/organizations/new");
+  await page.getByLabel("Organization name").fill(OTHER_ORG.name);
+  await page.getByLabel("Identifier").fill(OTHER_ORG.slug);
+  await page.getByRole("button", { name: "Create organization" }).click();
+  await expect(page).toHaveURL(`/internal/organizations/${OTHER_ORG.slug}`);
+  await invite(page, OTHER_LEAD, "Client Project Lead");
+  const other = await newPage(browser);
+  await acceptInvitation(other, await confirmationLink(OTHER_LEAD.email, /invit/i));
+  await expect(other).toHaveURL(/\/portal/);
+  await page.goto("/internal/engagements/new");
+  await page.getByLabel("Client organization").selectOption({ label: OTHER_ORG.name });
+  await page.getByLabel("Engagement title").fill(OTHER_ENGAGEMENT.title);
+  await page.getByLabel("Identifier").fill(OTHER_ENGAGEMENT.slug);
+  await page.getByLabel("Project objective").fill("Another client's program.");
+  await page.getByRole("button", { name: "Create engagement" }).click();
+  await addToTeam(page, fullName(OTHER_LEAD), "Client Project Lead", "Client Project Lead");
+});
+
+test("G-7: a deliverable is published with a file and reaches the client only once shown, keeping its version 1 file after republication", async ({
   browser,
 }) => {
-  boundary(
-    "B1",
-    "a deliverable created in the UI stays internal: no control sets its client visibility",
-  );
   const page = await signedInPage(browser, ARCHITECT.email, TEST_PASSWORD);
   acceptDialogs(page);
   await page.goto(`${engagementPath}/deliverables?new=1`);
-  await expect(page.getByRole("button", { name: "Create deliverable" })).toBeVisible();
-  await expect(page.getByRole("combobox", { name: /client visibility/i })).toHaveCount(0);
   await page.locator("input[name=title]").fill(DELIVERABLE);
   await page.locator("textarea[name=summary]").fill("The executive summary.");
   await page.getByRole("button", { name: "Create deliverable" }).click();
   await page.getByRole("link", { name: DELIVERABLE }).first().click();
   await expect(page.getByRole("heading", { name: DELIVERABLE })).toBeVisible();
-  const deliverableUrl = page.url();
+  deliverableId = new URL(page.url()).pathname.split("/").pop()!;
+  await publish(page, 1, "First publication.");
+  const v1 = await attachFile(page, "summary-v1.pdf", "Version 1 of the summary.");
+  const v1Files = page.getByRole("region", { name: "Version 1 files" });
+  await expect(v1Files.getByRole("heading")).toHaveText("Version 1 · current");
+  await expect(page.getByText("The client cannot see this deliverable.")).toBeVisible();
 
-  await page.getByRole("button", { name: "Publish", exact: true }).click();
-  await page.locator("textarea[name=changeSummary]").fill("First publication.");
-  await page.locator("form").getByRole("button", { name: "Publish v1" }).click();
-  // Published: the next publication would be v2.
-  await page.getByRole("button", { name: "Publish", exact: true }).click();
-  await expect(page.locator("form").getByRole("button", { name: "Publish v2" })).toBeVisible();
-  await expect(page.getByRole("combobox", { name: /client visibility/i })).toHaveCount(0);
+  // Published but not shown: no client can find or fetch it.
+  const lead = await signedInPage(browser, CLIENT_LEAD.email, TEST_PASSWORD);
+  await lead.goto(`${portalPath}/deliverables`);
+  await expect(lead.getByText("No deliverables yet")).toBeVisible();
+  expect((await lead.request.get(`/files/${v1.id}`)).status()).toBe(404);
+  expect((await lead.goto(`${portalPath}/architecture/${deliverableId}`))?.status()).toBe(404);
 
-  const client = await signedInPage(browser, CLIENT_LEAD.email, TEST_PASSWORD);
-  await client.goto(portalPath);
-  await expect(client.getByText("No deliverables yet")).toBeVisible();
+  // Shown deliberately, by someone who can publish architecture.
+  await page.getByRole("button", { name: "Show to client" }).click();
+  await expect(
+    page.getByText("The client sees this deliverable's published versions now."),
+  ).toBeVisible();
 
+  await lead.goto(portalPath);
+  await lead.getByRole("link", { name: DELIVERABLE }).click();
+  await expect(lead).toHaveURL(`${portalPath}/deliverables`);
+  const shown = lead.getByRole("article", { name: DELIVERABLE });
+  await expect(shown).toContainText("The executive summary.");
+  await expect(shown.getByRole("link", { name: "summary-v1.pdf" })).toBeVisible();
+  const download = await lead.request.get(`/files/${v1.id}`);
+  expect(download.status()).toBe(200);
+  expect(await download.text()).toBe("Version 1 of the summary.");
+
+  // Area-limited, and outside the engagement: refused at the database.
+  const contributor = await signedInPage(browser, CONTRIBUTOR.email, TEST_PASSWORD);
+  await contributor.goto(`${portalPath}/deliverables`);
+  await expect(contributor.getByText("No deliverables yet")).toBeVisible();
+  expect((await contributor.request.get(`/files/${v1.id}`)).status()).toBe(404);
+  const other = await signedInPage(browser, OTHER_LEAD.email, TEST_PASSWORD);
+  expect((await other.request.get(`/files/${v1.id}`)).status()).toBe(404);
+  expect((await other.goto(`${portalPath}/deliverables`))?.status()).toBe(404);
+
+  // D9: republishing keeps version 1's file with version 1.
+  await page.goto(`${engagementPath}/deliverables/${deliverableId}`);
+  await publish(page, 2, "Corrected the summary.");
+  const v2 = await attachFile(page, "summary-v2.pdf", "Version 2 of the summary.");
+  await expect(
+    page.getByRole("region", { name: "Version 2 files" }).getByRole("heading"),
+  ).toHaveText("Version 2 · current");
+  await expect(v1Files.getByRole("heading")).toHaveText("Version 1");
+  await expect(v1Files.getByRole("link", { name: "summary-v1.pdf" })).toBeVisible();
+
+  await lead.goto(`${portalPath}/deliverables`);
+  await expect(shown).toContainText("Version 2, published");
+  await expect(
+    shown
+      .getByRole("region", { name: "Version 2 files" })
+      .getByRole("link", { name: "summary-v2.pdf" }),
+  ).toBeVisible();
+  await expect(
+    shown
+      .getByRole("region", { name: "Version 1 files" })
+      .getByRole("link", { name: "summary-v1.pdf" }),
+  ).toBeVisible();
+  expect(await (await lead.request.get(`/files/${v1.id}`)).text()).toBe(
+    "Version 1 of the summary.",
+  );
+  expect(await (await lead.request.get(`/files/${v2.id}`)).text()).toBe(
+    "Version 2 of the summary.",
+  );
+  expect((await other.request.get(`/files/${v2.id}`)).status()).toBe(404);
+});
+
+test("G-6: a review is scheduled, corrected, held, published and shown to the client", async ({
+  browser,
+}) => {
+  const page = await signedInPage(browser, ARCHITECT.email, TEST_PASSWORD);
+  acceptDialogs(page);
+  await page.goto(`${engagementPath}/reviews`);
+  await page.getByRole("button", { name: "Schedule a review" }).click();
+  await page.locator("input[name=title]").fill(REVIEW);
+  await page.locator("input[name=scheduledFor]").fill("2026-11-02T15:00");
+  await page.locator("textarea[name=summary]").fill("Agenda to follow.");
+  await page.getByRole("button", { name: "Schedule review" }).click();
+  await page.getByRole("link", { name: REVIEW }).first().click();
+  await expect(page.getByRole("heading", { name: REVIEW })).toBeVisible();
+
+  // B2: the review's own fields are corrected on its page.
+  await page.getByRole("button", { name: "Edit review fields" }).click();
+  const edit = page.locator("form", { has: page.locator("input[name=scheduledFor]") });
+  await edit.locator("textarea[name=summary]").fill("Confirm the regional program's scope.");
+  await edit.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByText("Confirm the regional program's scope.")).toBeVisible();
+
+  await page.getByRole("button", { name: "Hold review" }).click();
+  await page.locator("textarea[name=summary]").fill("Scope confirmed.");
+  await page.getByRole("button", { name: "Record as held" }).click();
+  await expect(page.getByText("Scope confirmed.")).toBeVisible();
+  await publish(page, 1, "The held review.");
+
+  const lead = await signedInPage(browser, CLIENT_LEAD.email, TEST_PASSWORD);
+  await lead.goto(`${portalPath}/reviews`);
+  await expect(lead.getByText("No reviews published yet")).toBeVisible();
+
+  await page.getByRole("button", { name: "Show to client" }).click();
+  await expect(
+    page.getByText("The client sees this review's published versions now."),
+  ).toBeVisible();
+  await lead.reload();
+  await expect(lead.getByText(REVIEW, { exact: true })).toBeVisible();
+  await expect(lead.getByText("Scope confirmed.")).toBeVisible();
+
+  const contributor = await signedInPage(browser, CONTRIBUTOR.email, TEST_PASSWORD);
+  await contributor.goto(`${portalPath}/reviews`);
+  await expect(contributor.getByText("No reviews published yet")).toBeVisible();
+});
+
+test("G-8 (part): an initiative is published and shown to the client", async ({ browser }) => {
+  const page = await signedInPage(browser, ARCHITECT.email, TEST_PASSWORD);
+  acceptDialogs(page);
+  await page.goto(`${engagementPath}/implementation?new=1`);
+  await page.locator("input[name=title]").fill(INITIATIVE);
+  await page.getByLabel(new RegExp(CAPABILITY)).check();
+  await page.locator("textarea[name=summary]").fill("Stand up the stewardship council.");
+  await page.getByRole("button", { name: "Create initiative" }).click();
+  await page.getByRole("link", { name: INITIATIVE }).first().click();
+  await expect(page.getByRole("heading", { name: INITIATIVE })).toBeVisible();
+  await publish(page, 1, "First publication.");
+
+  const lead = await signedInPage(browser, CLIENT_LEAD.email, TEST_PASSWORD);
+  await lead.goto(`${portalPath}/implementation`);
+  await expect(lead.getByText(INITIATIVE, { exact: true })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Show to client" }).click();
+  await expect(
+    page.getByText("The client sees this initiative's published versions now."),
+  ).toBeVisible();
+  await lead.reload();
+  await expect(lead.getByText(INITIATIVE, { exact: true })).toBeVisible();
+
+  const contributor = await signedInPage(browser, CONTRIBUTOR.email, TEST_PASSWORD);
+  await contributor.goto(`${portalPath}/implementation`);
+  await expect(contributor.getByText(INITIATIVE, { exact: true })).toHaveCount(0);
+});
+
+test("C1 boundary: the generic element route still fails for a deliverable", async ({
+  browser,
+}) => {
   boundary("C1", "the generic element route returns a server error for a deliverable's id");
+  const page = await signedInPage(browser, ARCHITECT.email, TEST_PASSWORD);
   // Control: the same route opens an architecture object.
   await page.goto(`${engagementPath}/architecture/capability`);
   await page.getByRole("link", { name: CAPABILITY }).first().click();
   await expect(page.getByRole("heading", { name: CAPABILITY, exact: true })).toBeVisible();
   expect(new URL(page.url()).pathname).toMatch(/\/architecture\/elements\/[0-9a-f-]{36}$/);
-  const deliverableId = new URL(deliverableUrl).pathname.split("/").pop()!;
   const response = await page.goto(`${engagementPath}/architecture/elements/${deliverableId}`);
   expect(response?.status()).toBe(500);
 });
@@ -406,6 +569,35 @@ async function invite(
   await page.getByLabel("Role", { exact: true }).selectOption({ label: role });
   await page.getByRole("button", { name: "Send invitation", exact: true }).click();
   await expect(memberRow(page, person)).toBeVisible();
+}
+
+/** Publishes the open record's next version from its page. */
+async function publish(page: Page, versionNo: number, changeSummary: string) {
+  await page.getByRole("button", { name: "Publish", exact: true }).click();
+  await page.locator("textarea[name=changeSummary]").fill(changeSummary);
+  await page
+    .locator("form")
+    .getByRole("button", { name: `Publish v${versionNo}` })
+    .click();
+  await page.getByRole("button", { name: "Publish", exact: true }).click();
+  await expect(
+    page.locator("form").getByRole("button", { name: `Publish v${versionNo + 1}` }),
+  ).toBeVisible();
+  await page.reload();
+}
+
+/** Attaches a small PDF to the open deliverable's current version; returns its file id. */
+async function attachFile(page: Page, name: string, content: string) {
+  await page.locator("input[type=file][name=files]").setInputFiles({
+    name,
+    mimeType: "application/pdf",
+    buffer: Buffer.from(content),
+  });
+  await page.getByRole("button", { name: "Attach to this version" }).click();
+  const link = page.getByRole("link", { name });
+  await expect(link).toBeVisible();
+  const href = (await link.getAttribute("href"))!;
+  return { id: href.split("/").pop()! };
 }
 
 /**

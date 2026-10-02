@@ -7,20 +7,31 @@ import {
   submitForReview,
 } from "@/domain/architecture/actions";
 import { getInternalArchitectureContext, memberNames } from "@/domain/architecture/context";
-import { getElementDetail, listEvidence, loadArchitecture } from "@/domain/architecture/queries";
+import {
+  getElementDetail,
+  listBaselines,
+  listEvidence,
+  loadArchitecture,
+} from "@/domain/architecture/queries";
 import {
   addReviewParticipant,
   cancelReview,
   holdReview,
   recordReviewValidation,
+  updateReview,
 } from "@/domain/reviews/actions";
 import {
   REVIEW_PARTICIPANT_ROLES,
   REVIEW_PARTICIPANT_ROLE_LABELS,
+  REVIEW_TYPES,
   REVIEW_TYPE_LABELS,
   reviewStatus,
 } from "@/domain/reviews/catalog";
-import { getReviewParticipants, getReviewRegister } from "@/domain/reviews/queries";
+import {
+  getReviewParticipants,
+  getReviewRegister,
+  getReviewSummary,
+} from "@/domain/reviews/queries";
 import { setValidationCriterionNote } from "@/domain/methodology/actions";
 import {
   getApproachGuidance,
@@ -47,6 +58,7 @@ import { getReviewDossier } from "@/domain/architecture-intelligence/experience/
 import { viewerUsesIntelligence } from "@/domain/architecture-intelligence/experience/queries";
 import { ACTION_LABELS, pageDrawer } from "@/domain/architecture-intelligence/experience/subjects";
 import { StatusTag } from "@/components/ui/status-tag";
+import { ClientVisibilityControl } from "@/components/architecture/client-visibility-control";
 
 /**
  * One review's detail: header, agenda (examines), participants, findings
@@ -73,6 +85,8 @@ export default async function ReviewDetailPage({
     revisions,
     dossier,
     usesIntelligence,
+    baselines,
+    reviewSummary,
   ] = await Promise.all([
     loadArchitecture(engagement.id),
     getReviewRegister(engagement.id),
@@ -84,6 +98,8 @@ export default async function ReviewDetailPage({
     getElementRevisions(engagement.id),
     getReviewDossier(engagement.id, reviewId),
     viewerUsesIntelligence(engagement.id),
+    listBaselines(engagement.id),
+    getReviewSummary(reviewId),
   ]);
   const intelligence = pageDrawer(`/internal/engagements/${slug}/reviews/${reviewId}`, query);
   const element = architecture.byId.get(reviewId);
@@ -232,9 +248,62 @@ export default async function ReviewDetailPage({
               value: row.scheduled_for ? formatDateTime(row.scheduled_for) : "Not set",
             },
             { label: "Held at", value: row.held_at ? formatDateTime(row.held_at) : "Not yet held" },
-            { label: "Summary", value: row.summary },
+            { label: "Summary", value: reviewSummary || null },
+            {
+              label: "Client visibility",
+              value: element.client_visibility === "client" ? "Client" : "Internal",
+            },
           ]}
         />
+        {canPublish && !frozen ? (
+          <div className="mt-4">
+            <ClientVisibilityControl
+              elementId={element.id}
+              visibility={element.client_visibility}
+              published={Boolean(element.latestVersion)}
+              noun="review"
+            />
+          </div>
+        ) : null}
+        {canManageReviews && !frozen ? (
+          <div className="mt-4">
+            <ActionForm
+              fields={[
+                {
+                  name: "reviewType",
+                  label: "Kind",
+                  type: "select",
+                  options: REVIEW_TYPES.map((t) => ({ value: t, label: REVIEW_TYPE_LABELS[t] })),
+                },
+                {
+                  name: "scheduledFor",
+                  label: "Scheduled for",
+                  type: "text",
+                  hint: "YYYY-MM-DDTHH:mm",
+                },
+                {
+                  name: "baselineId",
+                  label: "Baseline",
+                  type: "select",
+                  options: [
+                    { value: "", label: "None" },
+                    ...baselines.map((b) => ({ value: b.id, label: b.label })),
+                  ],
+                },
+                { name: "summary", label: "Summary", type: "textarea" },
+              ]}
+              defaultValues={{
+                reviewType: row.review_type,
+                scheduledFor: row.scheduled_for ? row.scheduled_for.slice(0, 16) : "",
+                baselineId: row.baseline_id ?? "",
+                summary: reviewSummary,
+              }}
+              action={updateReview.bind(null, element.id)}
+              submitLabel="Save"
+              trigger="Edit review fields"
+            />
+          </div>
+        ) : null}
       </Panel>
 
       {dossier && (row.review_status === "scheduled" || row.review_status === "held") ? (

@@ -613,6 +613,42 @@ export async function publishElement(elementId: string, input: unknown) {
   );
 }
 
+/** The client-facing records whose client visibility is set on their own page (V1-A B1). */
+const CLIENT_RECORD_KINDS = ["deliverable", "review", "implementation_initiative"] as const;
+const clientVisibilitySchema = z.object({ visibility: z.enum(["internal", "client"]) });
+
+/**
+ * Set whether a deliverable, review or implementation initiative is shown to
+ * the client (V1-A B1). Clients see only its published versions, and only
+ * while it is client-visible. The database lets only a holder of
+ * publish_architecture change this, whatever the caller's other capabilities.
+ */
+export async function setClientVisibility(elementId: string, input: unknown) {
+  await requireViewer();
+  const parsed = clientVisibilitySchema.safeParse(input ?? {});
+  if (!parsed.success) return fromZodError(parsed.error);
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("architecture_elements")
+    .update({ client_visibility: parsed.data.visibility })
+    .eq("id", elementId)
+    .in("kind", [...CLIENT_RECORD_KINDS])
+    .select("id");
+  if (error?.code === "42501" || (!error && !data?.length)) {
+    return fail(
+      "Only someone who can publish architecture on this engagement can change what the client sees.",
+    );
+  }
+  if (error?.message.includes("architecture_elements_method_ip_internal")) {
+    return fail(
+      "This record is classified as TPLCo Method IP, so it cannot be shown to the client.",
+    );
+  }
+  if (error) return dbError(error);
+  refresh();
+  return ok(undefined);
+}
+
 export async function retireElement(elementId: string, input: unknown) {
   return run(reasonSchema, input, (supabase, v) =>
     supabase.rpc("retire_element", { p_element_id: elementId, p_reason: v.reason }),
