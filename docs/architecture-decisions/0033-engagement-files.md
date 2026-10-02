@@ -17,3 +17,5 @@ Information requests and evidence need files, not only links. Files are confiden
 ## Consequences
 
 Files cannot be replaced or removed through the application; a wrong file is superseded by a new one.
+
+**Amended (V1-A Increment 3):** a client also reads the files of a deliverable they can read, on every published version. See [ADR-0075](0075-client-records-and-deliverable-files.md).

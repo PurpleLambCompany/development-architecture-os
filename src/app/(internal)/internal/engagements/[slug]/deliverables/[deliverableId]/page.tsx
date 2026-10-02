@@ -26,6 +26,8 @@ import { StatementsPanel } from "@/components/architecture/statements-panel";
 import { VersionsPanel } from "@/components/architecture/versions-panel";
 import { ActivityList } from "@/components/architecture/activity-list";
 import { DeliverableFileUpload } from "@/components/deliverables/deliverable-file-upload";
+import { DeliverableFilesByVersion } from "@/components/deliverables/deliverable-files";
+import { ClientVisibilityControl } from "@/components/architecture/client-visibility-control";
 import { ActionButton, ActionForm } from "@/components/ui/action-form";
 import { PracticePanel } from "@/components/methodology/practice-panel";
 import { PageHeader } from "@/components/ui/page-header";
@@ -52,7 +54,7 @@ export default async function DeliverableDetailPage({
   const nameOf = memberNames(engagement);
   const frozen = element.lifecycle === "retired" || element.lifecycle === "superseded";
   const evidenceOptions = evidence.map((s) => ({ value: s.id, label: s.title }));
-  const files = row.latest_version_id ? await getDeliverableFiles(row.latest_version_id) : [];
+  const files = await getDeliverableFiles(element.id);
 
   return (
     <div className="space-y-8">
@@ -122,6 +124,10 @@ export default async function DeliverableDetailPage({
               { label: "Kind", value: DELIVERABLE_TYPE_LABELS[row.deliverable_type] },
               { label: "Confidential", value: row.confidential ? "Yes" : "No" },
               {
+                label: "Client visibility",
+                value: element.client_visibility === "client" ? "Client" : "Internal",
+              },
+              {
                 label: "Baseline",
                 value: row.baseline_id
                   ? baselines.find((b) => b.id === row.baseline_id)?.label
@@ -130,6 +136,14 @@ export default async function DeliverableDetailPage({
               { label: "Last changed", value: formatDateTime(element.updated_at) },
             ]}
           />
+          {canPublish && !frozen ? (
+            <ClientVisibilityControl
+              elementId={element.id}
+              visibility={element.client_visibility}
+              published={Boolean(element.latestVersion)}
+              noun="deliverable"
+            />
+          ) : null}
           {canManageDeliverables && !frozen ? (
             <ActionForm
               fields={[
@@ -185,10 +199,10 @@ export default async function DeliverableDetailPage({
       />
 
       <Panel
-        title="File"
+        title="Files"
         description={
           row.latest_version_id
-            ? "Attached to the currently published version."
+            ? "Each file belongs to the published version it was attached to. A new attachment goes to the current version; earlier versions keep theirs."
             : "Publish the deliverable before attaching its file."
         }
       >
@@ -196,16 +210,10 @@ export default async function DeliverableDetailPage({
           {files.length === 0 ? (
             <EmptyState title="No file attached" />
           ) : (
-            <ul className="divide-y divide-rule border-y border-rule text-sm">
-              {files.map((f) => (
-                <li key={f.id} className="flex flex-wrap items-center justify-between gap-3 py-2">
-                  <span className="text-ink">{f.filename}</span>
-                  <span className="text-xs text-ink-muted">
-                    {(f.size_bytes / 1024).toFixed(0)} KB · {formatDateTime(f.created_at)}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <DeliverableFilesByVersion
+              files={files}
+              currentVersionNo={element.latestVersion?.version_no ?? null}
+            />
           )}
           {canManageDeliverables && row.latest_version_id ? (
             <DeliverableFileUpload engagementId={engagement.id} elementId={element.id} />

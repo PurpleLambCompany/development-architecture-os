@@ -32,20 +32,20 @@ Project Intelligence adds one record kind, `opportunity` (prefix `OPP`), to the 
 
 ## New tables
 
-| Table                            | Holds                                                                                    | Client policy                                                                |
-| -------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `opportunities`                  | Value, feasibility, attractiveness (generated), window, status                           | published snapshot only                                                      |
-| `intelligence_stewardship`       | Attention, next review date, triage state and note                                       | none                                                                         |
-| `intelligence_status_changes`    | Append-only field-level history: operation, field, from/to, rationale, actor             | none                                                                         |
-| `intelligence_escalations`       | Level (Principal Architect / client executive), reason, acknowledged/resolved            | none directly; a client sees only the `executive_attention` action it raises |
-| `intelligence_signal_dismissals` | Rule, subject, fingerprint, reason, expiry                                               | none                                                                         |
-| `client_actions`                 | One request, its kind, addressee, subjects, status                                       | addressee, and `assign_client_actions` holders, see the whole engagement's   |
-| `client_action_subjects`         | Published, client-visible elements a request is about                                    | as above                                                                     |
-| `client_action_responses`        | The addressee's written response, link, files                                            | as above                                                                     |
-| `client_action_events`           | Sent/responded/returned/closed/withdrawn/reassigned history                              | as above                                                                     |
-| `client_contributions`           | Client input on one published, client-visible element                                    | the submitter, and internal readers                                          |
-| `engagement_member_areas`        | A client member's domain or element-subtree scope                                        | their own                                                                    |
-| `engagement_files`               | Uploaded file metadata; the storage object itself lives in the `engagement-files` bucket | files attached to something they can see                                     |
+| Table                            | Holds                                                                                    | Client policy                                                                                                       |
+| -------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `opportunities`                  | Value, feasibility, attractiveness (generated), window, status                           | published snapshot only                                                                                             |
+| `intelligence_stewardship`       | Attention, next review date, triage state and note                                       | none                                                                                                                |
+| `intelligence_status_changes`    | Append-only field-level history: operation, field, from/to, rationale, actor             | none                                                                                                                |
+| `intelligence_escalations`       | Level (Principal Architect / client executive), reason, acknowledged/resolved            | none directly; a client sees only the `executive_attention` action it raises                                        |
+| `intelligence_signal_dismissals` | Rule, subject, fingerprint, reason, expiry                                               | none                                                                                                                |
+| `client_actions`                 | One request, its kind, addressee, subjects, status                                       | addressee, and `assign_client_actions` holders, see the whole engagement's                                          |
+| `client_action_subjects`         | Published, client-visible elements a request is about                                    | as above                                                                                                            |
+| `client_action_responses`        | The addressee's written response, link, files                                            | as above                                                                                                            |
+| `client_action_events`           | Sent/responded/returned/closed/withdrawn/reassigned history                              | as above                                                                                                            |
+| `client_contributions`           | Client input on one published, client-visible element                                    | the submitter, and internal readers                                                                                 |
+| `engagement_member_areas`        | A client member's domain or element-subtree scope                                        | their own                                                                                                           |
+| `engagement_files`               | Uploaded file metadata; the storage object itself lives in the `engagement-files` bucket | files attached to something they can see, including any published version of a deliverable they can read (ADR-0075) |
 
 ## Capabilities (ADR-0031)
 

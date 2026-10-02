@@ -11,7 +11,14 @@ import { cn } from "@/lib/utils";
 const LATER_SECTIONS = ["Documents", "Messages"];
 
 export type PortalSection =
-  "overview" | "actions" | "architecture" | "decisions" | "reviews" | "implementation" | "billing";
+  | "overview"
+  | "actions"
+  | "architecture"
+  | "decisions"
+  | "reviews"
+  | "deliverables"
+  | "implementation"
+  | "billing";
 
 export async function EngagementNav({
   slug,
@@ -54,6 +61,9 @@ export async function EngagementNav({
         ? tab(`/portal/${slug}/decisions`, "Decisions", current === "decisions")
         : null}
       {seesArchitecture ? tab(`/portal/${slug}/reviews`, "Reviews", current === "reviews") : null}
+      {seesArchitecture
+        ? tab(`/portal/${slug}/deliverables`, "Deliverables", current === "deliverables")
+        : null}
       {seesArchitecture
         ? tab(`/portal/${slug}/implementation`, "Implementation", current === "implementation")
         : null}

@@ -29,6 +29,22 @@ export const getReviewRegister = cache(
   },
 );
 
+/**
+ * The review's own summary (the agenda, then the outcome once held). This is
+ * what the client's published snapshot carries; the register's summary is
+ * the element's.
+ */
+export const getReviewSummary = cache(async (elementId: string): Promise<string> => {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("summary")
+    .eq("element_id", elementId)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.summary ?? "";
+});
+
 export const getReviewParticipants = cache(
   async (elementId: string): Promise<ReviewParticipantRow[]> => {
     const supabase = await createSupabaseServerClient();

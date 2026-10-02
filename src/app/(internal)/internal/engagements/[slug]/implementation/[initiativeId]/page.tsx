@@ -72,6 +72,7 @@ import { PracticePanel } from "@/components/methodology/practice-panel";
 import { ActionButton, ActionForm, type FieldSpec } from "@/components/ui/action-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { DetailList, EmptyState, Panel } from "@/components/ui/panel";
+import { ClientVisibilityControl } from "@/components/architecture/client-visibility-control";
 import { StatusTag } from "@/components/ui/status-tag";
 
 /**
@@ -288,8 +289,20 @@ export default async function InitiativeDetailPage({
                     ),
                   }
                 : { label: "Initiated by", value: null },
+              {
+                label: "Client visibility",
+                value: element.client_visibility === "client" ? "Client" : "Internal",
+              },
             ]}
           />
+          {canPublish && !frozen ? (
+            <ClientVisibilityControl
+              elementId={element.id}
+              visibility={element.client_visibility}
+              published={Boolean(element.latestVersion)}
+              noun="initiative"
+            />
+          ) : null}
           {canManageImplementation && !frozen ? (
             <ActionForm
               fields={[

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireClient } from "@/lib/auth/viewer";
 import { formatDate, personName } from "@/lib/format";
@@ -180,13 +181,22 @@ export default async function ClientEngagementPage({ params }: PageProps<"/porta
           title="Delivered and implemented"
           actions={
             deliverables.length > 0 ? (
-              <ButtonLink
-                href={`/portal/${engagement.slug}/implementation`}
-                variant="secondary"
-                size="sm"
-              >
-                Implementation
-              </ButtonLink>
+              <span className="flex flex-wrap gap-2">
+                <ButtonLink
+                  href={`/portal/${engagement.slug}/deliverables`}
+                  variant="secondary"
+                  size="sm"
+                >
+                  Deliverables
+                </ButtonLink>
+                <ButtonLink
+                  href={`/portal/${engagement.slug}/implementation`}
+                  variant="secondary"
+                  size="sm"
+                >
+                  Implementation
+                </ButtonLink>
+              </span>
             ) : null
           }
         >
@@ -203,7 +213,12 @@ export default async function ClientEngagementPage({ params }: PageProps<"/porta
                 return (
                   <li key={d.element_id} className="space-y-1">
                     <p className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm text-ink">{d.title}</span>
+                      <Link
+                        href={`/portal/${engagement.slug}/deliverables`}
+                        className="text-sm text-ink hover:underline"
+                      >
+                        {d.title}
+                      </Link>
                       <span className="text-xs text-ink-subtle">
                         {DELIVERABLE_TYPE_LABELS[d.deliverable_type]}
                       </span>
