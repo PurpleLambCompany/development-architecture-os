@@ -29,8 +29,11 @@ const STATUS_LABELS: Record<Values["status"], string> = {
 
 export function OrganizationForm({
   organization,
+  showStatus = true,
 }: {
   organization?: { id: string; name: string; slug: string; status: Values["status"] };
+  /** False for the practice organization, whose status is not changed here. */
+  showStatus?: boolean;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +51,10 @@ export function OrganizationForm({
     setSaved(false);
     startTransition(async () => {
       const result = organization
-        ? await updateOrganization(organization.id, values)
+        ? await updateOrganization(
+            organization.id,
+            showStatus ? values : { name: values.name, slug: values.slug },
+          )
         : await createClientOrganization({ name: values.name, slug: values.slug });
       if (!result.ok) {
         setError(result.error);
@@ -91,7 +97,7 @@ export function OrganizationForm({
           {...form.register("slug", { onChange: () => setSlugTouched(true) })}
         />
       </Field>
-      {organization ? (
+      {organization && showStatus ? (
         <Field label="Status" htmlFor="status" error={errors.status?.message}>
           <Select id="status" {...form.register("status")}>
             {ORGANIZATION_STATUSES.map((status) => (

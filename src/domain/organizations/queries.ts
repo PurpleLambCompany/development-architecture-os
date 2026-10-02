@@ -37,7 +37,7 @@ export async function getOrganizationBySlug(slug: string) {
     .from("organizations")
     .select(
       `id, name, slug, type, status, created_at,
-       organization_members(id, role, status, created_at,
+       organization_members(id, role, status, created_at, updated_at,
          profiles!organization_members_user_id_fkey(id, first_name, last_name, email, status)),
        engagements(id, title, slug, status, engagement_type, start_date, target_end_date)`,
     )

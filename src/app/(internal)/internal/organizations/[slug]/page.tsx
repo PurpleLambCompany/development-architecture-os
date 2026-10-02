@@ -1,18 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireInternal } from "@/lib/auth/viewer";
-import { formatDateRange, personName } from "@/lib/format";
+import { formatDate, formatDateRange, personName } from "@/lib/format";
+import { getMyPracticeCapabilities } from "@/domain/methodology/queries";
 import { getOrganizationBySlug } from "@/domain/organizations/queries";
 import {
   CLIENT_ROLES,
-  INTERNAL_ROLES,
   ROLE_LABELS,
+  assignablePracticeRoles,
   canManageClientDirectory,
-  canManageInternalStaff,
+  createsArchitectureAuthority,
+  type AppRole,
 } from "@/domain/roles/roles";
 import { EngagementStatusTag } from "@/components/engagements/engagement-status";
 import { InviteMemberForm } from "@/components/organizations/invite-member-form";
-import { MemberStatusButton } from "@/components/organizations/member-status-button";
+import { MemberActions } from "@/components/organizations/member-actions";
 import { OrganizationForm } from "@/components/organizations/organization-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState, Panel } from "@/components/ui/panel";
@@ -28,9 +30,19 @@ export default async function OrganizationPage({
   if (!organization) notFound();
 
   const isTplco = organization.type === "tplco";
-  const canManage = isTplco
-    ? canManageInternalStaff(viewer.role)
-    : canManageClientDirectory(viewer.role);
+  // TPLCo staff are managed by practice administrators (D1); only a
+  // Principal Architect may give architectural authority (D2).
+  const { canAdminister } = await getMyPracticeCapabilities();
+  const canManage = isTplco ? canAdminister : canManageClientDirectory(viewer.role);
+  const roleOptions: readonly AppRole[] = isTplco
+    ? assignablePracticeRoles(viewer.role, canAdminister)
+    : canManage
+      ? CLIENT_ROLES
+      : [];
+  const authorityNote =
+    isTplco && canManage && viewer.role !== "principal_architect"
+      ? "Only a Principal Architect can invite or appoint Principal Architects, Architects and Researchers, or restore them after a suspension."
+      : null;
   const members = [...organization.organization_members].sort((a, b) =>
     personName(a.profiles).localeCompare(personName(b.profiles)),
   );
@@ -51,7 +63,7 @@ export default async function OrganizationPage({
         title="Members"
         description={
           isTplco
-            ? "TPLCo staff and their internal roles."
+            ? "TPLCo staff and their practice roles. A person's role on each engagement follows their practice role."
             : "People from this organization and their client roles."
         }
       >
@@ -86,16 +98,33 @@ export default async function OrganizationPage({
                     >
                       {member.status}
                     </StatusTag>
+                    {member.status === "invited" ? (
+                      <p className="mt-1 text-xs text-ink-subtle">
+                        Sent {formatDate(member.updated_at)}
+                      </p>
+                    ) : null}
                   </Td>
                   {canManage ? (
                     <Td className="text-right">
                       {member.profiles?.id !== viewer.id ? (
-                        <MemberStatusButton
+                        <MemberActions
                           memberId={member.id}
+                          name={personName(member.profiles)}
                           role={member.role}
                           status={member.status}
+                          roleOptions={roleOptions}
+                          canRestore={
+                            !isTplco ||
+                            viewer.role === "principal_architect" ||
+                            !createsArchitectureAuthority(
+                              { role: member.role, status: member.status },
+                              { role: member.role, status: "active" },
+                            )
+                          }
                         />
-                      ) : null}
+                      ) : (
+                        <span className="text-xs text-ink-subtle">You</span>
+                      )}
                     </Td>
                   ) : null}
                 </tr>
@@ -105,15 +134,13 @@ export default async function OrganizationPage({
         )}
       </Panel>
 
-      {canManage ? (
+      {canManage && roleOptions.length > 0 ? (
         <Panel
           title="Invite a person"
-          description="They receive an email to set a password. Access begins when they accept."
+          description="They receive an email to set a password. Access begins when they accept. A pending invitation can be re-sent or revoked from the member list."
         >
-          <InviteMemberForm
-            organizationId={organization.id}
-            roles={isTplco ? INTERNAL_ROLES : CLIENT_ROLES}
-          />
+          {authorityNote ? <p className="mb-4 text-sm text-ink-muted">{authorityNote}</p> : null}
+          <InviteMemberForm organizationId={organization.id} roles={roleOptions} />
         </Panel>
       ) : null}
 
@@ -144,8 +171,15 @@ export default async function OrganizationPage({
         </Panel>
       ) : null}
 
-      {canManage && !isTplco ? (
-        <Panel title="Organization details">
+      {canManage ? (
+        <Panel
+          title={isTplco ? "Practice details" : "Organization details"}
+          description={
+            isTplco
+              ? "The practice's name and identifier. The practice organization is never suspended or archived from here."
+              : undefined
+          }
+        >
           <OrganizationForm
             organization={{
               id: organization.id,
@@ -153,6 +187,7 @@ export default async function OrganizationPage({
               slug: organization.slug,
               status: organization.status === "invited" ? "active" : organization.status,
             }}
+            showStatus={!isTplco}
           />
         </Panel>
       ) : null}

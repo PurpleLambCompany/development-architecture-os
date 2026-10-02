@@ -281,20 +281,27 @@ export function lineageRolesForKind(
 // -----------------------------------------------------------------------------
 // Practice capabilities (D10, D11)
 // -----------------------------------------------------------------------------
+// administer_practice (V1-A, D1) is practice administration, not Method
+// authority: who invites, suspends and re-roles TPLCo staff and edits the
+// practice organization. Its holders administer it; publish_methodology
+// holders administer the two Method capabilities.
 export const PRACTICE_CAPABILITIES = [
   "author_methodology",
   "publish_methodology",
+  "administer_practice",
 ] as const satisfies readonly PracticeCapability[];
 
 export const PRACTICE_CAPABILITY_LABELS: Record<PracticeCapability, string> = {
   author_methodology: "Author methodology",
   publish_methodology: "Publish methodology",
+  administer_practice: "Administer the practice",
 };
 
 /** Mirrors public.practice_role_capability_defaults. */
 export const PRACTICE_ROLE_DEFAULTS: Partial<Record<AppRole, readonly PracticeCapability[]>> = {
-  principal_architect: ["author_methodology", "publish_methodology"],
+  principal_architect: ["author_methodology", "publish_methodology", "administer_practice"],
   architect: ["author_methodology"],
+  system_administrator: ["administer_practice"],
 };
 
 // -----------------------------------------------------------------------------

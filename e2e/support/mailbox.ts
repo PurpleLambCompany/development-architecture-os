@@ -5,7 +5,7 @@ import { localSupabase } from "./local-supabase";
  * The local mail catcher (Mailpit), where the local auth server delivers
  * invitation and sign-in emails. Tests follow the links people would click.
  */
-type Summary = { ID: string; Subject: string; To: { Address: string }[] };
+type Summary = { ID: string; Subject: string; Created: string; To: { Address: string }[] };
 
 async function api(path: string, init?: RequestInit) {
   const response = await fetch(`${localSupabase().mailpitUrl}/api/v1${path}`, init);
@@ -24,21 +24,26 @@ async function messagesTo(email: string): Promise<Summary[]> {
 }
 
 /**
- * Waits for an email to `email` whose subject matches, and returns the
- * confirmation link it carries.
+ * Waits until at least `count` emails to `email` whose subject matches have
+ * arrived, and returns the confirmation link in the newest one.
  */
-export async function confirmationLink(email: string, subject: RegExp): Promise<string> {
-  let found: Summary | undefined;
+export async function confirmationLink(
+  email: string,
+  subject: RegExp,
+  { count = 1 }: { count?: number } = {},
+): Promise<string> {
+  let matching: Summary[] = [];
   await expect
     .poll(
       async () => {
-        found = (await messagesTo(email)).find((m) => subject.test(m.Subject));
-        return found !== undefined;
+        matching = (await messagesTo(email)).filter((m) => subject.test(m.Subject));
+        return matching.length;
       },
-      { message: `an email to ${email} matching ${subject}`, timeout: 20_000 },
+      { message: `${count} email(s) to ${email} matching ${subject}`, timeout: 20_000 },
     )
-    .toBe(true);
-  const message = (await (await api(`/message/${found!.ID}`)).json()) as { HTML: string };
+    .toBeGreaterThanOrEqual(count);
+  const newest = [...matching].sort((a, b) => b.Created.localeCompare(a.Created))[0]!;
+  const message = (await (await api(`/message/${newest.ID}`)).json()) as { HTML: string };
   const link = [...message.HTML.matchAll(/href="([^"]+)"/g)]
     .map((match) => match[1].replaceAll("&amp;", "&"))
     .find((href) => href.includes("/auth/confirm"));

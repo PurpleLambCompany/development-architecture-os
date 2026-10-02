@@ -28,16 +28,26 @@ const enums = readFileSync(
   join(process.cwd(), "supabase/migrations/20261005000000_phase6_enums.sql"),
   "utf8",
 );
-const practice = readFileSync(
-  join(process.cwd(), "supabase/migrations/20261005000100_practice_capabilities.sql"),
+// administer_practice and its defaults were added by V1-A (D1, D4).
+const v1aEnums = readFileSync(
+  join(process.cwd(), "supabase/migrations/20261009000000_v1a_practice_administration_enum.sql"),
   "utf8",
 );
+const practice = [
+  "supabase/migrations/20261005000100_practice_capabilities.sql",
+  "supabase/migrations/20261009000100_v1a_practice_administration.sql",
+]
+  .map((file) => readFileSync(join(process.cwd(), file), "utf8"))
+  .join("\n");
 
 function enumValues(file: string, type: string): string[] {
   const start = file.indexOf(`create type public.${type} as enum (`);
   expect(start, `enum ${type} is defined`).toBeGreaterThanOrEqual(0);
   const block = file.slice(start, file.indexOf(");", start));
-  return [...block.matchAll(/'(\w+)'/g)].map((m) => m[1] as string);
+  const added = [
+    ...v1aEnums.matchAll(new RegExp(`alter type public\\.${type} add value '(\\w+)'`, "g")),
+  ];
+  return [...[...block.matchAll(/'(\w+)'/g)].map((m) => m[1] as string), ...added.map((m) => m[1])];
 }
 
 describe("the Method Library vocabulary matches the migration", () => {
@@ -64,12 +74,11 @@ describe("the Method Library vocabulary matches the migration", () => {
   });
 
   it("mirrors the practice capability role defaults", () => {
-    const start = practice.indexOf("insert into public.practice_role_capability_defaults");
-    const block = practice.slice(start, practice.indexOf(";", start));
-    const fromSql = [...block.matchAll(/\('(\w+)',\s*'(\w+)'\)/g)].map(([, role, cap]) => [
-      role,
-      cap,
-    ]);
+    const fromSql = [
+      ...practice.matchAll(/insert into public\.practice_role_capability_defaults[^;]*;/g),
+    ]
+      .flatMap(([block]) => [...block.matchAll(/\('(\w+)',\s*'(\w+)'\)/g)])
+      .map(([, role, cap]) => [role, cap]);
     const fromTs = Object.entries(PRACTICE_ROLE_DEFAULTS).flatMap(([role, caps]) =>
       (caps ?? []).map((cap) => [role, cap]),
     );

@@ -2,9 +2,13 @@ import "server-only";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
- * People who may be assigned to an engagement: TPLCo staff plus members
- * of the engagement's client organization. The database re-checks this
- * on insert (validate_engagement_member trigger).
+ * People who may be assigned to an engagement: active TPLCo staff plus
+ * active members of the engagement's client organization. Invited and
+ * suspended people are not offered (V1-A A3, A5). The database re-checks
+ * that the person is a member of the right organization, and that an
+ * internal person's engagement role is their practice role, on insert
+ * (validate_engagement_member trigger). It does not re-check their status:
+ * a person who is not active reaches nothing either way.
  *
  * A person can belong to several organizations; each person is listed
  * once, as internal if they are TPLCo staff.
@@ -14,15 +18,16 @@ export async function listAssignableUsers(clientOrganizationId: string) {
   const { data, error } = await supabase
     .from("organization_members")
     .select(
-      "user_id, role, status, organizations!inner(id, type), profiles!organization_members_user_id_fkey(first_name, last_name, email)",
+      "user_id, role, status, organizations!inner(id, type), profiles!organization_members_user_id_fkey(first_name, last_name, email, status)",
     )
-    .in("status", ["active", "invited"]);
+    .eq("status", "active");
   if (error) throw error;
 
   return data
     .filter(
       (member) =>
-        member.organizations.type === "tplco" || member.organizations.id === clientOrganizationId,
+        member.profiles?.status === "active" &&
+        (member.organizations.type === "tplco" || member.organizations.id === clientOrganizationId),
     )
     .map((member) => ({
       userId: member.user_id,

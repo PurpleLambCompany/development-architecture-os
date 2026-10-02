@@ -8,6 +8,7 @@ import { fromDatabaseError, fromZodError, ok, type ActionResult } from "@/lib/ac
 import { requireInternal } from "@/lib/auth/viewer";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
+import type { PracticeCapability } from "./catalog";
 import {
   addendumSchema,
   adoptLegacySchema,
@@ -746,10 +747,7 @@ export async function setPracticeOverride(membershipId: string, input: unknown) 
   );
 }
 
-export async function clearPracticeOverride(
-  membershipId: string,
-  capability: "author_methodology" | "publish_methodology",
-) {
+export async function clearPracticeOverride(membershipId: string, capability: PracticeCapability) {
   return run(empty, {}, (supabase) =>
     supabase.rpc("clear_practice_capability_override", {
       p_membership_id: membershipId,

@@ -136,6 +136,7 @@ export const getMyPracticeCapabilities = cache(async () => {
   return {
     canAuthor: held.has("author_methodology"),
     canPublish: held.has("publish_methodology"),
+    canAdminister: held.has("administer_practice"),
   };
 });
 

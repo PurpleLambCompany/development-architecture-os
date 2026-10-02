@@ -8,8 +8,9 @@ export const organizationInputSchema = z.object({
   slug: slugSchema,
 });
 
+/** The practice organization's status is not edited, so status is optional. */
 export const organizationUpdateSchema = organizationInputSchema.extend({
-  status: z.enum(ORGANIZATION_STATUSES),
+  status: z.enum(ORGANIZATION_STATUSES).optional(),
 });
 
 export type OrganizationInput = z.infer<typeof organizationInputSchema>;

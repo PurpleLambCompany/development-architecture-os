@@ -21,3 +21,5 @@ The spec requires that authorization never depend on hidden UI (§25) and be enf
 
 - Each new table in later phases must enable RLS and reuse the helpers (for example, Phase 2 finance tables will add a `can_view_engagement_financials()` helper).
 - Helper functions run per row; if engagement volumes grow large, the helpers may need caching via `(select ...)` wrapping or materialized membership views.
+
+**Amended (V1-A Increment 2):** TPLCo staff, the practice organization and profile status are governed by the practice capability `administer_practice` rather than the System Administrator role, and only a Principal Architect creates architectural authority. See [ADR-0074](0074-practice-administration-and-architectural-authority.md).

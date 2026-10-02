@@ -21,11 +21,14 @@ import { Table, Td, Th } from "@/components/ui/table";
 export const metadata = { title: "Practice capabilities" };
 
 /**
- * Practice capabilities (D10, D11, ADR-0044): who may author and who may
- * publish TPLCo methodology. Organization-wide, separate from engagement
- * capabilities. Role defaults plus recorded overrides; only a
- * publish_methodology holder changes them, never for themselves, and at
- * least one holder always remains. The database enforces all of it.
+ * Practice capabilities (D10, D11, ADR-0044; V1-A D1, ADR-0074): who
+ * administers the practice, and who may author and publish TPLCo
+ * methodology. Organization-wide, separate from engagement capabilities.
+ * Role defaults plus recorded overrides. Practice administrators change
+ * administer_practice; publish_methodology holders change the Method
+ * capabilities. Never for oneself, and at least one holder of
+ * administer_practice and of publish_methodology always remains. The
+ * database enforces all of it.
  */
 export default async function PracticeCapabilitiesPage() {
   const viewer = await requireInternal();
@@ -51,7 +54,7 @@ export default async function PracticeCapabilitiesPage() {
       <PageHeader
         eyebrow="Settings"
         title="Practice capabilities"
-        description="Who may author and publish TPLCo methodology. These are organization-wide and separate from engagement capabilities. Clients never hold them."
+        description="Who administers the practice, and who may author and publish TPLCo methodology. These are organization-wide and separate from engagement capabilities. Clients never hold them."
       />
       <p className="text-sm text-ink-muted">
         <Link href="/internal/settings" className="hover:underline">
@@ -61,11 +64,7 @@ export default async function PracticeCapabilitiesPage() {
       </p>
       <Panel
         title="TPLCo members"
-        description={
-          mine.canPublish
-            ? "Overrides need a reason. You cannot change your own, and someone must always keep Publish methodology."
-            : "Only a member who can publish methodology changes these."
-        }
+        description="Overrides need a reason. Practice administrators change who administers the practice; members who can publish methodology change the methodology capabilities. Nobody changes their own, and someone always keeps each of Administer the practice and Publish methodology."
       >
         <Table>
           <thead>
@@ -90,6 +89,12 @@ export default async function PracticeCapabilitiesPage() {
                 {PRACTICE_CAPABILITIES.map((c) => {
                   const x = cell(m.organization_member_id, c);
                   const self = m.user_id === viewer.id;
+                  // A Principal Architect always administers the practice (D4);
+                  // the database refuses revoking it.
+                  const fixed =
+                    c === "administer_practice" && m.role === "principal_architect" && x.effective;
+                  const canChange =
+                    !fixed && (c === "administer_practice" ? mine.canAdminister : mine.canPublish);
                   return (
                     <Td key={c}>
                       <div className="space-y-1">
@@ -110,7 +115,7 @@ export default async function PracticeCapabilitiesPage() {
                         {x.override_reason ? (
                           <p className="text-xs text-ink-muted">{x.override_reason}</p>
                         ) : null}
-                        {mine.canPublish && !self ? (
+                        {canChange && !self ? (
                           <div className="flex flex-wrap gap-2">
                             <ActionForm
                               trigger={x.effective ? "Revoke" : "Grant"}
