@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { z } from "zod";
 import {
   addAllPublishedToBaseline,
   addBaselineItem,
@@ -41,6 +42,7 @@ export default async function BaselinePage({
 }: PageProps<"/internal/engagements/[slug]/baselines/[baselineId]">) {
   const { slug, baselineId } = await params;
   const query = await searchParams;
+  if (!z.uuid().safeParse(baselineId).success) notFound();
   const { engagement, canEdit, canPublish } = await getInternalArchitectureContext(slug);
   const [baseline, architecture, baselines] = await Promise.all([
     getBaseline(baselineId),

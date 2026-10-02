@@ -1,6 +1,6 @@
 # ADR-0075: Client-facing records and deliverable files
 
-**Status:** Implemented on a draft PR (V1-A Increment 3, Workstream B; plan decisions D9 and D13 accepted by Kerrick 2026-10-02). Not yet merged or accepted.
+**Status:** Accepted (V1-A Increment 3, merged PR #19; plan decisions D9 and D13 accepted by Kerrick 2026-10-02).
 
 ## Context
 

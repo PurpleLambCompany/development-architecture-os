@@ -5,12 +5,16 @@ import {
   APPROVAL_METHOD_LABELS,
   approvalState,
 } from "@/domain/architecture/catalog";
+import { internalElementHref } from "@/domain/architecture/links";
 import type { ApprovalRow, LoadedElement } from "@/domain/architecture/queries";
+import type { InternalSnapshot } from "@/domain/architecture/snapshot";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { ActionForm, type FieldSpec } from "@/components/ui/action-form";
+import { ButtonLink } from "@/components/ui/button";
 import { EmptyState, Panel } from "@/components/ui/panel";
 import { Table, Td, Th } from "@/components/ui/table";
 import { ApprovalTag, InternalMark } from "./badges";
+import { SnapshotView } from "./snapshot-view";
 
 /** "Published v3 · v2 approved · v3 awaiting response" (proposal §5). */
 export function publicationLine(element: LoadedElement): string | null {
@@ -28,6 +32,41 @@ export function publicationLine(element: LoadedElement): string | null {
   if (state === "awaiting_response") parts.push(`v${latest.version_no} awaiting response`);
   if (state === "changes_requested") parts.push(`v${latest.version_no} changes requested`);
   return parts.join(" · ");
+}
+
+/**
+ * A specific published version, shown read-only (the existing internal
+ * snapshot view), with a way back to the record's working copy. Used by
+ * every record's own detail page when a version link (above) is followed
+ * (C1): each kind reads its version snapshot the same way the generic
+ * element page always has.
+ */
+export function VersionSnapshotPanel({
+  versionNo,
+  publishedAt,
+  snapshot,
+  closeHref,
+  titleOf,
+}: {
+  versionNo: number;
+  publishedAt: string;
+  snapshot: InternalSnapshot;
+  closeHref: string;
+  titleOf?: (elementId: string) => string | null;
+}) {
+  return (
+    <Panel
+      title={`Version ${versionNo} as published`}
+      description={`Published ${formatDateTime(publishedAt)}. Immutable. Internal view, including internal statements.`}
+      actions={
+        <ButtonLink href={closeHref} variant="ghost" size="sm">
+          Close
+        </ButtonLink>
+      }
+    >
+      <SnapshotView snapshot={snapshot} titleOf={titleOf} />
+    </Panel>
+  );
 }
 
 export const externalApprovalFields: FieldSpec[] = [
@@ -143,7 +182,7 @@ export function VersionsPanel({
                 <tr key={v.id}>
                   <Td className="whitespace-nowrap">
                     <Link
-                      href={`/internal/engagements/${slug}/architecture/elements/${element.id}?version=${v.id}`}
+                      href={`${internalElementHref(slug, element.kind, element.id)}?version=${v.id}`}
                       className="hover:underline"
                     >
                       v{v.version_no}

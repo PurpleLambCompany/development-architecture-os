@@ -164,7 +164,12 @@ export async function getReviewDossier(
     p_engagement_id: engagementId,
     p_review_id: reviewId,
   });
-  if (error) return null;
+  if (error) {
+    // C3: logged, not swallowed. Callers show a calm "could not be
+    // prepared" state rather than letting the dossier silently disappear.
+    console.error("review_dossier failed", { engagementId, reviewId, error });
+    return null;
+  }
   return data as unknown as ReviewDossier;
 }
 

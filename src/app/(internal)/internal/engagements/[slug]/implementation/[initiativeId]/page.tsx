@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { z } from "zod";
 import {
   citeEvidenceOnElement,
   publishElement,
@@ -9,7 +10,12 @@ import {
   submitForReview,
 } from "@/domain/architecture/actions";
 import { getInternalArchitectureContext, memberNames } from "@/domain/architecture/context";
-import { getElementDetail, listEvidence, loadArchitecture } from "@/domain/architecture/queries";
+import {
+  getElementDetail,
+  getVersionSnapshot,
+  listEvidence,
+  loadArchitecture,
+} from "@/domain/architecture/queries";
 import {
   acknowledgeEscalation,
   addCheckpoint,
@@ -60,7 +66,7 @@ import {
 } from "@/components/architecture/badges";
 import { RelationshipsPanel } from "@/components/architecture/relationships-panel";
 import { StatementsPanel } from "@/components/architecture/statements-panel";
-import { VersionsPanel } from "@/components/architecture/versions-panel";
+import { VersionSnapshotPanel, VersionsPanel } from "@/components/architecture/versions-panel";
 import { ActivityList } from "@/components/architecture/activity-list";
 import { escalateFields, requiredNoteFields, triageFields } from "@/components/intelligence/fields";
 import { CriteriaPanel } from "@/components/methodology/criteria-panel";
@@ -106,6 +112,7 @@ export default async function InitiativeDetailPage({
 }: PageProps<"/internal/engagements/[slug]/implementation/[initiativeId]">) {
   const { slug, initiativeId } = await params;
   const query = await searchParams;
+  if (!z.uuid().safeParse(initiativeId).success) notFound();
   const { engagement, canEdit, canPublish, canManageImplementation } =
     await getInternalArchitectureContext(slug);
   const [
@@ -138,6 +145,9 @@ export default async function InitiativeDetailPage({
   const element = architecture.byId.get(initiativeId);
   const row = registerRows.find((r) => r.element_id === initiativeId);
   if (!element || !row || element.kind !== "implementation_initiative") notFound();
+  const versionId = typeof query.version === "string" ? query.version : null;
+  const shownVersion = versionId ? element.versions.find((v) => v.id === versionId) : null;
+  const versionSnapshot = shownVersion ? await getVersionSnapshot(shownVersion.id) : null;
   const criterionInference = await (async () => {
     const p = await inferencePromotionFromQuery(
       engagement.id,
@@ -198,6 +208,16 @@ export default async function InitiativeDetailPage({
         }
       />
       <ArchitectureNav slug={slug} current="implementation" />
+
+      {shownVersion && versionSnapshot ? (
+        <VersionSnapshotPanel
+          versionNo={shownVersion.version_no}
+          publishedAt={shownVersion.published_at}
+          snapshot={versionSnapshot}
+          closeHref={internalElementHref(slug, "implementation_initiative", element.id)}
+          titleOf={(id) => architecture.byId.get(id)?.title ?? null}
+        />
+      ) : null}
 
       <Panel
         title="Working copy"

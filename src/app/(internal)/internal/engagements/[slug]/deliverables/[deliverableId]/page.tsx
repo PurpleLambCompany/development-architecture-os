@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { z } from "zod";
 import { getApproachGuidance } from "@/domain/methodology/queries";
 import {
   publishElement,
@@ -7,8 +8,10 @@ import {
   submitForReview,
 } from "@/domain/architecture/actions";
 import { getInternalArchitectureContext, memberNames } from "@/domain/architecture/context";
+import { internalElementHref } from "@/domain/architecture/links";
 import {
   getElementDetail,
+  getVersionSnapshot,
   listBaselines,
   listEvidence,
   loadArchitecture,
@@ -23,7 +26,7 @@ import { ArchitectureNav } from "@/components/architecture/architecture-nav";
 import { LifecycleTag, ReferenceCode } from "@/components/architecture/badges";
 import { RelationshipsPanel } from "@/components/architecture/relationships-panel";
 import { StatementsPanel } from "@/components/architecture/statements-panel";
-import { VersionsPanel } from "@/components/architecture/versions-panel";
+import { VersionSnapshotPanel, VersionsPanel } from "@/components/architecture/versions-panel";
 import { ActivityList } from "@/components/architecture/activity-list";
 import { DeliverableFileUpload } from "@/components/deliverables/deliverable-file-upload";
 import { DeliverableFilesByVersion } from "@/components/deliverables/deliverable-files";
@@ -35,8 +38,11 @@ import { DetailList, EmptyState, Panel } from "@/components/ui/panel";
 
 export default async function DeliverableDetailPage({
   params,
+  searchParams,
 }: PageProps<"/internal/engagements/[slug]/deliverables/[deliverableId]">) {
   const { slug, deliverableId } = await params;
+  const query = await searchParams;
+  if (!z.uuid().safeParse(deliverableId).success) notFound();
   const { engagement, canEdit, canPublish, canManageDeliverables } =
     await getInternalArchitectureContext(slug);
   const [architecture, registerRows, baselines, detail, evidence, edgeItems] = await Promise.all([
@@ -55,6 +61,9 @@ export default async function DeliverableDetailPage({
   const frozen = element.lifecycle === "retired" || element.lifecycle === "superseded";
   const evidenceOptions = evidence.map((s) => ({ value: s.id, label: s.title }));
   const files = await getDeliverableFiles(element.id);
+  const versionId = typeof query.version === "string" ? query.version : null;
+  const shownVersion = versionId ? element.versions.find((v) => v.id === versionId) : null;
+  const versionSnapshot = shownVersion ? await getVersionSnapshot(shownVersion.id) : null;
 
   return (
     <div className="space-y-8">
@@ -73,6 +82,16 @@ export default async function DeliverableDetailPage({
         }
       />
       <ArchitectureNav slug={slug} current="deliverables" />
+
+      {shownVersion && versionSnapshot ? (
+        <VersionSnapshotPanel
+          versionNo={shownVersion.version_no}
+          publishedAt={shownVersion.published_at}
+          snapshot={versionSnapshot}
+          closeHref={internalElementHref(slug, "deliverable", element.id)}
+          titleOf={(id) => architecture.byId.get(id)?.title ?? null}
+        />
+      ) : null}
 
       <Panel
         title="Working copy"

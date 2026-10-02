@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { z } from "zod";
 import { DOMAINS, DOMAIN_SHORT_LABELS } from "@/domain/architecture/catalog";
 import { getInternalArchitectureContext, memberNames } from "@/domain/architecture/context";
 import { internalElementHref } from "@/domain/architecture/links";
@@ -61,6 +62,7 @@ export default async function MethodApplicationPage({
   params,
 }: PageProps<"/internal/engagements/[slug]/method/[applicationId]">) {
   const { slug, applicationId } = await params;
+  if (!z.uuid().safeParse(applicationId).success) notFound();
   const { engagement, canEdit } = await getInternalArchitectureContext(slug);
   const detail = await getMethodApplication(applicationId);
   if (!detail || detail.app.engagement_id !== engagement.id) notFound();
