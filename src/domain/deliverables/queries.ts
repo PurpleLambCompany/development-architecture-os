@@ -46,28 +46,43 @@ export type DeliverableFile = {
  * files the viewer may see (for a client: only those of a deliverable they
  * can read).
  */
-export const getDeliverableFiles = cache(async (elementId: string): Promise<DeliverableFile[]> => {
+export const getDeliverableFiles = cache(
+  async (elementId: string): Promise<DeliverableFile[]> =>
+    (await getFilesOfDeliverables([elementId])).get(elementId) ?? [],
+);
+
+/** The same, for several deliverables in one query, keyed by deliverable. */
+export async function getFilesOfDeliverables(
+  elementIds: readonly string[],
+): Promise<Map<string, DeliverableFile[]>> {
+  const byDeliverable = new Map<string, DeliverableFile[]>();
+  if (elementIds.length === 0) return byDeliverable;
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("engagement_files")
     .select(
       "id, filename, size_bytes, created_at, element_version_id, element_versions!inner(version_no, element_id)",
     )
-    .eq("element_versions.element_id", elementId)
+    .in("element_versions.element_id", [...elementIds])
     .eq("purpose", "deliverable")
     .order("created_at");
   if (error) throw error;
-  return (data ?? [])
-    .map((f) => ({
+  for (const f of data ?? []) {
+    const file: DeliverableFile = {
       id: f.id,
       filename: f.filename,
       size_bytes: f.size_bytes,
       created_at: f.created_at,
       version_id: f.element_version_id!,
       version_no: f.element_versions.version_no,
-    }))
-    .sort((a, b) => b.version_no - a.version_no);
-});
+    };
+    const list = byDeliverable.get(f.element_versions.element_id) ?? [];
+    list.push(file);
+    byDeliverable.set(f.element_versions.element_id, list);
+  }
+  for (const list of byDeliverable.values()) list.sort((a, b) => b.version_no - a.version_no);
+  return byDeliverable;
+}
 
 /** Version numbers of published versions the viewer may read, by version id. */
 export async function getVersionNumbers(

@@ -27,4 +27,5 @@ V1-A plan §4 Workstream B (B1-B3) and decision D9. Deliverables, Reviews and Im
 - One migration, function-only; no table, column or policy changes and no type drift.
 - Amends ADR-0033: a client also reads the files of deliverables they can read.
 - Tests: pgTAP `62_client_records_and_files`; the fresh-install browser run proves G-6, G-7 and the visibility part of G-8.
+- A superseded deliverable, review or initiative stays readable by the client, with its files, as the history its successor replaced (existing `element_client_readable` behaviour). Its visibility cannot be changed once superseded, and the record pages do not offer Retire on a superseded record, so withdrawing one from the client is not yet possible in the app; the database's `retire_element` accepts it. This is left to the successor workflow (D11, Workstream F).
 - Still outside this increment: the generic element route for these kinds (C1), the seeded demo's client-visible records and files (F8), and the client Documents area (V1-C).

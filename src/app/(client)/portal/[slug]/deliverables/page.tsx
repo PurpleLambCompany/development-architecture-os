@@ -4,7 +4,7 @@ import { getClientPendingApprovals } from "@/domain/architecture/queries";
 import { DELIVERABLE_TYPE_LABELS } from "@/domain/deliverables/catalog";
 import {
   getClientDeliverables,
-  getDeliverableFiles,
+  getFilesOfDeliverables,
   getVersionNumbers,
 } from "@/domain/deliverables/queries";
 import { formatDate } from "@/lib/format";
@@ -33,7 +33,7 @@ export default async function ClientDeliverablesPage({
     canRespond ? getClientPendingApprovals(engagement.id) : Promise.resolve([]),
   ]);
   const [files, versionNo] = await Promise.all([
-    Promise.all(deliverables.map((d) => getDeliverableFiles(d.element_id))),
+    getFilesOfDeliverables(deliverables.map((d) => d.element_id)),
     getVersionNumbers(deliverables.map((d) => d.version_id)),
   ]);
 
@@ -51,7 +51,8 @@ export default async function ClientDeliverablesPage({
           <EmptyState title="No deliverables yet" />
         ) : (
           <div className="space-y-6">
-            {deliverables.map((d, index) => {
+            {deliverables.map((d) => {
+              const ownFiles = files.get(d.element_id) ?? [];
               const approval = pending.find((p) => p.element_version_id === d.version_id);
               return (
                 <article
@@ -70,9 +71,9 @@ export default async function ClientDeliverablesPage({
                     {formatDate(d.published_at)}
                   </p>
                   {d.summary ? <p className="max-w-2xl text-sm text-ink">{d.summary}</p> : null}
-                  {files[index].length > 0 ? (
+                  {ownFiles.length > 0 ? (
                     <DeliverableFilesByVersion
-                      files={files[index]}
+                      files={ownFiles}
                       currentVersionNo={versionNo.get(d.version_id) ?? null}
                     />
                   ) : (
