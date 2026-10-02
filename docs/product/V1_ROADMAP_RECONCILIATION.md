@@ -1,8 +1,8 @@
 # V1 Roadmap Reconciliation: Development Systems Architecture OS
 
-**Status:** For Kerrick's review. This is investigation and planning only. No application code, schema, migration, dependency, credential or provider configuration was changed.
+**Status:** **Accepted by Kerrick on 2026-10-02 as the governing roadmap to V1** (§6), with his decisions recorded in §7. The findings in §2 to §5 are the evidence it rests on. This document changed no application code, schema, migration, dependency, credential or provider configuration.
 **Baseline:** `main` at `162e9cd9f0b2324580c44684983531aabfccf589`, after Phase 7B.2 Step A.
-**Date:** 2026-10-01.
+**Dates:** investigation 2026-10-01; accepted 2026-10-02.
 
 ## 1. What this document answers
 
@@ -90,7 +90,7 @@ Schemas, ADRs and tests do not count towards completion on their own.
    Two of them sit outside spec §22 MVP. Spec §18 calls AI "POST-MVP". The Method Library goes well beyond the §22 "Method/IP Foundation". Meanwhile, MVP essentials from §12, §22 and §33 remain unbuilt: generated deliverables, notifications, review comments and documents.
 
 6. **Step B is not on the V1 critical path.** It unlocks internal-only, suggestion-labelled interpretations. It addresses none of the blockers above. It also cannot touch real engagement data until the B-4 contractual prerequisites are met. It belongs after V1's core workflows, as an optional increment.
-7. **Proposed path to V1:** five short phases, numbered here as V1-A to V1-E:
+7. **Path to V1 (accepted 2026-10-02):** five short phases, V1-A to V1-E:
    - V1-A Workflow Closure;
    - V1-B Production Foundation;
    - V1-C Participation and Awareness;
@@ -99,7 +99,7 @@ Schemas, ADRs and tests do not count towards completion on their own.
 
    Step B and the rest of the deferred scope come after them.
 
-8. **First real use.** Kerrick can begin a real engagement himself at the end of V1-B, as a closely supervised pilot. He would contact the client outside the app, write deliverables outside the app and keep AI off. V1 is reached at the end of V1-E, once one real engagement has been delivered end to end.
+8. **First real use.** Supervised real-world use begins at the end of V1-B (Gate B), not after V1-E. Kerrick can begin a real engagement himself at that point, as a closely supervised pilot. He would contact the client outside the app, write deliverables outside the app and keep AI off. V1 is reached at the end of V1-E, once one real engagement has been delivered end to end.
 
 ---
 
@@ -501,7 +501,7 @@ Everything in §5.1 and §5.2, plus:
 
 ### 5.5 Where Step B belongs
 
-Step B is a governed evaluation (seed and synthetic data only, manual grading, a committed report, a reviewed manifest change). It turns on five internal interpretation kinds. It belongs **after V1**, as the first post-V1 increment, or in parallel once V1-B is live if Kerrick wants it.
+Step B is a governed evaluation (seed and synthetic data only, manual grading, a committed report, a reviewed manifest change). It turns on five internal interpretation kinds. It belongs **after V1**, as a post-V1 increment. Under decision 6 (§6.1) it remains on hold, and is frozen until V1 unless Kerrick explicitly authorizes otherwise.
 
 1. **It removes no V1 blocker.** None of the blockers in §5.1 to §5.3 depends on it.
 2. **It would not reach real engagements anyway.** It can only reach real engagements after the B-4 contractual prerequisites, and those depend on real clients, which V1-B enables.
@@ -541,27 +541,66 @@ Yes, in three places, relative to unfinished workflows.
 
 Meanwhile, the smallest substantive phase was the client-facing one (Phase 5, 2,642 migration lines), and it is the one with the most open gaps.
 
-**Recommendation:** freeze new infrastructure (no new AI kinds, Edge rules, Method structures or Tool Contract functions) until V1 is reached. Scale ADRs and proofs to the risk of each change. Make a golden-path browser test part of every phase's gate.
+**Recommendation (accepted as decision 6, §6.1):** freeze new infrastructure (no new AI kinds, Edge rules, Method structures or Tool Contract functions) until V1 is reached. Scale ADRs and proofs to the risk of each change. Make a golden-path browser test part of every phase's gate.
 
 ---
 
-## 6. Proposed remaining phase sequence
+## 6. The governing V1 roadmap
 
-The existing numbering (7B.2 Step B, then 8 Portfolio, then 9 Certification) follows the spec's capability list, not the path to a usable product. Below is a reorganized sequence focused on delivery. It uses neutral labels so Kerrick can choose how to number them.
+**Accepted by Kerrick on 2026-10-02.** V1-A to V1-E is the governing remaining roadmap to V1.
 
-Each phase is deliberately small, ends in a browser-verified acceptance gate, and adds no new AI, Edge or Method infrastructure.
+- **Historical phases.** Phases 1 to 7 (including 7A, 7B.1 and 7B.2 Step A) remain the historical implementation phases. Their numbering is not continued on the V1 critical path. There is no "Phase 8" before V1.
+- **One phase at a time.** Each phase starts only on Kerrick's explicit instruction, after the previous gate is accepted. Each is deliberately small and ends in a browser-verified acceptance gate.
+- **No frozen-area expansion.** No phase adds capability in the areas frozen until V1 (§6.1).
 
 ```
-V1-A Workflow Closure ─► V1-B Production Foundation ─► ★ first real use (supervised pilot)
-        │                          │
-        └──────────────┬───────────┘
-                       ▼
-          V1-C Participation and Awareness ─► V1-D Engagement Outputs ─► V1-E Discovery and Scale ─► ★ V1
-                                                                                                       │
-                                                       post-V1: Step B · Stripe · Portfolio · Pattern Library …
+V1-A Workflow Closure
+   │  ◆ Gate A: workflow-closure gate
+   ▼
+V1-B Production Foundation
+   │  ◆ Gate B: pilot-readiness gate
+   ▼
+★ Supervised real-world use begins (Kerrick selects the pilot engagement)
+   │      pilot findings feed V1-C to V1-E priorities (§6.2)
+   ▼
+V1-C Participation and Awareness ─► V1-D Engagement Outputs ─► V1-E Discovery and Scale
+                                                                   │  ◆ V1 completion (§6.3)
+                                                                   ▼
+                                                                 ★ V1
+                                                                   │
+                         post-V1: Step B · Stripe · Portfolio · Pattern Library · DOCX/PPTX …
 ```
 
-V1-A and V1-B can run in either order or overlap. Both are needed before the pilot.
+V1-A comes before V1-B: the production environment is built for a workflow that has no dead ends. V1-D and V1-E may overlap once V1-C's gate is accepted, if Kerrick instructs it.
+
+**Real-world use begins after V1-B, not after V1-E.** Supervised use of the application on a real engagement starts once the pilot-readiness gate (Gate B) is accepted. V1-C to V1-E are built while that pilot runs and are shaped by it.
+
+### 6.1 Frozen until V1
+
+By Kerrick's decision of 2026-10-02, these areas are frozen for capability expansion until V1 is complete:
+
+| Area                          | Frozen (no new capability without Kerrick's explicit authorization)                                                                                                                                                              | Still allowed                                                                                                                        |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **Architecture Intelligence** | Step B (evaluation, manifest changes, activation); new inference kinds; new Tool Contract functions; new prompts or prompt versions; new surfaces or read models; providers or credentials; any 7B.2 exclusion or later AI scope | Existing functionality as merged; security, correctness and blocking-defect fixes; AI remains off for real engagements               |
+| **Development Edge**          | New rules, item types, briefing or judgment features, promotion targets, practice-count measures                                                                                                                                 | Existing functionality; security, correctness and blocking-defect fixes                                                              |
+| **Method Library**            | New method structures, forms, lineage or release features, Method Application features, practice measures                                                                                                                        | Existing functionality; security, correctness and blocking-defect fixes; _reading_ existing content where a V1 phase names it (V1-E) |
+
+A V1 phase may _use_ an existing frozen capability without expanding it. For example:
+
+- V1-D's executive review mode is built on the existing deterministic Review dossier.
+- V1-E's batch requests may draw questions from existing Method question-library content.
+
+Any change that would add capability in a frozen area stops and goes to Kerrick first.
+
+### 6.2 Pilot findings and scope control
+
+Findings from the supervised pilot may change the **priority and order** of work within V1-C, V1-D and V1-E. For example, they may move a capability earlier, split a phase, or drop a capability the pilot shows is unnecessary.
+
+They may not silently expand scope:
+
+- **New capability needs a roadmap amendment.** A finding that calls for a capability not listed in V1-C to V1-E, or for anything in a frozen area, is recorded as a proposed amendment to this roadmap. It is built only after Kerrick accepts that amendment.
+- **Each phase proposal starts from the evidence.** It lists the pilot findings it responds to, and states what it moves, adds or drops relative to this document.
+- **Defects are fixed in place.** A blocking defect found in the pilot is fixed under the allowance in §6.1, or in the phase that owns the area, without a roadmap amendment.
 
 ### V1-A: Workflow Closure
 
@@ -570,18 +609,21 @@ V1-A and V1-B can run in either order or overlap. Both are needed before the pil
 - **Major capabilities:**
   - A client-visibility control for deliverables and reviews, matching objects, records and initiatives. Deliverable files readable by the client under the existing publication boundary.
   - Fixing the element-page 500 for deliverable and initiative ids (redirect to their own page). `error.tsx` and `not-found` boundaries for internal and portal pages.
-  - A role model that lets a solo Principal Architect also administer. For example, the bootstrap user is a Principal Architect who also holds system administration, or System Administrators may invite internal staff while keeping Principal Architect authority. This needs a decision (§7).
+  - **The bootstrap and role model (Kerrick's decision 2, §7).** The first practice user operates as a Principal Architect and can administer the practice enough to establish the team without a second Principal Architect: invite internal staff, assign engagement roles and grant the capabilities the team needs. System Administrator is not made equivalent to architectural authority. The exact capability model, including how authority capabilities are granted when only one Principal Architect exists, is reconciled at the start of V1-A and recorded in an ADR before it is built.
   - Changing a member's role. Resending and revoking invitations. Forgot-password and a link to set a password.
   - Deleting or archiving evidence sources. A searchable picker for relationship targets. A "create successor" shortcut for superseding.
   - Bulk submit and publish for a selection or a domain, each version still individually recorded.
   - A Playwright golden-path suite in CI covering: create an organization, invite, accept, create an engagement, publish an element, publish a deliverable with a file, client approves and downloads, record an invoice and payment.
   - The two pre-existing defects: internal mobile overflow and the initiative 500.
-- **Dependencies:** none.
-- **Acceptance gate:**
-  - The golden-path suite is green in CI.
-  - Kerrick's manual browser pass of the same path is accepted.
-  - No step in the path needs SQL.
-- **Excluded:** new features, notifications, generation, AI, Edge or Method changes.
+- **Dependencies:** Kerrick's instruction to begin.
+- **◆ Gate A, the workflow-closure gate (between V1-A and V1-B).** V1-B does not start until all of these hold and Kerrick accepts:
+  1. The golden-path browser suite runs in CI as a required check and is green.
+  2. Every step of the golden path is done through the UI by the person who would do it in practice. No step needs SQL, the Supabase dashboard or a developer.
+  3. A deliverable and a review created in the UI reach the client, and the client can download the deliverable's file.
+  4. No reachable page returns an unhandled error. Every internal and portal route has an error boundary.
+  5. A single first practice user can establish a team and run an engagement under the reconciled capability model, proven by pgTAP and the browser suite.
+  6. Kerrick's own manual browser pass of the golden path is accepted.
+- **Excluded:** new features, notifications, generation, and anything in the frozen areas (§6.1).
 - **Required for V1:** yes.
 
 ### V1-B: Production Foundation
@@ -589,26 +631,31 @@ V1-A and V1-B can run in either order or overlap. Both are needed before the pil
 - **Objective:** a real, secure, operated environment that TPLCo can put a client into.
 - **User-visible outcome:** DSA OS at a TPLCo domain. Invitations and password resets arrive by email. The first administrator signs in without anyone running SQL.
 - **Major capabilities:**
-  - A hosted Supabase project and a Vercel project, plus a staging environment.
+  - **Infrastructure and provider decisions, made during this phase (Kerrick's decision 3).** Hosting, region and the transactional email provider are not chosen in advance. V1-B opens with a short, explicit comparison judged on the application's requirements, security, operational simplicity and cost. The stack in `CLAUDE.md` (Supabase, Vercel) is the starting assumption, not a foregone conclusion. Kerrick decides; the domain remains his decision.
+  - Hosted staging and production environments on the chosen platform.
   - Migration deployment from CI on merge to `main`, with a manual approval for production. The seed is excluded in production and the exclusion is enforced, not just instructed.
   - SMTP through a transactional email provider (the long-deferred decision), with the auth templates deployed.
   - A first-administrator bootstrap through a one-time, server-only setup path or a scripted command, documented and tested. No dashboard SQL.
   - Security headers, MFA for internal users, session limits, auditing of sign-in events.
   - Error monitoring and structured server logging. Backups and point-in-time recovery confirmed and a restore rehearsed.
   - A production runbook covering: deploy, roll back, restore, rotate secrets, revoke access.
-- **Dependencies:** Kerrick's decisions on hosting region, domain and email provider. Kerrick provisions the accounts and secrets; Claude never holds them.
-- **Acceptance gate:**
-  - Staging and production deployed from `main`.
-  - A fresh production-like environment bootstrapped by following the runbook.
-  - A test client invited by real email completes the golden path on staging.
-  - Restore rehearsed.
-  - Kerrick accepts.
-- **Excluded:** workflow emails (V1-C), Stripe, AI providers or credentials, any real engagement data before acceptance.
+- **Dependencies:** Gate A accepted. Kerrick's decisions on hosting, region, email provider and domain, made in this phase. Kerrick provisions the accounts and secrets; Claude never holds them.
+- **◆ Gate B, the pilot-readiness gate (end of V1-B).** Real engagement data enters the system only after all of these hold and Kerrick accepts:
+  1. **Environments.** Staging and production are deployed from `main` through the documented pipeline. The seed cannot run in production, and this is enforced, not just instructed.
+  2. **Bootstrap.** A fresh production-like environment was bootstrapped by following the runbook, with no SQL.
+  3. **Email.** Invitations, magic links and password resets arrive by real email on the production domain.
+  4. **Staging run.** A test client, invited by real email, completed the golden path on staging, including downloading a deliverable.
+  5. **Access security.** MFA is enforced for internal users. Session limits, security headers and sign-in auditing are live.
+  6. **Recovery.** Error monitoring is receiving events. Backups and point-in-time recovery are confirmed, and a restore was rehearsed with the result recorded.
+  7. **Runbook.** It covers deploy, roll back, restore, rotate secrets and revoke access, and Kerrick has read it.
+  8. **AI off.** Architecture Intelligence is off in production (mode `off`, no provider credential).
+  9. **Workarounds accepted.** The known pilot workarounds (below) are written down and Kerrick accepts them.
+- **Excluded:** workflow emails (V1-C), Stripe, AI providers or credentials, any real engagement data before Gate B is accepted.
 - **Required for V1:** yes.
 
-### ★ First real-world use: after V1-A and V1-B
+### ★ Supervised real-world use begins after V1-B
 
-At this point Kerrick can run a real engagement as a **supervised pilot**:
+Once Gate B is accepted, Kerrick selects the real engagement for the pilot (Kerrick's decision 5). He also decides whether its client is told it is a pilot. He can then run it in the application as a **supervised pilot**:
 
 - set up the engagement and team;
 - invite the client;
@@ -625,7 +672,7 @@ Known pilot workarounds:
 - Reviews are run with the internal dossier on screen.
 - Architecture Intelligence stays off. This is required anyway for real data until Step B and B-4.
 
-Everything found during the pilot feeds V1-C to V1-E.
+Everything found during the pilot feeds V1-C to V1-E under the scope control in §6.2.
 
 ### V1-C: Participation and Awareness
 
@@ -654,7 +701,8 @@ Everything found during the pilot feeds V1-C to V1-E.
 - **Objective:** the system produces the client-ready outputs the method promises, from the structured architecture (spec §12, §33).
 - **User-visible outcome:** an architect can generate a Full Architecture Blueprint, a Capability Map and an Executive Summary from published architecture (or a frozen baseline). They can review the output, publish it as a deliverable version and share it in the portal. Executive reviews can be run on screen in a presentation mode, and registers can be exported.
 - **Major capabilities:**
-  - Print-quality HTML templates rendered to PDF for the three highest-value deliverables, pinned to a baseline or the published versions, with the document attached to the deliverable version it documents. The remaining types (Strategy Deck, Implementation Framework, Measurement Model) follow the same mechanism.
+  - **Output format (Kerrick's decision 4):** print-quality HTML rendered to branded PDF is the V1 output format. DOCX and PPTX generation are post-V1, unless evidence from the pilot establishes that one is necessary. That would be a roadmap amendment under §6.2.
+  - Branded print-quality HTML templates rendered to PDF for the three highest-value deliverables, pinned to a baseline or the published versions, with the document attached to the deliverable version it documents. The remaining types (Strategy Deck, Implementation Framework, Measurement Model) follow the same mechanism.
   - Executive review mode: a structured, full-screen presentation of the review agenda in the spec §11 order, built from the existing deterministic dossier. It records client responses in the session.
   - CSV exports of registers, the architecture (per domain) and baselines. A printable review pack.
   - Invoice PDFs, using the same rendering.
@@ -663,7 +711,7 @@ Everything found during the pilot feeds V1-C to V1-E.
   - Generated documents show only published, client-visible content when generated for the client (pgTAP and snapshot tests).
   - A generated Blueprint for the pilot engagement is reviewed by Kerrick for quality.
   - The browser suite is extended.
-- **Excluded:** AI drafting, DOCX and PPTX generation, deck design tools, graph visualization.
+- **Excluded:** AI drafting (frozen, §6.1), DOCX and PPTX generation (post-V1), deck design tools, graph visualization.
 - **Required for V1:** yes.
 
 ### V1-E: Discovery and Scale
@@ -677,7 +725,7 @@ Everything found during the pilot feeds V1-C to V1-E.
   - find anything by name across an engagement or the practice;
   - see the engagement's phase plan.
 - **Major capabilities:**
-  - Batch requests (several questions in one request set), optionally drawn from a Method question library. This is the first delivery-facing use of Phase 6 content.
+  - Batch requests (several questions in one request set), optionally drawn from existing Method question-library content. This reads Phase 6 content without expanding the Method Library (§6.1).
   - Interview capture: a structured evidence form plus a stakeholder register built on the existing `stakeholder` object type.
   - Multi-file evidence import.
   - CSV import of elements and relationships into drafts, validated against the vocabulary, never auto-published.
@@ -686,28 +734,38 @@ Everything found during the pilot feeds V1-C to V1-E.
   - An audit log view and export per engagement. An engagement export at close.
 - **Dependencies:** V1-A. It can run in parallel with V1-D.
 - **Acceptance gate:**
-  - The pilot's next engagement starts its discovery in the app.
+  - A real engagement (the pilot or a later one) runs its discovery in the app.
   - An import of at least 100 elements succeeds.
   - Search returns only what the reader may see (pgTAP).
   - Kerrick accepts.
-- **Excluded:** questionnaire builders, Method-driven automation, cross-engagement analytics, AI.
+- **Excluded:** questionnaire builders, Method-driven automation, cross-engagement analytics, and anything in the frozen areas (§6.1).
 - **Required for V1:** yes.
 
-### ★ V1
+### ◆ V1 completion (end of V1-E)
 
-V1 is reached when one real paid engagement has run end to end in DSA OS:
+V1 is complete when all of these hold and Kerrick confirms it:
 
-- set up;
-- discovery;
-- architecture;
-- reviews;
-- generated deliverables;
-- implementation tracking;
-- finance recorded.
+1. **Phase gates.** Gates A and B and the acceptance gates of V1-C, V1-D and V1-E are all accepted.
+2. **End-to-end use.** On real paid engagement work in production, every stage has been carried out in DSA OS:
+   - setup;
+   - discovery;
+   - architecture construction and publication;
+   - decisions and approvals;
+   - executive reviews;
+   - generated deliverables (branded PDF);
+   - implementation tracking;
+   - finance.
 
-The client must have taken part through the portal, with no developer intervention and no SQL. Kerrick confirms it against spec §33.
+   The pilot engagement counts for every stage it reached after the capability shipped. Any stage it passed before then is shown on a later real engagement.
 
-### Post-V1 (in an order Kerrick chooses)
+3. **Client participation.** The client took part through the portal and was notified by the system: responding, approving, deciding, commenting, and reading documents and deliverables.
+4. **No developer intervention.** There was no developer intervention, no SQL and no dashboard work in day-to-day operation.
+5. **Spec §33.** Every success criterion in spec §33 is met. Kerrick confirms this line by line, and any criterion he deliberately moves post-V1 is recorded with his reason.
+6. **Freeze respected.** The freeze in §6.1 held, and no unaccepted scope was added (§6.2).
+
+The freeze in §6.1 lifts only when Kerrick confirms V1, and then only for what he authorizes next.
+
+### Post-V1 (in an order Kerrick chooses, each needing his explicit authorization)
 
 1. **Architecture Intelligence Step B:**
    - a governed seed and synthetic evaluation of the v2 prompts per kind;
@@ -715,26 +773,35 @@ The client must have taken part through the portal, with no developer interventi
    - a report;
    - a manifest change;
    - real engagements only after B-4.
+
+   Step B remains on hold until then (§6.1).
+
 2. **Stripe payments and receipts** (spec §10), already designed for in the finance schema.
 3. **Pattern Library and Portfolio Intelligence** (spec §16, §17). These depend on several completed engagements.
-4. **Branded DOCX and PPTX outputs, and graph visualization.**
+4. **Branded DOCX and PPTX outputs** (unless brought into V1 by pilot evidence, §6.2), **and graph visualization.**
 5. **Certification and licensing** (spec §21).
 
 ---
 
-## 7. Decisions needed from Kerrick
+## 7. Decisions recorded (Kerrick, 2026-10-02)
 
-1. **The roadmap shape.** Accept the reorganized sequence (V1-A to V1-E, then post-V1), or keep the existing numbering with these phases inserted.
-2. **The first-user role model:**
-   - **Recommended:** the bootstrap user is a Principal Architect, and Principal Architects may invite internal staff.
-   - **Alternative:** a System Administrator who can also hold Principal Architect authority on engagements they create.
-3. **Hosting and email:**
-   - the hosting region;
-   - the domain;
-   - the transactional email provider (open since Phase 2).
-4. **Output format for V1-D.** PDF from print-quality HTML is recommended over DOCX and PPTX for V1.
-5. **The pilot.** Which real engagement, and whether its client is told it is a pilot.
-6. **The infrastructure freeze.** Whether to freeze new AI, Edge and Method infrastructure until V1, as recommended.
+1. **Roadmap.** V1-A to V1-E is adopted as the governing remaining roadmap to V1. Phases 1 to 7 are preserved as historical implementation phases. Their numbering is not continued on the V1 critical path (§6).
+2. **Bootstrap model.** The Principal Architect direction is adopted:
+   - The first practice user can operate as Principal Architect and administer the practice enough to establish the team, without a second Principal Architect.
+   - System Administrator is not made inherently equivalent to architectural authority.
+   - The exact capability model is reconciled during V1-A (§6, V1-A).
+3. **Infrastructure and providers.** Hosting, region, domain and the transactional email provider are not selected yet.
+   - The infrastructure and provider decisions are made explicitly during V1-B, on the application's requirements, security, operational simplicity and cost.
+   - The domain remains Kerrick's decision.
+4. **Output format.** V1-D uses print-quality HTML to generate branded PDF outputs. DOCX and PPTX generation are post-V1, unless later evidence establishes that one is necessary for the pilot.
+5. **Pilot.** The pilot engagement is not selected yet. V1-B establishes the pilot-readiness gate (Gate B). Kerrick selects the real engagement after that gate is met.
+6. **Freeze.** New capability expansion in Architecture Intelligence, the Development Edge and the Method Library is frozen until V1 (§6.1).
+   - Existing functionality remains.
+   - Security, correctness and blocking-defect fixes are allowed.
+   - No new capability work happens in those areas without Kerrick's explicit authorization.
+   - Architecture Intelligence Step B remains on hold.
+
+Acceptance of this roadmap does not begin V1-A. V1-A starts only on Kerrick's explicit instruction. `README.md`, `CLAUDE.md` and the status markers are updated separately, when he directs.
 
 ## 8. What this document did not do
 
