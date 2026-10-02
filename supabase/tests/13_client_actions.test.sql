@@ -140,7 +140,7 @@ select throws_ok($$ select public.send_client_action('e0000000-0000-4000-8000-00
   'Confirm.', pg_temp.member('lead@meridian.test')) $$,
   '23514', null, 'a confirmation names what to confirm');
 select throws_ok($$ select public.send_client_action('e0000000-0000-4000-8000-000000000001', 'question', 'Late',
-  'A question.', pg_temp.member('lead@meridian.test'), current_date - 1) $$,
+  'A question.', pg_temp.member('lead@meridian.test'), (now() at time zone 'America/Chicago')::date - 1) $$,
   '23514', null, 'a due date cannot be in the past');
 select throws_ok($$ select public.send_client_action('e0000000-0000-4000-8000-000000000001', 'executive_attention',
   'Exec', 'Attention.', pg_temp.member('sponsor@meridian.test'), null, array['b3000000-0000-4000-8000-000000000502']::uuid[]) $$,
