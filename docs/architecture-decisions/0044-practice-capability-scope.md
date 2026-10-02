@@ -52,3 +52,5 @@ Reading the library remains every internal member's right (`private.is_internal(
 - The engagement capability enum, tables, functions, application mirror and suite 03 are unchanged.
 - Any later TPLCo-wide authority, such as Pattern Library curation or licensing administration, adds a `practice_capability` value rather than an engagement capability or a third mechanism.
 - The role-based portfolio financial exception (`has_portfolio_financial_access`) is left as it is.
+
+**Amended (V1-A Increment 2):** `administer_practice` is added as a practice capability, administered by its own holders rather than by `publish_methodology`. See [ADR-0074](0074-practice-administration-and-architectural-authority.md).

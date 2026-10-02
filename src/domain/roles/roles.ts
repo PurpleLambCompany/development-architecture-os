@@ -86,9 +86,50 @@ export function canArchiveEngagement(role: AppRole | null): boolean {
   return canSeeAllEngagements(role);
 }
 
-/** Only System Administrators manage TPLCo staff and profile status. */
-export function canManageInternalStaff(role: AppRole | null): boolean {
-  return role === "system_administrator";
+/**
+ * Internal roles whose engagement defaults carry architectural authority
+ * (decision D2). Mirrors public.is_architecture_authority_role.
+ */
+export const ARCHITECTURE_AUTHORITY_ROLES = [
+  "principal_architect",
+  "architect",
+  "researcher",
+] as const satisfies readonly InternalRole[];
+
+export function isArchitectureAuthorityRole(role: AppRole): boolean {
+  return (ARCHITECTURE_AUTHORITY_ROLES as readonly AppRole[]).includes(role);
+}
+
+/**
+ * The practice roles a viewer may give someone, by invitation or role
+ * change. Practice administration is the administer_practice capability
+ * (D1), not a role name; the authority-bearing roles additionally need the
+ * viewer to be a Principal Architect (D2). Mirrors
+ * private.guard_practice_membership; nobody acts on themselves (D5).
+ */
+export function assignablePracticeRoles(
+  viewerRole: AppRole | null,
+  administersPractice: boolean,
+): InternalRole[] {
+  if (!administersPractice) return [];
+  return INTERNAL_ROLES.filter(
+    (role) => viewerRole === "principal_architect" || !isArchitectureAuthorityRole(role),
+  );
+}
+
+/**
+ * Whether giving `target` this role and status creates architectural
+ * authority: an authority-bearing role that is new, changed into, or
+ * restored from suspension. Only a Principal Architect may do that.
+ */
+export function createsArchitectureAuthority(
+  before: { role: AppRole; status: string } | null,
+  after: { role: AppRole; status: string },
+): boolean {
+  if (!isArchitectureAuthorityRole(after.role)) return false;
+  if (after.status !== "active" && after.status !== "invited") return false;
+  if (!before) return true;
+  return before.role !== after.role || (before.status !== "active" && before.status !== "invited");
 }
 
 export function canReadActivityLog(role: AppRole | null): boolean {

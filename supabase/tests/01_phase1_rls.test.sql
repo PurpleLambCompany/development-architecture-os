@@ -190,10 +190,15 @@ select throws_ok(
      values ('e0000000-0000-4000-8000-000000000003', '30000000-0000-4000-8000-000000000003', 'internal', 'architect') $$,
   '23514', null, 'a client user cannot be assigned an internal role'
 );
+-- Practice administration is a capability since V1-A (D1): a Principal
+-- Architect now administers TPLCo staff (60_practice_administration covers
+-- it); someone without administer_practice still cannot.
+select pg_temp.reset_actor();
+select pg_temp.act_as('researcher@tplco.test');
 select throws_ok(
   $$ insert into public.organization_members (organization_id, user_id, role)
      values ('a0000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000003', 'system_administrator') $$,
-  '42501', null, 'principal architect cannot grant internal roles'
+  '42501', null, 'a member without practice administration cannot grant internal roles'
 );
 select pg_temp.reset_actor();
 

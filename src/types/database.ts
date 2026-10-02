@@ -8127,6 +8127,10 @@ export type Database = {
         Args: { capability: Database["public"]["Enums"]["engagement_capability"] };
         Returns: boolean;
       };
+      is_architecture_authority_role: {
+        Args: { role: Database["public"]["Enums"]["app_role"] };
+        Returns: boolean;
+      };
       is_financial_capability: {
         Args: { capability: Database["public"]["Enums"]["engagement_capability"] };
         Returns: boolean;
@@ -9151,7 +9155,7 @@ export type Database = {
       payment_method: "ach" | "wire" | "check" | "card_via_processor" | "other";
       payment_status: "recorded" | "reversed";
       payment_structure: "milestone" | "installments" | "percentage" | "retainer" | "custom";
-      practice_capability: "author_methodology" | "publish_methodology";
+      practice_capability: "author_methodology" | "publish_methodology" | "administer_practice";
       provenance_type:
         | "client_source"
         | "public_source"
@@ -9496,7 +9500,7 @@ export const Constants = {
       payment_method: ["ach", "wire", "check", "card_via_processor", "other"],
       payment_status: ["recorded", "reversed"],
       payment_structure: ["milestone", "installments", "percentage", "retainer", "custom"],
-      practice_capability: ["author_methodology", "publish_methodology"],
+      practice_capability: ["author_methodology", "publish_methodology", "administer_practice"],
       provenance_type: [
         "client_source",
         "public_source",

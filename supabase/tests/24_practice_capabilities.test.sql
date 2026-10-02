@@ -59,11 +59,14 @@ as $$
   where u.email = user_email limit 1;
 $$;
 
+-- The methodology capabilities only. administer_practice (V1-A, D1) is
+-- covered by 60_practice_administration.test.sql.
 create function pg_temp.caps()
 returns text
 language sql
 as $$
-  select coalesce(string_agg(c::text, ',' order by c), '') from public.my_practice_capabilities() c;
+  select coalesce(string_agg(c::text, ',' order by c), '') from public.my_practice_capabilities() c
+  where c <> 'administer_practice';
 $$;
 
 -- -----------------------------------------------------------------------------

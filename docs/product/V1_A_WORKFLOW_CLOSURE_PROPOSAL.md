@@ -1,7 +1,7 @@
 # V1-A Workflow Closure: Implementation Plan
 
 **Status:** **Accepted by Kerrick on 2026-10-02 as the V1-A implementation plan,** with decisions D1 to D13 recorded in §9. Implementation proceeds only on Kerrick's instruction, through small sequential PRs (D13), each stopping for his review before merge.
-**Progress:** Increment 1, the browser suite foundation (Workstream G, §6), is implemented on a draft PR and is not yet merged or accepted. No later increment has begun. This document changes no application code, schema, migration or dependency.
+**Progress:** Increment 1, the browser suite foundation (Workstream G, §6), is merged (PR #17). Increment 2, practice administration, bootstrap and authority closure (Workstream A, D1-D7), is implemented on a draft PR and is not yet merged or accepted. No later increment has begun. This document changes no application code, schema, migration or dependency.
 **Completion:** V1-A is complete only when the full Gate A assessment (§8) holds and Kerrick gives his manual acceptance. Merging individual workstream PRs does not constitute V1-A acceptance.
 **Unchanged:** Architecture Intelligence Step B remains on hold, and Architecture Intelligence, Development Edge and Method Library capability expansion remains frozen until V1 (roadmap §6.1).
 **Governing scope:** [`V1_ROADMAP_RECONCILIATION.md`](V1_ROADMAP_RECONCILIATION.md) §6 (V1-A and Gate A), accepted 2026-10-02.

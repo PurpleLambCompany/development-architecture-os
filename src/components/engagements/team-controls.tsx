@@ -1,12 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { assignEngagementMember, removeEngagementMember } from "@/domain/memberships/actions";
-import { CLIENT_ROLES, INTERNAL_ROLES, ROLE_LABELS, type AppRole } from "@/domain/roles/roles";
+import { CLIENT_ROLES, ROLE_LABELS, type AppRole, type ClientRole } from "@/domain/roles/roles";
 import { Button } from "@/components/ui/button";
 import { Field, FormMessage } from "@/components/ui/field";
-import { Select } from "@/components/ui/input";
+import { Input, Select } from "@/components/ui/input";
 
 export type AssignableUser = {
   userId: string;
@@ -26,25 +26,27 @@ export function AddTeamMemberForm({
 }) {
   const router = useRouter();
   const [userId, setUserId] = useState("");
-  const [role, setRole] = useState<AppRole | "">("");
+  const [role, setRole] = useState<ClientRole | "">("");
   const [message, setMessage] = useState<{ tone: "error" | "success"; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
 
   const selected = candidates.find((candidate) => candidate.userId === userId);
-  const roles = useMemo(
-    () => (selected?.side === "internal" ? INTERNAL_ROLES : selected ? CLIENT_ROLES : []),
-    [selected],
-  );
+  // An internal person's engagement role is their practice role (D3); only
+  // a client person's role is chosen here.
+  const internal = selected?.side === "internal";
 
   const onSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     setMessage(null);
-    if (!selected || !role) {
+    if (!selected || (!internal && !role)) {
       setMessage({ tone: "error", text: "Choose a person and a role." });
       return;
     }
     startTransition(async () => {
-      const result = await assignEngagementMember(engagementId, { userId, role });
+      const result = await assignEngagementMember(
+        engagementId,
+        internal ? { userId } : { userId, role },
+      );
       if (!result.ok) {
         setMessage({ tone: "error", text: result.error });
         return;
@@ -73,7 +75,7 @@ export function AddTeamMemberForm({
             onChange={(event) => {
               const next = candidates.find((c) => c.userId === event.target.value);
               setUserId(event.target.value);
-              setRole(next?.orgRole ?? "");
+              setRole(next?.side === "client" ? (next.orgRole as ClientRole) : "");
             }}
           >
             <option value="">Select…</option>
@@ -92,27 +94,36 @@ export function AddTeamMemberForm({
                 .map((c) => (
                   <option key={c.userId} value={c.userId}>
                     {c.name || c.email} — {ROLE_LABELS[c.orgRole]}
-                    {c.status === "invited" ? " (invited)" : ""}
                   </option>
                 ))}
             </optgroup>
           </Select>
         </Field>
-        <Field label="Engagement role" htmlFor="member-role">
-          <Select
-            id="member-role"
-            value={role}
-            disabled={!selected}
-            onChange={(event) => setRole(event.target.value as AppRole)}
+        {internal ? (
+          <Field
+            label="Engagement role"
+            htmlFor="member-practice-role"
+            hint="Their practice role. Differences on this engagement are capability overrides."
           >
-            <option value="">Select…</option>
-            {roles.map((r) => (
-              <option key={r} value={r}>
-                {ROLE_LABELS[r]}
-              </option>
-            ))}
-          </Select>
-        </Field>
+            <Input id="member-practice-role" value={ROLE_LABELS[selected.orgRole]} readOnly />
+          </Field>
+        ) : (
+          <Field label="Engagement role" htmlFor="member-role">
+            <Select
+              id="member-role"
+              value={role}
+              disabled={!selected}
+              onChange={(event) => setRole(event.target.value as ClientRole)}
+            >
+              <option value="">Select…</option>
+              {CLIENT_ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {ROLE_LABELS[r]}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
         <Button type="submit" variant="secondary" disabled={pending}>
           Add to team
         </Button>

@@ -26,3 +26,5 @@ Architects and Researchers read architecture activity through `public.architectu
 ## Amendment (2026-10-01): Architecture Intelligence capabilities are architecture authority
 
 `use_architecture_intelligence` and `authorize_external_ai_processing` (ADR-0061) join `edit_architecture` and `publish_architecture` as architecture-authority capabilities: overrides are granted or revoked only by Principal Architects on the engagement, never for themselves, and never by System Administrators or Project Administrators. Both are internal-only. Defaults: Principal Architect holds both; Architect holds `use_architecture_intelligence`; no other role holds either (OD-1, OD-2). Enforced by `private.can_manage_capability` and `public.is_architecture_authority_capability` (migration `20261007000100_architecture_intelligence_capabilities.sql`) and tested in `41_ai_capabilities`.
+
+**Amended (V1-A Increment 2):** a System Administrator cannot acquire architectural authority through a role or status change, and an internal person's engagement role is their practice role. See [ADR-0074](0074-practice-administration-and-architectural-authority.md).

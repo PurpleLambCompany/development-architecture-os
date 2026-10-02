@@ -15,9 +15,13 @@ export const updateMemberSchema = z.object({
   status: z.enum(["active", "suspended"]),
 });
 
+/**
+ * An internal person's engagement role is their practice role (D3), so it
+ * is never chosen; a client person's role is chosen from the client roles.
+ */
 export const assignEngagementMemberSchema = z.object({
   userId: z.uuid("Choose a person"),
-  role: z.enum(ALL_ROLES, "Choose a role"),
+  role: z.enum(CLIENT_ROLES, "Choose a role").optional(),
 });
 
 export type InviteMemberInput = z.infer<typeof inviteMemberSchema>;

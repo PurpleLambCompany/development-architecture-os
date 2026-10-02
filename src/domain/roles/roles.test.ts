@@ -6,7 +6,9 @@ import {
   canArchiveEngagement,
   canManageClientDirectory,
   canManageEngagement,
-  canManageInternalStaff,
+  assignablePracticeRoles,
+  createsArchitectureAuthority,
+  isArchitectureAuthorityRole,
   canSeeAllEngagements,
   roleSide,
 } from "./roles";
@@ -39,7 +41,7 @@ describe("capabilities (mirror of RLS)", () => {
       expect(canManageClientDirectory(role)).toBe(false);
       expect(canManageEngagement(role, role)).toBe(false);
       expect(canArchiveEngagement(role)).toBe(false);
-      expect(canManageInternalStaff(role)).toBe(false);
+      expect(isArchitectureAuthorityRole(role)).toBe(false);
     }
   });
 
@@ -54,8 +56,49 @@ describe("capabilities (mirror of RLS)", () => {
     expect(canArchiveEngagement("project_administrator")).toBe(false);
   });
 
-  it("reserves staff management for system administrators", () => {
-    expect(canManageInternalStaff("system_administrator")).toBe(true);
-    expect(canManageInternalStaff("principal_architect")).toBe(false);
+  it("lets practice administrators manage staff, but only a Principal Architect creates authority (D1, D2)", () => {
+    expect(assignablePracticeRoles("principal_architect", true)).toEqual(INTERNAL_ROLES);
+    expect(assignablePracticeRoles("system_administrator", true)).toEqual([
+      "system_administrator",
+      "project_administrator",
+      "finance_administrator",
+    ]);
+    expect(assignablePracticeRoles("project_administrator", true)).not.toContain("architect");
+    expect(assignablePracticeRoles("principal_architect", false)).toEqual([]);
+    expect(assignablePracticeRoles("system_administrator", false)).toEqual([]);
+  });
+
+  it("recognizes every route that creates architectural authority", () => {
+    expect(createsArchitectureAuthority(null, { role: "architect", status: "invited" })).toBe(true);
+    expect(
+      createsArchitectureAuthority(
+        { role: "researcher", status: "active" },
+        { role: "architect", status: "active" },
+      ),
+    ).toBe(true);
+    expect(
+      createsArchitectureAuthority(
+        { role: "architect", status: "suspended" },
+        { role: "architect", status: "active" },
+      ),
+    ).toBe(true);
+    expect(
+      createsArchitectureAuthority(
+        { role: "architect", status: "active" },
+        { role: "architect", status: "suspended" },
+      ),
+    ).toBe(false);
+    expect(
+      createsArchitectureAuthority(
+        { role: "architect", status: "active" },
+        { role: "project_administrator", status: "active" },
+      ),
+    ).toBe(false);
+    expect(
+      createsArchitectureAuthority(
+        { role: "architect", status: "invited" },
+        { role: "architect", status: "active" },
+      ),
+    ).toBe(false);
   });
 });

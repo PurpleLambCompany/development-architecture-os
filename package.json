@@ -18,6 +18,7 @@
     "db:reset": "supabase db reset",
     "db:test": "supabase test db",
     "db:types": "supabase gen types typescript --local > src/types/database.ts && prettier --write src/types/database.ts",
+    "practice:bootstrap": "node scripts/practice-bootstrap.mjs",
     "check": "pnpm lint && pnpm typecheck && pnpm format:check && pnpm test"
   },
   "dependencies": {
