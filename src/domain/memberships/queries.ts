@@ -5,8 +5,10 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  * People who may be assigned to an engagement: active TPLCo staff plus
  * active members of the engagement's client organization. Invited and
  * suspended people are not offered (V1-A A3, A5). The database re-checks
- * membership, and that an internal person's engagement role is their
- * practice role, on insert (validate_engagement_member trigger).
+ * that the person is a member of the right organization, and that an
+ * internal person's engagement role is their practice role, on insert
+ * (validate_engagement_member trigger). It does not re-check their status:
+ * a person who is not active reaches nothing either way.
  *
  * A person can belong to several organizations; each person is listed
  * once, as internal if they are TPLCo staff.

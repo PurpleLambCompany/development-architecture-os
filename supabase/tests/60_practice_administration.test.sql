@@ -18,7 +18,7 @@
 -- =============================================================================
 begin;
 
-select plan(83);
+select plan(87);
 
 create function pg_temp.act_as(user_email text)
 returns void
@@ -292,6 +292,19 @@ select pg_temp.act_as('sysadmin@tplco.test');
 select ok(not pg_temp.administers(), 'who then no longer administers the practice');
 select throws_ok($$ select pg_temp.invite('person9@practice.test', 'project_administrator') $$, '42501', null,
   'and can no longer invite');
+select pg_temp.act_as('projectadmin@tplco.test');
+select throws_ok($$ select public.set_practice_capability_override(pg_temp.member('principal@tplco.test'),
+  'administer_practice', false, 'Taking over') $$, '23514', 'A Principal Architect always administers the practice',
+  'no administrator can take practice administration from a Principal Architect');
+select pg_temp.act_as('principal@tplco.test');
+select lives_ok($$ select public.set_practice_capability_override(pg_temp.member('person9@practice.test'),
+  'administer_practice', false, 'Not yet') $$, 'administration is revoked from an invited colleague');
+select lives_ok($$ update public.organization_members set role = 'principal_architect' where id = pg_temp.member('person9@practice.test') $$,
+  'who is then made a Principal Architect');
+select ok(not exists (select 1 from public.practice_member_capability_overrides
+  where organization_member_id = pg_temp.member('person9@practice.test') and capability = 'administer_practice'),
+  'and the earlier revocation does not follow them into the role');
+update public.organization_members set role = 'finance_administrator' where id = pg_temp.member('person9@practice.test');
 select pg_temp.reset_actor();
 update public.practice_member_capability_overrides set granted = false where capability = 'administer_practice';
 insert into public.practice_member_capability_overrides (organization_member_id, capability, granted, reason)

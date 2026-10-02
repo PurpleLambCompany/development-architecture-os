@@ -3,8 +3,8 @@
 --
 -- Two real database sessions (dblink):
 --   1. two practice administrators revoke each other's administer_practice
---      at once: the practice lock serializes them, the second no longer
---      holds the capability, and one administrator remains (D5);
+--      at once: the practice lock serializes them, and the second, no
+--      longer holding the capability, is refused (D5);
 --   2. two sessions suspend the only two active Principal Architects at
 --      once: the second waits, then is refused, so one remains (D5);
 --   3. a Principal Architect is demoted while they promote someone: the
@@ -95,21 +95,23 @@ as $$
 $$;
 
 -- -----------------------------------------------------------------------------
--- 1. Two administrators revoke each other's administer_practice at once.
---    Administrators now: System Administrator, and both Principal
---    Architects. The Architect-turned-Principal steps aside first, through
---    the System Administrator, so exactly two remain.
+-- 1. Two administrators revoke each other's administer_practice at once:
+--    the System Administrator and a Project Administrator the Principal
+--    Architect delegated it to. (A Principal Architect's administration
+--    cannot be revoked.)
 -- -----------------------------------------------------------------------------
-select pg_temp.connect('a', 'sysadmin@tplco.test');
+select pg_temp.connect('a', 'principal@tplco.test');
 select * from extensions.dblink('a', format($sql$
-  select public.set_practice_capability_override(%L::uuid, 'administer_practice', false, 'Setup')::text $sql$,
-  pg_temp.member('10000000-0000-4000-8000-000000000003'))) as r(v text);
-select pg_temp.connect('b', 'principal@tplco.test');
+  select public.set_practice_capability_override(%L::uuid, 'administer_practice', true, 'Setup')::text $sql$,
+  pg_temp.member('10000000-0000-4000-8000-000000000005'))) as r(v text);
+select extensions.dblink_disconnect('a');
+select pg_temp.connect('a', 'sysadmin@tplco.test');
+select pg_temp.connect('b', 'projectadmin@tplco.test');
 
 select extensions.dblink_exec('a', 'begin');
 select * from extensions.dblink('a', format($sql$
   select public.set_practice_capability_override(%L::uuid, 'administer_practice', false, 'Race')::text $sql$,
-  pg_temp.member('10000000-0000-4000-8000-000000000002'))) as r(v text);
+  pg_temp.member('10000000-0000-4000-8000-000000000005'))) as r(v text);
 select ok(pg_temp.start_and_check_blocked('b', format($sql$
   select public.set_practice_capability_override(%L::uuid, 'administer_practice', false, 'Race') $sql$,
   pg_temp.member('10000000-0000-4000-8000-000000000001'))),
@@ -117,8 +119,8 @@ select ok(pg_temp.start_and_check_blocked('b', format($sql$
 select extensions.dblink_exec('a', 'commit');
 select is(pg_temp.finish_query('b'), 'You do not hold administer_practice',
   'and is then refused, because its author no longer administers the practice');
-select is(private.practice_capability_holder_count('administer_practice'), 1,
-  'exactly one practice administrator remains');
+select is(private.practice_capability_holder_count('administer_practice'), 3,
+  'the System Administrator and both Principal Architects still administer the practice');
 
 -- -----------------------------------------------------------------------------
 -- 2. The two active Principal Architects suspended at once by the remaining

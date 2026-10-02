@@ -218,6 +218,15 @@ begin
   if coalesce(btrim(p_reason), '') = '' then
     raise exception 'Say why the capability changes' using errcode = '23514';
   end if;
+  -- A Principal Architect always administers the practice, so no other
+  -- administrator can take away their power to create architectural
+  -- authority (D2, D4).
+  if p_capability = 'administer_practice' and not p_granted and exists (
+    select 1 from public.organization_members
+    where id = p_membership_id and role = 'principal_architect'
+  ) then
+    raise exception 'A Principal Architect always administers the practice' using errcode = '23514';
+  end if;
   insert into public.practice_member_capability_overrides (organization_member_id, capability, granted, reason)
   values (p_membership_id, p_capability, p_granted, btrim(p_reason))
   on conflict (organization_member_id, capability)
@@ -454,6 +463,12 @@ begin
     update public.engagement_members
     set role = new.role
     where user_id = new.user_id and side = 'internal' and role <> new.role;
+    -- A new Principal Architect always administers the practice (D4): an
+    -- earlier revocation does not follow them into the role.
+    if new.role = 'principal_architect' then
+      delete from public.practice_member_capability_overrides
+      where organization_member_id = new.id and capability = 'administer_practice' and not granted;
+    end if;
   end if;
   return null;
 end;

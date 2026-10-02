@@ -89,8 +89,12 @@ export default async function PracticeCapabilitiesPage() {
                 {PRACTICE_CAPABILITIES.map((c) => {
                   const x = cell(m.organization_member_id, c);
                   const self = m.user_id === viewer.id;
+                  // A Principal Architect always administers the practice (D4);
+                  // the database refuses revoking it.
+                  const fixed =
+                    c === "administer_practice" && m.role === "principal_architect" && x.effective;
                   const canChange =
-                    c === "administer_practice" ? mine.canAdminister : mine.canPublish;
+                    !fixed && (c === "administer_practice" ? mine.canAdminister : mine.canPublish);
                   return (
                     <Td key={c}>
                       <div className="space-y-1">
