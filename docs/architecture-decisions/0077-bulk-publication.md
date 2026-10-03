@@ -1,6 +1,6 @@
 # ADR-0077: Bulk publication
 
-**Status:** Implemented on a draft PR (V1-A Increment 5), not yet accepted. Plan decision D8, accepted by Kerrick 2026-10-02.
+**Status:** Accepted (V1-A Increment 5; plan decision D8 accepted by Kerrick 2026-10-02; merged in PR #21, `a20a1cf`).
 
 ## Context
 

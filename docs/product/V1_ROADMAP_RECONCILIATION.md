@@ -499,6 +499,8 @@ Everything in §5.1 and §5.2, plus:
 |                                                                       | Pattern Library, Portfolio Intelligence, certification and licensing (spec §16, §17, §21, §23) |
 |                                                                       | Internal authoring on phones                                                                   |
 
+Several items in the post-V1 column — graph visualization, command palette, cross-engagement analytics, Portfolio Intelligence — are also discussed as long-term direction in `DSA_IDE_TECHNICAL_DIRECTION.md` (2026-10-03). That document is direction only and changes nothing here: these items remain post-V1, and spec §23 remains in force. Its purpose is to keep V1 decisions from foreclosing them, not to advance them.
+
 ### 5.5 Where Step B belongs
 
 Step B is a governed evaluation (seed and synthetic data only, manual grading, a committed report, a reviewed manifest change). It turns on five internal interpretation kinds. It belongs **after V1**, as a post-V1 increment. Under decision 6 (§6.1) it remains on hold, and is frozen until V1 unless Kerrick explicitly authorizes otherwise.
