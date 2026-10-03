@@ -17,6 +17,8 @@ import {
   elementSchema,
   baselineItemSchema,
   baselineSchema,
+  bulkPublishSchema,
+  bulkSubmitSchema,
   citationSchema,
   decideSchema,
   decisionOptionSchema,
@@ -610,6 +612,31 @@ export async function publishElement(elementId: string, input: unknown) {
       p_element_id: elementId,
       p_change_summary: v.changeSummary,
     }),
+  );
+}
+
+/**
+ * Bulk publication (V1-A D8). publish_element_versions composes the same
+ * publish_element_version the single-element action above calls, once per
+ * element, inside the database: every capability check, lifecycle rule,
+ * version, audit row and relationship-publication rule is exactly what
+ * individual publication would have produced. One element's refusal does
+ * not stop the rest (partial success); each row of the result names its own
+ * element and, on refusal, the reason.
+ */
+export async function bulkPublishElements(input: unknown) {
+  return run(bulkPublishSchema, input, (supabase, v) =>
+    supabase.rpc("publish_element_versions", {
+      p_element_ids: v.elementIds,
+      p_change_summary: v.changeSummary,
+    }),
+  );
+}
+
+/** Bulk submission for review (V1-A D8); composes submit_element_for_review per element. */
+export async function bulkSubmitElementsForReview(input: unknown) {
+  return run(bulkSubmitSchema, input, (supabase, v) =>
+    supabase.rpc("submit_elements_for_review", { p_element_ids: v.elementIds }),
   );
 }
 

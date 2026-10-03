@@ -8349,6 +8349,16 @@ export type Database = {
         Args: { p_change_summary?: string; p_element_id: string };
         Returns: string;
       };
+      publish_element_versions: {
+        Args: { p_change_summary?: string; p_element_ids: string[] };
+        Returns: {
+          element_id: string;
+          error_code: string;
+          error_message: string;
+          published: boolean;
+          version_id: string;
+        }[];
+      };
       publish_method_asset_version: {
         Args: {
           p_change_summary?: string;
@@ -8863,6 +8873,15 @@ export type Database = {
         Returns: string;
       };
       submit_element_for_review: { Args: { p_element_id: string }; Returns: undefined };
+      submit_elements_for_review: {
+        Args: { p_element_ids: string[] };
+        Returns: {
+          element_id: string;
+          error_code: string;
+          error_message: string;
+          submitted: boolean;
+        }[];
+      };
       suggested_interpretations: {
         Args: { p_engagement_id: string };
         Returns: {

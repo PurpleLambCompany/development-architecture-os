@@ -14,7 +14,7 @@ begin;
 
 create extension if not exists dblink with schema extensions;
 
-select plan(10);
+select plan(14);
 
 create function pg_temp.connect(name text, user_email text)
 returns void
@@ -139,6 +139,40 @@ select is(
   (select count(*)::int from public.architecture_relationships where engagement_id = 'e0000000-0000-4000-8000-000000000002'),
   1, 'only one direction exists');
 
+-- -----------------------------------------------------------------------------
+-- 4. V1-A D8: two overlapping bulk publishes do not deadlock.
+--
+-- publish_element_versions sorts and deduplicates its input ascending by id
+-- before locking anything (ADR on bulk publication), specifically so that
+-- two concurrent bulk calls over an overlapping selection always acquire
+-- their shared locks in the same global order regardless of the order the
+-- caller selected them in. Session A publishes [003, 004]; session B
+-- publishes the same pair given in the opposite order, [004, 003], which
+-- the function still locks as 003 then 004 -- so B waits on A's lock on
+-- 003, rather than each session holding one end and waiting on the other.
+-- -----------------------------------------------------------------------------
+select extensions.dblink_exec('a', pg_temp.create_area_sql('b9000000-0000-4000-8000-000000000003', 'Bulk concurrency C'));
+select extensions.dblink_exec('a', pg_temp.create_area_sql('b9000000-0000-4000-8000-000000000004', 'Bulk concurrency D'));
+
+select extensions.dblink_exec('a', 'begin');
+select is(
+  (select r.published from extensions.dblink('a', $$
+     select bool_and(published) from public.publish_element_versions(
+       array['b9000000-0000-4000-8000-000000000003', 'b9000000-0000-4000-8000-000000000004']::uuid[]) $$)
+   as r(published boolean)),
+  true, 'Session A bulk-publishes C and D (not yet committed)');
+select ok(
+  pg_temp.start_and_check_blocked('b', $$
+    select bool_and(published) from public.publish_element_versions(
+      array['b9000000-0000-4000-8000-000000000004', 'b9000000-0000-4000-8000-000000000003']::uuid[]) $$),
+  'Session B, bulk-publishing the same pair in reverse order, waits rather than deadlocking');
+select extensions.dblink_exec('a', 'commit');
+select is(pg_temp.finish_query('b'), null, 'Session B then completes with no deadlock error');
+select is(
+  (select count(*)::int from public.element_versions
+   where element_id in ('b9000000-0000-4000-8000-000000000003', 'b9000000-0000-4000-8000-000000000004')),
+  4, 'each of the two elements was published by both sessions in turn: two versions apiece, four in all');
+
 select * from finish();
 
 -- -----------------------------------------------------------------------------
@@ -158,3 +192,4 @@ delete from public.architecture_objects where engagement_id = 'e0000000-0000-400
 delete from public.architecture_elements where engagement_id = 'e0000000-0000-4000-8000-000000000002';
 delete from public.architecture_reference_counters where engagement_id = 'e0000000-0000-4000-8000-000000000002';
 commit;
+
