@@ -19,6 +19,7 @@ import {
 import {
   acknowledgeEscalation,
   addCheckpoint,
+  createInitiativeSuccessor,
   escalateInitiative,
   recordCheckpointAchieved,
   reopenInitiative,
@@ -64,7 +65,10 @@ import {
   LifecycleTag,
   ReferenceCode,
 } from "@/components/architecture/badges";
-import { RelationshipsPanel } from "@/components/architecture/relationships-panel";
+import {
+  RelationshipsPanel,
+  elementOptionLabel,
+} from "@/components/architecture/relationships-panel";
 import { StatementsPanel } from "@/components/architecture/statements-panel";
 import { VersionSnapshotPanel, VersionsPanel } from "@/components/architecture/versions-panel";
 import { ActivityList } from "@/components/architecture/activity-list";
@@ -193,6 +197,9 @@ export default async function InitiativeDetailPage({
     .filter((m) => m.side === "internal" && m.status === "active")
     .map((m) => ({ value: m.id, label: nameOf(m.user_id) }));
   const today = new Date().toISOString().slice(0, 10);
+  const objects = architecture.elements.filter(
+    (e) => e.kind === "object" && e.lifecycle !== "retired" && e.lifecycle !== "superseded",
+  );
 
   return (
     <div className="space-y-8">
@@ -246,13 +253,68 @@ export default async function InitiativeDetailPage({
                 trigger="Return for work"
               />
             ) : null}
-            {canPublish && !frozen ? (
+            {canManageImplementation && canPublish && !frozen ? (
+              <ActionForm
+                fields={[
+                  { name: "title", label: "Title", wide: true },
+                  {
+                    name: "implementsElementIds",
+                    label: "Implements",
+                    type: "checkboxes",
+                    options: objects.map((o) => ({ value: o.id, label: elementOptionLabel(o) })),
+                    wide: true,
+                    hint: "At least one core architecture object.",
+                  },
+                  {
+                    name: "category",
+                    label: "Category",
+                    type: "select",
+                    options: IMPLEMENTATION_CATEGORIES.map((c) => ({
+                      value: c.key,
+                      label: c.label,
+                    })),
+                  },
+                  { name: "targetOperationalOn", label: "Target operational date", type: "date" },
+                  {
+                    name: "ownerMemberId",
+                    label: "Owner",
+                    type: "select",
+                    options: [{ value: "", label: "Unassigned" }, ...owners],
+                  },
+                  { name: "summary", label: "Summary", type: "textarea", wide: true },
+                  {
+                    name: "reason",
+                    label: "Reason this successor is needed",
+                    type: "textarea",
+                    wide: true,
+                  },
+                ]}
+                defaultValues={{
+                  title: element.title,
+                  implementsElementIds: implementsTargets.map((r) => r.target_element_id),
+                  category: row.category,
+                  targetOperationalOn: row.target_operational_on ?? "",
+                  ownerMemberId: row.owner_member_id ?? "",
+                  summary: element.summary,
+                }}
+                action={createInitiativeSuccessor.bind(null, element.id, engagement.id)}
+                submitLabel="Create successor"
+                trigger="Create successor"
+                confirm="Create a new draft initiative pre-filled from this one, and mark this one superseded by it immediately? This cannot be undone."
+              />
+            ) : null}
+            {canPublish && element.lifecycle !== "retired" ? (
               <ActionForm
                 fields={[{ name: "reason", label: "Reason", type: "textarea" }]}
                 action={retireElement.bind(null, element.id)}
                 submitLabel="Retire"
                 variant="danger"
                 trigger="Retire"
+                confirm={
+                  element.lifecycle === "superseded"
+                    ? "Retire this superseded initiative? This withdraws it from the client."
+                    : undefined
+                }
               />
             ) : null}
           </div>

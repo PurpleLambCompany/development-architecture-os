@@ -49,6 +49,26 @@ export async function sendMagicLink(input: unknown): Promise<ActionResult> {
   return ok(undefined);
 }
 
+/**
+ * Sends a password-recovery email to existing accounts only. Same
+ * non-revealing shape as {@link sendMagicLink}: the response never
+ * differs based on whether the address has an account, so this cannot be
+ * used to discover who has access.
+ */
+export async function sendPasswordReset(input: unknown): Promise<ActionResult> {
+  const parsed = magicLinkSchema.safeParse(input);
+  if (!parsed.success) return fromZodError(parsed.error);
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+    redirectTo: `${publicEnv.NEXT_PUBLIC_SITE_URL}/auth/confirm?next=/account/set-password`,
+  });
+  if (error && error.status !== 400 && error.status !== 422) {
+    console.error("Password reset failed", error);
+  }
+  return ok(undefined);
+}
+
 export async function signOut() {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();

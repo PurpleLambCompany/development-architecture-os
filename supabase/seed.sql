@@ -1258,6 +1258,167 @@ from public.architecture_elements e
 where e.engagement_id = 'e0000000-0000-4000-8000-000000000003' and e.kind = 'implementation_initiative'
   and e.title = 'Third-region governance ratification';
 
+-- Phase 5 on Meridian's flagship engagement (V1-A Increment 6, F8) ------------------------------
+-- Meridian (e...001) had zero reviews, deliverables and implementation
+-- initiatives, and this seed had no deliverable file anywhere: the only
+-- client-visible Phase 5 examples belonged to Harbor (e...003) above. This
+-- mirrors that block's structure and realism on Meridian's own content: one
+-- client-visible review, one client-visible deliverable (with an attached
+-- deliverable file), and one client-visible implementation initiative.
+--
+-- Deliverable file note: a file an architect actually attaches reaches
+-- engagement_files through register_engagement_file, signing a real upload
+-- URL for storage; this seed script has no such upload to perform, so the
+-- row below is written directly (as this file already does throughout for
+-- state that would otherwise go through an operation), already attached to
+-- the published version exactly as attach_deliverable_file would leave it.
+-- No row is added to storage.objects, so unlike a file uploaded through the
+-- app, this one has no real bytes behind it locally, and an actual download
+-- click will 404 until a real file replaces it through the app -- no seeded
+-- file anywhere in this project (Method Library, evidence or deliverable)
+-- has ever had real bytes seeded this way; that remains a gap in the
+-- seeding story generally, not something introduced here.
+
+-- Review: a held, published Executive Review of the district's readiness,
+-- examining the applied strategic model's core market knowledge directly
+-- and the anchor partner initiative below.
+select pg_temp.act_as('10000000-0000-4000-8000-000000000002');  -- Principal Architect (manage_reviews)
+select public.create_review('e0000000-0000-4000-8000-000000000001', 'executive_review',
+  'Innovation District Readiness Review', current_timestamp - interval '12 days', null,
+  'Board-level review of the district''s readiness to proceed to site acquisition and anchor agreements.');
+
+update public.architecture_elements set client_visibility = 'client'
+where engagement_id = 'e0000000-0000-4000-8000-000000000001' and kind = 'review'
+  and title = 'Innovation District Readiness Review';
+
+select public.add_review_participant(e.id, pg_temp.member('10000000-0000-4000-8000-000000000002'), 'organizer')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000001' and e.kind = 'review' and e.title = 'Innovation District Readiness Review';
+select public.add_review_participant(e.id, pg_temp.member('10000000-0000-4000-8000-000000000003'), 'presenter')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000001' and e.kind = 'review' and e.title = 'Innovation District Readiness Review';
+select public.add_review_participant(e.id, pg_temp.member('20000000-0000-4000-8000-000000000001'), 'reviewer')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000001' and e.kind = 'review' and e.title = 'Innovation District Readiness Review';
+select public.add_review_participant(e.id, pg_temp.member('20000000-0000-4000-8000-000000000002'), 'attendee')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000001' and e.kind = 'review' and e.title = 'Innovation District Readiness Review';
+
+-- Deliverable: an approved Executive Strategy Deck documenting the
+-- Commercial Real Estate Market knowledge and the Phase 1 district
+-- footprint, with an attached deliverable file.
+select pg_temp.act_as('10000000-0000-4000-8000-000000000002');  -- Principal Architect (manage_deliverables)
+select public.create_deliverable('e0000000-0000-4000-8000-000000000001', 'executive_strategy_deck',
+  'Regional Innovation District: Executive Strategy Deck', null, false,
+  'The board-facing summary of the district strategy and its implementation path.');
+
+update public.architecture_elements set client_visibility = 'client'
+where engagement_id = 'e0000000-0000-4000-8000-000000000001' and kind = 'deliverable'
+  and title = 'Regional Innovation District: Executive Strategy Deck';
+
+select pg_temp.rel(e.id, 'documents', 'b3000000-0000-4000-8000-000000000101')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000001' and e.kind = 'deliverable'
+  and e.title = 'Regional Innovation District: Executive Strategy Deck';
+select pg_temp.rel(e.id, 'documents', 'b3000000-0000-4000-8000-000000000109')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000001' and e.kind = 'deliverable'
+  and e.title = 'Regional Innovation District: Executive Strategy Deck';
+
+select pg_temp.act_as('10000000-0000-4000-8000-000000000003');  -- Architect
+select public.publish_element_version(e.id, 'First published version')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000001' and e.kind = 'deliverable'
+  and e.title = 'Regional Innovation District: Executive Strategy Deck';
+
+select public.request_architecture_approval(e.latest_version_id, null, 'Please approve the executive strategy deck.')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000001' and e.kind = 'deliverable'
+  and e.title = 'Regional Innovation District: Executive Strategy Deck';
+select pg_temp.act_as('20000000-0000-4000-8000-000000000001');  -- Meridian Executive Sponsor
+select public.respond_to_architecture_approval(a.id, 'approved', 'Approved for circulation to the full board.')
+from public.architecture_approvals a
+join public.architecture_elements e on e.latest_version_id = a.element_version_id
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000001' and e.kind = 'deliverable'
+  and e.title = 'Regional Innovation District: Executive Strategy Deck';
+
+insert into public.engagement_files (
+  id, engagement_id, object_path, filename, content_type, size_bytes, purpose, uploaded_by, element_version_id
+)
+select
+  'f7c00000-0000-4000-8000-000000000003',
+  'e0000000-0000-4000-8000-000000000001',
+  'e0000000-0000-4000-8000-000000000001/f7c00000-0000-4000-8000-000000000003/Regional-Innovation-District-Executive-Strategy-Deck.pdf',
+  'Regional-Innovation-District-Executive-Strategy-Deck.pdf',
+  'application/pdf', 4823040, 'deliverable', '10000000-0000-4000-8000-000000000003', e.latest_version_id
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000001' and e.kind = 'deliverable'
+  and e.title = 'Regional Innovation District: Executive Strategy Deck';
+
+-- Initiative: "in_progress", implementing the Commercial Real Estate Market
+-- knowledge, with an achieved, client-visible checkpoint.
+select pg_temp.act_as('10000000-0000-4000-8000-000000000003');  -- Architect (manage_implementation)
+select public.create_implementation_initiative('e0000000-0000-4000-8000-000000000001',
+  'Anchor partner engagement launch', array['b3000000-0000-4000-8000-000000000101']::uuid[],
+  'partnership', current_date + 60, pg_temp.member('10000000-0000-4000-8000-000000000003'),
+  'Engaging the two university anchors and the Authority toward binding letters of intent.');
+
+update public.architecture_elements set client_visibility = 'client'
+where engagement_id = 'e0000000-0000-4000-8000-000000000001' and kind = 'implementation_initiative'
+  and title = 'Anchor partner engagement launch';
+
+select public.publish_element_version(e.id, 'First published version')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000001' and e.kind = 'implementation_initiative'
+  and e.title = 'Anchor partner engagement launch';
+
+-- Published immediately: the client-facing snapshot must show "in_progress",
+-- not the pre-publication "not_started" the first published version froze.
+select public.update_implementation_status(e.id, 'in_progress', null, true,
+  'In progress: initial outreach to both university anchors has begun.')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000001' and e.kind = 'implementation_initiative'
+  and e.title = 'Anchor partner engagement launch';
+
+select public.add_implementation_checkpoint(e.id, 'design_approved', 'Engagement plan approved by the board',
+  current_date - 10, null, null, true)
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000001' and e.kind = 'implementation_initiative'
+  and e.title = 'Anchor partner engagement launch';
+select public.record_checkpoint_achieved(c.id, current_date - 8, null)
+from public.implementation_checkpoints c
+join public.architecture_elements e on e.id = c.implementation_element_id
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000001' and e.kind = 'implementation_initiative'
+  and e.title = 'Anchor partner engagement launch' and c.checkpoint_type = 'design_approved';
+
+-- Review's agenda, held, finding and publication (same pattern as Harbor).
+select pg_temp.rel(e.id, 'examines', 'b3000000-0000-4000-8000-000000000101')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000001' and e.kind = 'review' and e.title = 'Innovation District Readiness Review';
+
+select pg_temp.rel(rev.id, 'examines', init.id)
+from public.architecture_elements rev, public.architecture_elements init
+where rev.engagement_id = 'e0000000-0000-4000-8000-000000000001' and rev.kind = 'review' and rev.title = 'Innovation District Readiness Review'
+  and init.engagement_id = 'e0000000-0000-4000-8000-000000000001' and init.kind = 'implementation_initiative'
+  and init.title = 'Anchor partner engagement launch';
+
+select pg_temp.act_as('10000000-0000-4000-8000-000000000002');  -- Principal Architect (manage_reviews)
+select public.hold_review(e.id, current_timestamp - interval '12 days',
+  'The board affirmed the district strategy and endorsed proceeding to anchor engagement.')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000001' and e.kind = 'review' and e.title = 'Innovation District Readiness Review';
+
+select pg_temp.stmt(gen_random_uuid(), e.id, 'finding',
+  'The district strategy and its underlying market and regulatory knowledge are both ready to support anchor engagement.',
+  'architect_judgment', true, 0)
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000001' and e.kind = 'review' and e.title = 'Innovation District Readiness Review';
+
+select pg_temp.act_as('10000000-0000-4000-8000-000000000003');  -- Architect (edit_architecture, publish_architecture)
+select public.publish_element_version(e.id, 'First published version')
+from public.architecture_elements e
+where e.engagement_id = 'e0000000-0000-4000-8000-000000000001' and e.kind = 'review' and e.title = 'Innovation District Readiness Review';
+
 
 -- -----------------------------------------------------------------------------
 -- Phase 6: Method Library demo (clearly fictional content, seed only; §32)

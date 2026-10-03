@@ -30,53 +30,34 @@ export default async function InternalLayout({ children }: LayoutProps<"/interna
           </div>
           <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-5" aria-label="Internal">
             <Suspense>
-              <NavGroup>
-                <NavLink href="/internal" exact>
-                  Dashboard
-                </NavLink>
-              </NavGroup>
-              <NavGroup label="Clients">
-                <NavLink href="/internal/organizations">Organizations</NavLink>
-                <NavPlaceholder>Contacts</NavPlaceholder>
-              </NavGroup>
-              <NavGroup label="Engagements">
-                <NavLink href="/internal/engagements?view=active">Active</NavLink>
-                <NavLink href="/internal/engagements?view=upcoming">Upcoming</NavLink>
-                <NavLink href="/internal/engagements?view=completed">Completed</NavLink>
-              </NavGroup>
-              {hasFinance ? (
-                <NavGroup label="Finance">
-                  <NavLink href="/internal/finance">Portfolio</NavLink>
-                </NavGroup>
-              ) : null}
-              <NavGroup label="Architecture">
-                <NavLink href="/internal/architecture">Architecture</NavLink>
-                <NavLink href="/internal/intelligence">Intelligence</NavLink>
-                <NavLink href="/internal/reviews">Reviews</NavLink>
-                <NavLink href="/internal/implementation">Implementation</NavLink>
-              </NavGroup>
-              <NavGroup label="Practice">
-                <NavLink href="/internal/method-library">Method Library</NavLink>
-              </NavGroup>
-              <NavGroup label="Later phases">
-                <NavPlaceholder>Portfolio</NavPlaceholder>
-              </NavGroup>
-              <NavGroup>
-                <NavLink href="/internal/settings">Settings</NavLink>
-              </NavGroup>
+              <NavigationGroups hasFinance={hasFinance} />
             </Suspense>
           </nav>
         </div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-rule bg-surface px-8 py-3">
-          <nav className="flex gap-4 text-sm md:hidden" aria-label="Internal (compact)">
-            <Link href="/internal">Dashboard</Link>
-            <Link href="/internal/organizations">Organizations</Link>
-            <Link href="/internal/engagements">Engagements</Link>
-            <Link href="/internal/architecture">Architecture</Link>
-            {hasFinance ? <Link href="/internal/finance">Finance</Link> : null}
-          </nav>
+        <header className="relative flex items-center justify-between gap-3 border-b border-rule bg-surface px-4 py-3 sm:px-8">
+          {/*
+            F6: every nav destination reachable at 390px. Rather than a
+            second, hand-maintained flat link list (which is exactly how
+            Intelligence, Reviews, Implementation, Method Library and
+            Settings went unreachable below md in the first place), this
+            disclosure renders the same NavigationGroups the desktop
+            sidebar uses, so the two can never drift apart again. A plain
+            <details>/<summary> needs no client script and is keyboard-
+            and screen-reader-accessible by default.
+          */}
+          <details className="group md:hidden">
+            <summary className="cursor-pointer list-none rounded-sm border border-rule-strong px-3 py-1.5 text-sm text-ink-muted marker:content-none">
+              Menu
+            </summary>
+            <nav
+              className="absolute inset-x-0 top-full z-10 max-h-[70vh] overflow-y-auto border-b border-rule bg-surface px-4 py-4 shadow-md"
+              aria-label="Internal (menu)"
+            >
+              <NavigationGroups hasFinance={hasFinance} />
+            </nav>
+          </details>
           <span className="hidden md:block" />
           <UserMenu
             name={viewer.displayName}
@@ -84,9 +65,51 @@ export default async function InternalLayout({ children }: LayoutProps<"/interna
             organizationName={viewer.organizationName}
           />
         </header>
-        <main className="mx-auto w-full max-w-6xl flex-1 px-8 py-10">{children}</main>
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-8">{children}</main>
       </div>
     </div>
+  );
+}
+
+/** The navigation structure, shared by the desktop sidebar and the mobile menu (F6) so they cannot drift apart. */
+function NavigationGroups({ hasFinance }: { hasFinance: boolean }) {
+  return (
+    <>
+      <NavGroup>
+        <NavLink href="/internal" exact>
+          Dashboard
+        </NavLink>
+      </NavGroup>
+      <NavGroup label="Clients">
+        <NavLink href="/internal/organizations">Organizations</NavLink>
+        <NavPlaceholder>Contacts</NavPlaceholder>
+      </NavGroup>
+      <NavGroup label="Engagements">
+        <NavLink href="/internal/engagements?view=active">Active</NavLink>
+        <NavLink href="/internal/engagements?view=upcoming">Upcoming</NavLink>
+        <NavLink href="/internal/engagements?view=completed">Completed</NavLink>
+      </NavGroup>
+      {hasFinance ? (
+        <NavGroup label="Finance">
+          <NavLink href="/internal/finance">Portfolio</NavLink>
+        </NavGroup>
+      ) : null}
+      <NavGroup label="Architecture">
+        <NavLink href="/internal/architecture">Architecture</NavLink>
+        <NavLink href="/internal/intelligence">Intelligence</NavLink>
+        <NavLink href="/internal/reviews">Reviews</NavLink>
+        <NavLink href="/internal/implementation">Implementation</NavLink>
+      </NavGroup>
+      <NavGroup label="Practice">
+        <NavLink href="/internal/method-library">Method Library</NavLink>
+      </NavGroup>
+      <NavGroup label="Later phases">
+        <NavPlaceholder>Portfolio</NavPlaceholder>
+      </NavGroup>
+      <NavGroup>
+        <NavLink href="/internal/settings">Settings</NavLink>
+      </NavGroup>
+    </>
   );
 }
 

@@ -71,7 +71,7 @@ select 'init', public.create_implementation_initiative('e0000000-0000-4000-8000-
   'Acquisition rollout', array['b3000000-0000-4000-8000-000000000201'::uuid], 'process',
   current_date + 60, pg_temp.member('architect@tplco.test'), 'Standing up the acquisition process.');
 select is((select reference_code from public.architecture_elements where id = (select id from pg_temp.ids where key = 'init')),
-  'IMP-001', 'it gets the IMP prefix');
+  'IMP-002', 'it gets the IMP prefix');
 select is((select implementation_status::text from public.implementation_initiatives
            where element_id = (select id from pg_temp.ids where key = 'init')), 'not_started',
   'a new initiative starts not_started');
@@ -171,7 +171,7 @@ select lives_ok($$ select public.resolve_implementation_escalation(
    where element_id = (select id from pg_temp.ids where key = 'init') and level = 'principal_architect'),
   'A second vendor was qualified.') $$, 'and the Principal Architect resolves it');
 select is((select count(*)::int from public.implementation_register('e0000000-0000-4000-8000-000000000001')
-           where reference_code = 'IMP-001' and cardinality(open_escalations) = 0), 1,
+           where reference_code = 'IMP-002' and cardinality(open_escalations) = 0), 1,
   'the register no longer shows the initiative as escalated');
 select pg_temp.reset_actor();
 
@@ -181,19 +181,19 @@ insert into pg_temp.ids (key, id)
 select 'overdue', public.create_implementation_initiative('e0000000-0000-4000-8000-000000000001',
   'Past-target initiative', array['b3000000-0000-4000-8000-000000000202'::uuid], 'other', current_date - 5);
 select ok((select rule_key from public.implementation_signals('e0000000-0000-4000-8000-000000000001')
-           where reference_code = 'IMP-002') = 'implementation_past_target',
+           where reference_code = 'IMP-003') = 'implementation_past_target',
   'an initiative past its target operational date is signalled');
 select throws_ok($$ select public.dismiss_implementation_signal('e0000000-0000-4000-8000-000000000001',
   (select id from pg_temp.ids where key = 'overdue'), '', 'Reason') $$, '23514', null,
   'dismissal needs a fingerprint');
 select lives_ok($$ select public.dismiss_implementation_signal('e0000000-0000-4000-8000-000000000001',
   (select id from pg_temp.ids where key = 'overdue'), f.fingerprint, 'Vendor delay accepted by the sponsor.')
-  from public.implementation_signals('e0000000-0000-4000-8000-000000000001') f where f.reference_code = 'IMP-002' $$,
+  from public.implementation_signals('e0000000-0000-4000-8000-000000000001') f where f.reference_code = 'IMP-003' $$,
   'an Architect dismisses the signal');
 select is((select count(*)::int from public.implementation_signals('e0000000-0000-4000-8000-000000000001')
-           where reference_code = 'IMP-002'), 0, 'which is then hidden');
+           where reference_code = 'IMP-003'), 0, 'which is then hidden');
 select is((select count(*)::int from public.implementation_signals('e0000000-0000-4000-8000-000000000001',
-           null, true) where reference_code = 'IMP-002'), 1, 'but shown with dismissed ones included');
+           null, true) where reference_code = 'IMP-003'), 1, 'but shown with dismissed ones included');
 select pg_temp.reset_actor();
 
 -- -----------------------------------------------------------------------------
@@ -226,13 +226,13 @@ select pg_temp.reset_actor();
 -- -----------------------------------------------------------------------------
 select pg_temp.act_as('architect@tplco.test');
 select is((select checkpoint_count from public.implementation_register('e0000000-0000-4000-8000-000000000001')
-           where reference_code = 'IMP-001'), 1, 'IMP-001 shows its one checkpoint');
+           where reference_code = 'IMP-002'), 1, 'IMP-002 shows its one checkpoint');
 select is((select achieved_checkpoint_count from public.implementation_register('e0000000-0000-4000-8000-000000000001')
-           where reference_code = 'IMP-001'), 1, 'which is achieved');
+           where reference_code = 'IMP-002'), 1, 'which is achieved');
 select pg_temp.reset_actor();
 
 select pg_temp.act_as('sponsor@meridian.test');
-select is((select count(*)::int from public.client_implementation('e0000000-0000-4000-8000-000000000001')), 0,
+select is((select count(*)::int from public.client_implementation('e0000000-0000-4000-8000-000000000001')), 1,
   'a client sees no initiative before it is published');
 select pg_temp.reset_actor();
 
@@ -246,10 +246,10 @@ select lives_ok($$ select public.publish_element_version(
 select pg_temp.reset_actor();
 
 select pg_temp.act_as('sponsor@meridian.test');
-select is((select count(*)::int from public.client_implementation('e0000000-0000-4000-8000-000000000001')), 1,
+select is((select count(*)::int from public.client_implementation('e0000000-0000-4000-8000-000000000001')), 2,
   'the client now sees the published initiative');
 select is((select jsonb_array_length(checkpoints) from public.client_implementation('e0000000-0000-4000-8000-000000000001')
-           where reference_code = 'IMP-001'), 1, 'with its one client-visible checkpoint');
+           where reference_code = 'IMP-002'), 1, 'with its one client-visible checkpoint');
 select pg_temp.reset_actor();
 
 -- -----------------------------------------------------------------------------
@@ -262,9 +262,9 @@ select pg_temp.reset_actor();
 select pg_temp.act_as('architect@tplco.test');
 insert into pg_temp.ids (key, id)
 select 'v_before', version_id from public.client_implementation('e0000000-0000-4000-8000-000000000001')
-where reference_code = 'IMP-001';
+where reference_code = 'IMP-002';
 select is((select implementation_status::text from public.client_implementation('e0000000-0000-4000-8000-000000000001')
-           where reference_code = 'IMP-001'), 'in_progress', 'the client currently sees in_progress');
+           where reference_code = 'IMP-002'), 'in_progress', 'the client currently sees in_progress');
 
 select lives_ok($$ select public.update_implementation_status(
   (select id from pg_temp.ids where key = 'init'), 'stalled', 'Publish=false check.', false) $$,
@@ -273,10 +273,10 @@ select is((select implementation_status::text from public.implementation_initiat
            where element_id = (select id from pg_temp.ids where key = 'init')), 'stalled',
   'the live working row is stalled');
 select is((select implementation_status::text from public.client_implementation('e0000000-0000-4000-8000-000000000001')
-           where reference_code = 'IMP-001'), 'in_progress',
+           where reference_code = 'IMP-002'), 'in_progress',
   'but the client-facing snapshot is unchanged: p_publish = false never touches it');
 select is((select version_id from public.client_implementation('e0000000-0000-4000-8000-000000000001')
-           where reference_code = 'IMP-001'), (select id from pg_temp.ids where key = 'v_before'),
+           where reference_code = 'IMP-002'), (select id from pg_temp.ids where key = 'v_before'),
   'the client still reads the very same published version');
 
 select lives_ok($$ select public.update_implementation_status(
@@ -284,10 +284,10 @@ select lives_ok($$ select public.update_implementation_status(
   'Stalled, published for visibility.') $$,
   'the same status is re-saved with p_publish = true');
 select is((select implementation_status::text from public.client_implementation('e0000000-0000-4000-8000-000000000001')
-           where reference_code = 'IMP-001'), 'stalled',
+           where reference_code = 'IMP-002'), 'stalled',
   'the client-facing snapshot now reflects stalled: an explicit, opt-in publish updates it');
 select isnt((select version_id from public.client_implementation('e0000000-0000-4000-8000-000000000001')
-             where reference_code = 'IMP-001'), (select id from pg_temp.ids where key = 'v_before'),
+             where reference_code = 'IMP-002'), (select id from pg_temp.ids where key = 'v_before'),
   'a new version was published rather than the old one being reused');
 select is((select v.client_snapshot -> 'details' ->> 'implementation_status' from public.element_versions v
            where v.id = (select id from pg_temp.ids where key = 'v_before')), 'in_progress',

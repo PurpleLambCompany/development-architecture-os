@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { publishElement, returnToDraft } from "@/domain/architecture/actions";
 import { getInternalArchitectureContext, memberNames } from "@/domain/architecture/context";
-import { getReviewQueue, listBaselines, loadArchitecture } from "@/domain/architecture/queries";
+import {
+  getArchitectureActivity,
+  getReviewQueue,
+  listBaselines,
+  loadArchitecture,
+} from "@/domain/architecture/queries";
 import { formatDateTime } from "@/lib/format";
 import { ArchitectureNav } from "@/components/architecture/architecture-nav";
 import { ApprovalTag, ElementLink, LifecycleTag } from "@/components/architecture/badges";
@@ -38,14 +43,29 @@ export default async function ReviewsPage({
   const { slug } = await params;
   const query = await searchParams;
   const { engagement, canPublish, canManageReviews } = await getInternalArchitectureContext(slug);
-  const [architecture, queue, baselines, escalations, signals, sessions] = await Promise.all([
-    loadArchitecture(engagement.id),
-    getReviewQueue(),
-    listBaselines(engagement.id),
-    getEscalations(engagement.id, true),
-    getSignals(engagement.id),
-    getReviewRegister(engagement.id),
-  ]);
+  const [architecture, queue, baselines, escalations, signals, sessions, activity] =
+    await Promise.all([
+      loadArchitecture(engagement.id),
+      getReviewQueue(),
+      listBaselines(engagement.id),
+      getEscalations(engagement.id, true),
+      getSignals(engagement.id),
+      getReviewRegister(engagement.id),
+      getArchitectureActivity(engagement.id, 500),
+    ]);
+  // F4: who actually submitted a working copy for review, and when -- read
+  // from its own submitted_for_review activity event, not from the
+  // element's updated_by/updated_at, which a later unrelated edit can move.
+  const submittedBy = new Map<string, { actor: string | null; at: string }>();
+  for (const event of activity) {
+    if (
+      event.event === "submitted_for_review" &&
+      event.element_id &&
+      !submittedBy.has(event.element_id)
+    ) {
+      submittedBy.set(event.element_id, { actor: event.actor_name, at: event.created_at });
+    }
+  }
   const nameOf = memberNames(engagement);
   // Promotion from the Development Edge (ADR-0056): scheduling the Review is
   // the governed operation; the Edge item is then judged "promoted" to it.
@@ -116,8 +136,7 @@ export default async function ReviewsPage({
                 {
                   name: "scheduledFor",
                   label: "Scheduled for",
-                  type: "text",
-                  hint: "YYYY-MM-DDTHH:mm",
+                  type: "datetime",
                 },
                 { name: "summary", label: "Summary", type: "textarea" },
                 ...(promotingInference ? [bringTextField] : []),
@@ -214,8 +233,10 @@ export default async function ReviewsPage({
                 <span className="space-y-1">
                   <ElementLink slug={slug} element={e} />
                   <span className="block text-xs text-ink-subtle">
-                    {elementTypeLabel(e)} · submitted {formatDateTime(e.updated_at)} by{" "}
-                    {nameOf(e.updated_by)}
+                    {elementTypeLabel(e)} ·{" "}
+                    {submittedBy.has(e.id)
+                      ? `submitted ${formatDateTime(submittedBy.get(e.id)!.at)} by ${submittedBy.get(e.id)!.actor ?? "someone no longer on the engagement"}`
+                      : `submitted ${formatDateTime(e.updated_at)} by ${nameOf(e.updated_by)}`}
                     {e.latestVersion ? ` · currently published v${e.latestVersion.version_no}` : ""}
                   </span>
                 </span>

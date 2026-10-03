@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getApproachGuidance } from "@/domain/methodology/queries";
 import { formatDate, formatDateTime } from "@/lib/format";
 import {
+  createSuccessor,
   deleteElement,
   publishElement,
   retireElement,
@@ -329,9 +330,11 @@ export default async function ElementPage({
         actions={
           <Operations
             element={element}
+            engagementId={engagement.id}
             canEdit={canEdit}
             canPublish={canPublish}
             successors={successors}
+            elementOptions={liveOthers.map((e) => ({ value: e.id, label: elementOptionLabel(e) }))}
           />
         }
       >
@@ -682,24 +685,82 @@ function recordScope(element: LoadedElement): string {
 /** Lifecycle operations, offered by capability; the database checks each again. */
 function Operations({
   element,
+  engagementId,
   canEdit,
   canPublish,
   successors,
+  elementOptions,
 }: {
   element: LoadedElement;
+  engagementId: string;
   canEdit: boolean;
   canPublish: boolean;
   successors: LoadedElement[];
+  elementOptions: { value: string; label: string }[];
 }) {
   const { lifecycle } = element;
-  if (lifecycle === "retired" || lifecycle === "superseded") return null;
+  // A superseded (but not yet retired) element still offers Retire -- the
+  // database has always allowed retiring a superseded element; only the
+  // UI used to hide it, which was exactly the documented ADR-0075 gap
+  // (withdrawing a superseded, client-visible record was not possible in
+  // the app even once a successor existed). Every other operation here
+  // still only applies to a live (non-superseded, non-retired) element.
+  if (lifecycle === "retired") return null;
   const kindLabel = element.object
     ? "element"
     : RECORD_KIND_LABELS[element.kind as RecordKind].toLowerCase();
+  if (lifecycle === "superseded") {
+    return (
+      <div className="flex flex-wrap items-start justify-end gap-2">
+        {canPublish ? (
+          <ActionForm
+            fields={[{ name: "reason", label: "Reason", type: "textarea" }]}
+            action={retireElement.bind(null, element.id)}
+            submitLabel="Retire"
+            variant="danger"
+            trigger="Retire"
+            confirm="Retire this superseded element? This withdraws it from the client. It stays in history and published versions remain readable to internal users."
+          />
+        ) : null}
+      </div>
+    );
+  }
   return (
     <div className="flex flex-wrap items-start justify-end gap-2">
       {canEdit && (lifecycle === "draft" || lifecycle === "published") ? (
         <ActionButton action={submitForReview.bind(null, element.id)} label="Submit for review" />
+      ) : null}
+      {canEdit && canPublish ? (
+        <ActionForm
+          fields={[
+            ...(element.object
+              ? [
+                  ...spineFields(canPublish),
+                  ...objectFields(element.object.object_type as ObjectTypeKey),
+                ]
+              : [
+                  ...spineFields(canPublish, { recommendation: element.kind === "recommendation" }),
+                  ...recordFields(element.kind as RecordKind, elementOptions),
+                ]),
+            {
+              name: "reason",
+              label: "Reason this successor is needed",
+              type: "textarea",
+              wide: true,
+            },
+          ]}
+          defaultValues={elementDefaults(element)}
+          action={createSuccessor.bind(
+            null,
+            element.id,
+            engagementId,
+            element.object ? "object" : (element.kind as RecordKind),
+            element.object?.object_type ?? null,
+          )}
+          submitLabel="Create successor"
+          trigger="Create successor"
+          confirm="Create a new draft pre-filled from this element, and mark this element superseded by it immediately? This cannot be undone."
+        />
       ) : null}
       {canPublish ? (
         <ActionForm

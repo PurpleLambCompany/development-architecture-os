@@ -3,9 +3,10 @@
 import { revalidatePath } from "next/cache";
 import type { PostgrestError } from "@supabase/supabase-js";
 import type { z } from "zod";
-import { fromDatabaseError, fromZodError, ok, type ActionResult } from "@/lib/action-result";
+import { fail, fromDatabaseError, fromZodError, ok, type ActionResult } from "@/lib/action-result";
 import { requireViewer } from "@/lib/auth/viewer";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { supersedeElement } from "@/domain/architecture/actions";
 import {
   addParticipantSchema,
   cancelReviewSchema,
@@ -55,6 +56,33 @@ export async function createReview(engagementId: string, input: unknown) {
       ...(v.summary ? { p_summary: v.summary } : {}),
     }),
   );
+}
+
+/**
+ * Create Successor for a Review (V1-A F3/D11): composes createReview and
+ * the existing supersedeElement/supersede_element, exactly as the generic
+ * element page's Create Successor does. No new atomic database operation.
+ */
+export async function createReviewSuccessor(
+  oldElementId: string,
+  engagementId: string,
+  input: Record<string, unknown>,
+): Promise<ActionResult<{ newElementId: string }>> {
+  const { reason, ...rest } = input;
+  const reasonText = typeof reason === "string" ? reason : "";
+  const created = await createReview(engagementId, rest);
+  if (!created.ok) return created;
+  const newElementId = created.data as unknown as string;
+  if (typeof newElementId !== "string" || !newElementId) {
+    return fail("The successor could not be created.");
+  }
+  const superseded = await supersedeElement(oldElementId, { newElementId, reason: reasonText });
+  if (!superseded.ok) {
+    return fail(
+      `A successor draft was created, but could not yet be marked as superseding the original: ${superseded.error}`,
+    );
+  }
+  return ok({ newElementId });
 }
 
 /** Direct edit of a review's own working fields (manage_reviews, V1-A B2). */

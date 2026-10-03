@@ -150,11 +150,11 @@ select pg_temp.as_user('principal@tplco.test');
 select public.create_implementation_initiative('e0000000-0000-4000-8000-000000000001', 'Acquisition desk',
   array[pg_temp.m('CAP-002')], 'other', null, null, 'Stands up the acquisition desk.');
 select pg_temp.as_user('architect@tplco.test');
-select public.publish_element_version(pg_temp.m('IMP-001'), 'First published version');
-select public.propose_acceptance_criterion(pg_temp.m('IMP-001'), 'The desk closes one site.');
+select public.publish_element_version(pg_temp.m('IMP-002'), 'First published version');
+select public.propose_acceptance_criterion(pg_temp.m('IMP-002'), 'The desk closes one site.');
 select public.agree_acceptance_criterion(
   (select id from public.acceptance_criteria where body = 'The desk closes one site.'), 'The Authority', current_date);
-select ok(pg_temp.mf('criteria_without_review_path', pg_temp.m('IMP-001')),
+select ok(pg_temp.mf('criteria_without_review_path', pg_temp.m('IMP-002')),
   '15+ agreed criteria in force with no scheduled or held Review examining the initiative');
 
 -- -----------------------------------------------------------------------------

@@ -55,12 +55,12 @@ insert into pg_temp.ids (key, id)
 select 'summary', public.create_deliverable('e0000000-0000-4000-8000-000000000001', 'executive_summary',
   'Q3 Executive Summary', null, false, 'Progress against the strategy this quarter.');
 select is((select reference_code from public.architecture_elements where id = (select id from pg_temp.ids where key = 'summary')),
-  'DLV-001', 'it gets the DLV prefix');
+  'DLV-002', 'it gets the DLV prefix');
 insert into pg_temp.ids (key, id)
 select 'blueprint', public.create_deliverable('e0000000-0000-4000-8000-000000000001',
   'full_architecture_blueprint', 'Confidential Blueprint v1', null, true, 'The full architecture, confidential.');
 select is((select reference_code from public.architecture_elements where id = (select id from pg_temp.ids where key = 'blueprint')),
-  'DLV-002', 'sequential reference codes');
+  'DLV-003', 'sequential reference codes');
 select is((select confidential from public.deliverables where element_id = (select id from pg_temp.ids where key = 'blueprint')),
   true, 'the confidential flag is recorded');
 select pg_temp.reset_actor();
@@ -121,14 +121,14 @@ select pg_temp.reset_actor();
 -- deliverable_register / client_deliverables and confidentiality
 -- -----------------------------------------------------------------------------
 select pg_temp.act_as('architect@tplco.test');
-select is((select count(*)::int from public.deliverable_register('e0000000-0000-4000-8000-000000000001')), 2,
+select is((select count(*)::int from public.deliverable_register('e0000000-0000-4000-8000-000000000001')), 3,
   'the register lists both deliverables');
 select is((select latest_version_id is not null from public.deliverable_register('e0000000-0000-4000-8000-000000000001')
-           where reference_code = 'DLV-001'), true, 'DLV-001 shows it is published');
+           where reference_code = 'DLV-002'), true, 'DLV-002 shows it is published');
 select pg_temp.reset_actor();
 
 select pg_temp.act_as('sponsor@meridian.test');
-select is((select count(*)::int from public.client_deliverables('e0000000-0000-4000-8000-000000000001')), 1,
+select is((select count(*)::int from public.client_deliverables('e0000000-0000-4000-8000-000000000001')), 2,
   'the client sees the published, non-confidential deliverable');
 select pg_temp.reset_actor();
 
@@ -141,12 +141,12 @@ select lives_ok($$ select public.publish_element_version((select id from pg_temp
 select pg_temp.reset_actor();
 
 select pg_temp.act_as('sponsor@meridian.test');
-select is((select count(*)::int from public.client_deliverables('e0000000-0000-4000-8000-000000000001')), 2,
+select is((select count(*)::int from public.client_deliverables('e0000000-0000-4000-8000-000000000001')), 3,
   'the Executive Sponsor (view_confidential_deliverables) sees the confidential one too');
 select pg_temp.reset_actor();
 
 select pg_temp.act_as('viewer@meridian.test');
-select is((select count(*)::int from public.client_deliverables('e0000000-0000-4000-8000-000000000001')), 1,
+select is((select count(*)::int from public.client_deliverables('e0000000-0000-4000-8000-000000000001')), 2,
   'the Client Viewer, without view_confidential_deliverables, sees only the non-confidential one');
 select pg_temp.reset_actor();
 

@@ -12,7 +12,16 @@ import { cn } from "@/lib/utils";
 export type FieldSpec = {
   name: string;
   label: string;
-  type?: "text" | "money" | "date" | "number" | "textarea" | "select" | "url" | "checkboxes";
+  type?:
+    | "text"
+    | "money"
+    | "date"
+    | "datetime"
+    | "number"
+    | "textarea"
+    | "select"
+    | "url"
+    | "checkboxes";
   options?: { value: string; label: string }[];
   hint?: string;
   placeholder?: string;
@@ -154,11 +163,13 @@ export function ActionForm({
                   type={
                     field.type === "date"
                       ? "date"
-                      : field.type === "number"
-                        ? "number"
-                        : field.type === "url"
-                          ? "url"
-                          : "text"
+                      : field.type === "datetime"
+                        ? "datetime-local"
+                        : field.type === "number"
+                          ? "number"
+                          : field.type === "url"
+                            ? "url"
+                            : "text"
                   }
                   inputMode={field.type === "money" ? "decimal" : undefined}
                   placeholder={field.placeholder ?? (field.type === "money" ? "0.00" : undefined)}
@@ -196,11 +207,13 @@ export function ActionButton({
   label,
   variant = "secondary",
   confirm,
+  title,
 }: {
   action: () => Promise<ActionResult<unknown>>;
   label: string;
   variant?: "primary" | "secondary" | "danger" | "ghost";
   confirm?: string;
+  title?: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -210,6 +223,7 @@ export function ActionButton({
       size="sm"
       variant={variant}
       disabled={pending}
+      title={title}
       onClick={() => {
         if (confirm && !window.confirm(confirm)) return;
         startTransition(async () => {

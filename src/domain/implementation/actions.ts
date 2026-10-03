@@ -6,6 +6,7 @@ import type { z } from "zod";
 import { fail, fromDatabaseError, fromZodError, ok, type ActionResult } from "@/lib/action-result";
 import { requireViewer } from "@/lib/auth/viewer";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { supersedeElement } from "@/domain/architecture/actions";
 import {
   addCheckpointSchema,
   createInitiativeSchema,
@@ -71,6 +72,34 @@ export async function createInitiative(engagementId: string, input: unknown) {
       ...(v.summary ? { p_summary: v.summary } : {}),
     }),
   );
+}
+
+/**
+ * Create Successor for an Implementation Initiative (V1-A F3/D11): composes
+ * createInitiative and the existing supersedeElement/supersede_element,
+ * exactly as the generic element page's Create Successor does. No new
+ * atomic database operation.
+ */
+export async function createInitiativeSuccessor(
+  oldElementId: string,
+  engagementId: string,
+  input: Record<string, unknown>,
+): Promise<ActionResult<{ newElementId: string }>> {
+  const { reason, ...rest } = input;
+  const reasonText = typeof reason === "string" ? reason : "";
+  const created = await createInitiative(engagementId, rest);
+  if (!created.ok) return created;
+  const newElementId = created.data as unknown as string;
+  if (typeof newElementId !== "string" || !newElementId) {
+    return fail("The successor could not be created.");
+  }
+  const superseded = await supersedeElement(oldElementId, { newElementId, reason: reasonText });
+  if (!superseded.ok) {
+    return fail(
+      `A successor draft was created, but could not yet be marked as superseding the original: ${superseded.error}`,
+    );
+  }
+  return ok({ newElementId });
 }
 
 /** An update or delete that RLS silently filtered out means no permission. */

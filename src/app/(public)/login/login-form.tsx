@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
@@ -78,6 +79,14 @@ export function LoginForm() {
           {...form.register("password")}
         />
       </Field>
+      <p className="-mt-2 text-right">
+        <Link
+          href="/forgot-password"
+          className="text-xs text-ink-subtle underline hover:text-ink-muted"
+        >
+          Forgot your password?
+        </Link>
+      </p>
       <div className="flex flex-col gap-3 pt-1">
         <Button type="submit" disabled={pending}>
           Sign in

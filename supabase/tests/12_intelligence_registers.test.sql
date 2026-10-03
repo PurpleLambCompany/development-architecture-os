@@ -64,12 +64,12 @@ $$;
 -- The register
 -- -----------------------------------------------------------------------------
 select pg_temp.act_as('architect@tplco.test');
-select is((select count(*)::int from public.intelligence_register('e0000000-0000-4000-8000-000000000001')), 10,
-  'an assigned Architect reads all ten Project Intelligence records, internal ones included');
+select is((select count(*)::int from public.intelligence_register('e0000000-0000-4000-8000-000000000001')), 13,
+  'an assigned Architect reads all thirteen Project Intelligence records, internal ones included');
 select is(
   (select string_agg(kind::text || ':' || n, ',' order by kind::text)
    from (select kind, count(*) n from public.intelligence_register('e0000000-0000-4000-8000-000000000001') group by 1) x),
-  'assumption:1,constraint:1,decision:1,dependency:1,opportunity:2,recommendation:1,risk:3',
+  'assumption:1,constraint:1,decision:1,deliverable:1,dependency:1,implementation_initiative:1,opportunity:2,recommendation:1,review:1,risk:3',
   'every record kind appears, opportunities included');
 select is((select row(status, severity, attention::text, open_escalations::text[])::text
            from public.intelligence_register('e0000000-0000-4000-8000-000000000001') where reference_code = 'RSK-001'),

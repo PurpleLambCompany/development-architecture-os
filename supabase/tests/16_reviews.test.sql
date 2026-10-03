@@ -61,7 +61,7 @@ select lives_ok($$ select public.create_review('e0000000-0000-4000-8000-00000000
   'a Researcher (manage_reviews) creates a review');
 select is((select reference_code from public.architecture_elements
            where engagement_id = 'e0000000-0000-4000-8000-000000000001' and kind = 'review'
-             and title = 'Q3 Executive Review'), 'REV-001', 'it gets the REV prefix');
+             and title = 'Q3 Executive Review'), 'REV-002', 'it gets the REV prefix');
 select is((select review_status::text from public.reviews r
            join public.architecture_elements e on e.id = r.element_id where e.title = 'Q3 Executive Review'),
   'scheduled', 'a new review starts scheduled');
@@ -70,7 +70,7 @@ select lives_ok($$ select public.create_review('e0000000-0000-4000-8000-00000000
   'architecture_review', 'Deep-dive: acquisition capability') $$, 'a second review is created');
 select is((select reference_code from public.architecture_elements
            where engagement_id = 'e0000000-0000-4000-8000-000000000001' and kind = 'review'
-             and title = 'Deep-dive: acquisition capability'), 'REV-002', 'sequential reference codes');
+             and title = 'Deep-dive: acquisition capability'), 'REV-003', 'sequential reference codes');
 select pg_temp.reset_actor();
 
 -- -----------------------------------------------------------------------------
@@ -148,20 +148,20 @@ select pg_temp.reset_actor();
 -- review_register
 -- -----------------------------------------------------------------------------
 select pg_temp.act_as('architect@tplco.test');
-select is((select count(*)::int from public.review_register('e0000000-0000-4000-8000-000000000001')), 2,
+select is((select count(*)::int from public.review_register('e0000000-0000-4000-8000-000000000001')), 3,
   'the register lists both reviews');
 select is((select participant_count from public.review_register('e0000000-0000-4000-8000-000000000001')
-           where reference_code = 'REV-001'), 2, 'REV-001 shows its two participants');
+           where reference_code = 'REV-002'), 2, 'REV-002 shows its two participants');
 select is((select agenda_count from public.review_register('e0000000-0000-4000-8000-000000000001')
-           where reference_code = 'REV-001'), 1, 'REV-001 shows one examines relationship');
+           where reference_code = 'REV-002'), 1, 'REV-002 shows one examines relationship');
 select is((select review_status from public.review_register('e0000000-0000-4000-8000-000000000001')
-           where reference_code = 'REV-002'), 'cancelled', 'REV-002 shows cancelled');
+           where reference_code = 'REV-003'), 'cancelled', 'REV-003 shows cancelled');
 select pg_temp.reset_actor();
 
 select pg_temp.act_as('sponsor@meridian.test');
 select is((select count(*)::int from public.review_register('e0000000-0000-4000-8000-000000000001')), 0,
   'a client never reads the internal review register (RLS returns nothing, not an error)');
-select is((select count(*)::int from public.client_reviews('e0000000-0000-4000-8000-000000000001')), 0,
+select is((select count(*)::int from public.client_reviews('e0000000-0000-4000-8000-000000000001')), 1,
   'nor sees any review client-side before one is published');
 select pg_temp.reset_actor();
 
@@ -179,10 +179,10 @@ select lives_ok($$ select public.publish_element_version(
 select pg_temp.reset_actor();
 
 select pg_temp.act_as('sponsor@meridian.test');
-select is((select count(*)::int from public.client_reviews('e0000000-0000-4000-8000-000000000001')), 1,
+select is((select count(*)::int from public.client_reviews('e0000000-0000-4000-8000-000000000001')), 2,
   'the client now sees the published review');
 select is((select review_status from public.client_reviews('e0000000-0000-4000-8000-000000000001')
-           where reference_code = 'REV-001'), 'held', 'with its held status');
+           where reference_code = 'REV-002'), 'held', 'with its held status');
 select pg_temp.reset_actor();
 
 select * from finish();

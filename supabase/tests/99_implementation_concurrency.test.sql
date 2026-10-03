@@ -116,7 +116,7 @@ select is(pg_temp.finish_query('b'), null, 'Session B then succeeds');
 select is(
   (select array_agg(reference_code order by title) from public.architecture_elements
    where title in ('Concurrent initiative A', 'Concurrent initiative B')),
-  array['IMP-003', 'IMP-004'], 'the two initiatives get distinct, sequential codes');
+  array['IMP-004', 'IMP-005'], 'the two initiatives get distinct, sequential codes');
 
 -- -----------------------------------------------------------------------------
 -- 2. The same initiative resolved twice at once
