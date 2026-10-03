@@ -13,24 +13,18 @@ import { objectTypesIn, type ObjectTypeKey } from "@/domain/architecture/rules";
 import { getElementRevisions } from "@/domain/edge/queries";
 import { formatDate } from "@/lib/format";
 import { ArchitectureNav } from "@/components/architecture/architecture-nav";
-import {
-  ApprovalTag,
-  ElementLink,
-  InternalMark,
-  LifecycleTag,
-  MaturityMark,
-} from "@/components/architecture/badges";
+import { MaturityMark } from "@/components/architecture/badges";
 import { DomainViews, viewGraph } from "@/components/architecture/domain-views";
 import {
   newElementDefaults,
   objectFields,
   spineFields,
 } from "@/components/architecture/element-fields";
+import { ObjectRegisterTable } from "@/components/architecture/object-register";
 import { ActionForm } from "@/components/ui/action-form";
 import { ButtonLink } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
-import { EmptyState, Panel } from "@/components/ui/panel";
-import { Table, Td, Th } from "@/components/ui/table";
+import { Panel } from "@/components/ui/panel";
 
 export default async function DomainWorkspacePage({
   params,
@@ -151,52 +145,24 @@ export default async function DomainWorkspacePage({
           </Link>
         }
       >
-        {objects.length === 0 ? (
-          <EmptyState title="No objects yet" />
-        ) : (
-          <Table>
-            <thead>
-              <tr>
-                <Th>Object</Th>
-                <Th>Type</Th>
-                <Th>Lifecycle</Th>
-                <Th>Maturity</Th>
-                <Th>Approval</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {objects.map((o) => (
-                <tr key={o.id}>
-                  <Td>
-                    <span className="flex flex-wrap items-center gap-2">
-                      <ElementLink slug={slug} element={o} />
-                      {o.client_visibility === "internal" ? <InternalMark /> : null}
-                    </span>
-                  </Td>
-                  <Td className="whitespace-nowrap text-ink-muted">
-                    {types.find((t) => t.key === o.object!.object_type)?.label}
-                  </Td>
-                  <Td>
-                    <LifecycleTag lifecycle={o.lifecycle} />
-                  </Td>
-                  <Td className="whitespace-nowrap">
-                    <MaturityMark maturity={o.object!.maturity} />
-                  </Td>
-                  <Td>
-                    {o.latestVersion ? (
-                      <span className="flex items-center gap-2 text-xs text-ink-muted">
-                        v{o.latestVersion.version_no}
-                        <ApprovalTag state={o.latestApprovalState} />
-                      </span>
-                    ) : (
-                      <span className="text-xs text-ink-subtle">Unpublished</span>
-                    )}
-                  </Td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        )}
+        <ObjectRegisterTable
+          slug={slug}
+          canEdit={canEdit}
+          canPublish={canPublish}
+          rows={objects.map((o) => ({
+            id: o.id,
+            kind: o.kind,
+            referenceCode: o.reference_code,
+            title: o.title,
+            internal: o.client_visibility === "internal",
+            typeLabel:
+              types.find((t) => t.key === o.object!.object_type)?.label ?? o.object!.object_type,
+            lifecycle: o.lifecycle,
+            maturity: o.object!.maturity,
+            versionNo: o.latestVersion?.version_no ?? null,
+            approvalState: o.latestVersion ? o.latestApprovalState : null,
+          }))}
+        />
       </Panel>
     </div>
   );

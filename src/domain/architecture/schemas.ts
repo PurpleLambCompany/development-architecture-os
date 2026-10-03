@@ -294,6 +294,19 @@ export const reasonSchema = z.object({ reason: required(2000) });
 export const noteSchema = z.object({ note: required(2000) });
 export const publishSchema = z.object({ changeSummary: text(2000) });
 
+// Bulk publication (V1-A D8). The database also caps the array at 500 and
+// deduplicates it; this just keeps an empty or oversized selection from
+// reaching the network.
+const elementIds = z
+  .array(z.uuid())
+  .min(1, "Select at least one element")
+  .max(500, "Select at most 500 elements at a time");
+export const bulkPublishSchema = z.object({
+  elementIds,
+  changeSummary: text(2000),
+});
+export const bulkSubmitSchema = z.object({ elementIds });
+
 export const supersedeSchema = z.object({
   newElementId: id,
   reason: required(2000),
