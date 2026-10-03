@@ -7,9 +7,10 @@ import { fail, fromDatabaseError, fromZodError, ok, type ActionResult } from "@/
 import { requireViewer } from "@/lib/auth/viewer";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
-import type { RecordKind } from "./catalog";
+import { ENGAGEMENT_FILES_BUCKET } from "@/domain/intelligence/catalog";
+import { PHASE_5_KIND_LABELS, RECORD_KIND_LABELS, type RecordKind } from "./catalog";
 import { attributesFromForm } from "./object-types";
-import type { ObjectTypeKey } from "./rules";
+import { objectType, type ObjectTypeKey } from "./rules";
 import {
   RECORD_FIELD_SCHEMAS,
   approvalRequestSchema,
@@ -56,6 +57,32 @@ function refresh() {
   revalidatePath("/portal", "layout");
 }
 
+/** Human label for a raw kind or object-type code (V1-A F2), falling back to the code itself. */
+function humanizeKindCode(token: string): string {
+  const ot = objectType(token);
+  if (ot) return ot.label;
+  if (token in RECORD_KIND_LABELS) return RECORD_KIND_LABELS[token as RecordKind];
+  if (token in PHASE_5_KIND_LABELS)
+    return PHASE_5_KIND_LABELS[token as keyof typeof PHASE_5_KIND_LABELS];
+  return token;
+}
+
+/**
+ * The database's own pairing-rule refusal names the raw kind/object-type
+ * codes (e.g. "from role to goal"); the searchable target picker (F2)
+ * prevents this from arising in ordinary use, but this translates it into
+ * the same human labels used everywhere else, as a defense-in-depth
+ * fallback for any call that bypasses the picker.
+ */
+function translateRelationshipRuleMessage(message: string): string {
+  const match = message.match(
+    /^The Development Architecture Method does not define "(.+)" from (\S+) to (\S+)$/,
+  );
+  if (!match) return message;
+  const [, relationshipLabel, from, to] = match;
+  return `The Development Architecture Method does not define "${relationshipLabel}" from ${humanizeKindCode(from)} to ${humanizeKindCode(to)}`;
+}
+
 function dbError(error: PostgrestError): ActionResult<never> {
   if (error.code === "23505" && error.message.includes("architecture_relationships")) {
     return fail("That relationship already exists.");
@@ -65,6 +92,12 @@ function dbError(error: PostgrestError): ActionResult<never> {
   }
   if (error.code === "23505" && error.message.includes("architecture_baseline_items")) {
     return fail("That element is already in the baseline.");
+  }
+  if (
+    error.code === "23514" &&
+    error.message.startsWith("The Development Architecture Method does not define")
+  ) {
+    return fail(translateRelationshipRuleMessage(error.message));
   }
   return fromDatabaseError(error);
 }
@@ -461,6 +494,26 @@ export async function updateEvidenceSource(sourceId: string, input: unknown) {
   );
 }
 
+/**
+ * Delete an evidence source (V1-A F1/D10). The database refuses a cited
+ * source outright (a readable message naming what cites it, instead of a
+ * raw foreign-key error); an uncited source's own attached file, if any, is
+ * detached and removed from storage so nothing is left orphaned.
+ */
+export async function deleteEvidenceSource(sourceId: string) {
+  return run(empty, {}, async (supabase) => {
+    const { data, error } = await supabase.rpc("delete_evidence_source", {
+      p_source_id: sourceId,
+    });
+    if (error) return { error };
+    const paths = (data ?? []) as string[];
+    if (paths.length > 0) {
+      await supabase.storage.from(ENGAGEMENT_FILES_BUCKET).remove(paths);
+    }
+    return { data: undefined, error: null };
+  });
+}
+
 // Relationships ---------------------------------------------------------------------
 
 export async function addRelationship(
@@ -503,6 +556,47 @@ export async function retireRelationship(relationshipId: string, input: unknown)
   return run(reasonSchema, input, (supabase, v) =>
     supabase.rpc("retire_relationship", { p_relationship_id: relationshipId, p_reason: v.reason }),
   );
+}
+
+/**
+ * Publish a relationship whose both ends are already published (V1-A D2).
+ * publish_relationships stamps published_at/published_by on the
+ * relationship row directly; it never creates an element version. The
+ * underlying function accepts a batch and reports one row per id, so a
+ * refusal (already published, retired, an end not yet published, or no
+ * capability) comes back as that row's own error rather than a generic one.
+ */
+export async function publishRelationship(relationshipId: string) {
+  return run(empty, {}, async (supabase) => {
+    const { data, error } = await supabase.rpc("publish_relationships", {
+      p_relationship_ids: [relationshipId],
+    });
+    if (error) return { error };
+    const row = data?.[0];
+    if (!row) {
+      return {
+        error: {
+          code: "P0002",
+          message: "That relationship was not found.",
+          details: "",
+          hint: "",
+          name: "PostgrestError",
+        } as PostgrestError,
+      };
+    }
+    if (!row.published) {
+      return {
+        error: {
+          code: row.error_code ?? "23514",
+          message: row.error_message ?? "That relationship could not be published.",
+          details: "",
+          hint: "",
+          name: "PostgrestError",
+        } as PostgrestError,
+      };
+    }
+    return { data: undefined, error: null };
+  });
 }
 
 // Decisions -------------------------------------------------------------------------
@@ -690,6 +784,52 @@ export async function supersedeElement(oldElementId: string, input: unknown) {
       p_reason: v.reason,
     }),
   );
+}
+
+/**
+ * Create Successor (V1-A F3/D11): creates a new draft of the same kind,
+ * pre-filled from the original, and marks it as the original's successor
+ * in one action. This composes the existing create action for the
+ * element's own kind (createObject or createRecord) and the existing
+ * supersedeElement/supersede_element in sequence -- no new atomic database
+ * operation, exactly as D11 requires. supersede_element already guards
+ * self-supersession and cross-engagement misuse, so those checks are not
+ * duplicated here.
+ *
+ * If the new draft is created but the supersession call itself then fails,
+ * the draft is left in place rather than silently discarded; the error
+ * says so, and the existing Supersede control (which only needs an
+ * already-created successor) can complete it.
+ */
+export async function createSuccessor(
+  oldElementId: string,
+  engagementId: string,
+  kind: "object" | RecordKind,
+  // The create-successor form offers only maturity and attribute fields for
+  // an object's own type (objectFields never offers a type selector, since
+  // a successor keeps its predecessor's object type), so the type itself is
+  // bound here rather than collected from the form.
+  objectType: string | null,
+  input: Record<string, unknown>,
+): Promise<ActionResult<{ newElementId: string }>> {
+  const { reason, ...rest } = input;
+  const reasonText = typeof reason === "string" ? reason : "";
+  const created =
+    kind === "object"
+      ? await createObject(engagementId, { ...rest, objectType })
+      : await createRecord(engagementId, kind, rest);
+  if (!created.ok) return created;
+  const newElementId = created.data as unknown as string;
+  if (typeof newElementId !== "string" || !newElementId) {
+    return fail("The successor could not be created.");
+  }
+  const superseded = await supersedeElement(oldElementId, { newElementId, reason: reasonText });
+  if (!superseded.ok) {
+    return fail(
+      `A successor draft was created, but could not yet be marked as superseding the original: ${superseded.error}`,
+    );
+  }
+  return ok({ newElementId });
 }
 
 export async function reviewAiContent(

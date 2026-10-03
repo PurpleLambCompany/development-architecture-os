@@ -5,6 +5,7 @@ import type { PostgrestError } from "@supabase/supabase-js";
 import type { z } from "zod";
 import { fail, fromDatabaseError, fromZodError, ok, type ActionResult } from "@/lib/action-result";
 import { requireViewer } from "@/lib/auth/viewer";
+import { supersedeElement } from "@/domain/architecture/actions";
 import {
   ALLOWED_FILE_TYPES,
   ENGAGEMENT_FILES_BUCKET,
@@ -57,6 +58,34 @@ export async function createDeliverable(engagementId: string, input: unknown) {
       ...(v.summary ? { p_summary: v.summary } : {}),
     }),
   );
+}
+
+/**
+ * Create Successor for a Deliverable (V1-A F3/D11): composes
+ * createDeliverable and the existing supersedeElement/supersede_element,
+ * exactly as the generic element page's Create Successor does. No new
+ * atomic database operation.
+ */
+export async function createDeliverableSuccessor(
+  oldElementId: string,
+  engagementId: string,
+  input: Record<string, unknown>,
+): Promise<ActionResult<{ newElementId: string }>> {
+  const { reason, ...rest } = input;
+  const reasonText = typeof reason === "string" ? reason : "";
+  const created = await createDeliverable(engagementId, rest);
+  if (!created.ok) return created;
+  const newElementId = created.data as unknown as string;
+  if (typeof newElementId !== "string" || !newElementId) {
+    return fail("The successor could not be created.");
+  }
+  const superseded = await supersedeElement(oldElementId, { newElementId, reason: reasonText });
+  if (!superseded.ok) {
+    return fail(
+      `A successor draft was created, but could not yet be marked as superseding the original: ${superseded.error}`,
+    );
+  }
+  return ok({ newElementId });
 }
 
 /** An update or delete that RLS silently filtered out means no permission. */

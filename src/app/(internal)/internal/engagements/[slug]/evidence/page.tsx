@@ -1,4 +1,8 @@
-import { createEvidenceSource, updateEvidenceSource } from "@/domain/architecture/actions";
+import {
+  createEvidenceSource,
+  deleteEvidenceSource,
+  updateEvidenceSource,
+} from "@/domain/architecture/actions";
 import {
   EVIDENCE_PROVENANCE,
   EVIDENCE_SOURCE_TYPES,
@@ -20,7 +24,7 @@ import { ElementLink, InternalMark } from "@/components/architecture/badges";
 import { getEvidenceFiles } from "@/domain/intelligence/queries";
 import { FileList } from "@/components/intelligence/file-list";
 import { EvidenceFileUpload } from "@/components/intelligence/upload-form";
-import { ActionForm, type FieldSpec } from "@/components/ui/action-form";
+import { ActionButton, ActionForm, type FieldSpec } from "@/components/ui/action-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState, Panel } from "@/components/ui/panel";
 
@@ -153,6 +157,7 @@ export default async function EvidencePage({
                 ? architecture.byId.get(l.architecture_statements.element_id)
                 : undefined,
             }));
+            const citationCount = citedBy.length + s.elementLinks.length;
             return (
               <Panel
                 key={s.id}
@@ -240,13 +245,30 @@ export default async function EvidencePage({
                     ) : null}
                   </div>
                   {canEdit ? (
-                    <ActionForm
-                      fields={sourceFields(canPublish)}
-                      defaultValues={sourceDefaults(s)}
-                      action={updateEvidenceSource.bind(null, s.id)}
-                      submitLabel="Save source"
-                      trigger="Edit"
-                    />
+                    <div className="flex flex-wrap items-center gap-3">
+                      <ActionForm
+                        fields={sourceFields(canPublish)}
+                        defaultValues={sourceDefaults(s)}
+                        action={updateEvidenceSource.bind(null, s.id)}
+                        submitLabel="Save source"
+                        trigger="Edit"
+                      />
+                      {citationCount > 0 ? (
+                        <span
+                          className="text-xs text-ink-subtle"
+                          title="Cited sources cannot be deleted; remove the citations first."
+                        >
+                          Cited by {citationCount} — cannot be deleted
+                        </span>
+                      ) : (
+                        <ActionButton
+                          action={deleteEvidenceSource.bind(null, s.id)}
+                          label="Delete source"
+                          variant="danger"
+                          confirm="Delete this evidence source? This cannot be undone."
+                        />
+                      )}
+                    </div>
                   ) : null}
                 </div>
               </Panel>

@@ -19,6 +19,7 @@ import {
 import {
   addReviewParticipant,
   cancelReview,
+  createReviewSuccessor,
   holdReview,
   recordReviewValidation,
   updateReview,
@@ -206,7 +207,7 @@ export default async function ReviewDetailPage({
             {canManageReviews && row.review_status === "scheduled" ? (
               <ActionForm
                 fields={[
-                  { name: "heldAt", label: "Held at", hint: "YYYY-MM-DDTHH:mm, blank for now" },
+                  { name: "heldAt", label: "Held at", type: "datetime", hint: "Blank for now" },
                   { name: "summary", label: "Summary", type: "textarea" },
                 ]}
                 action={holdReview.bind(null, element.id)}
@@ -246,13 +247,59 @@ export default async function ReviewDetailPage({
                 trigger="Return for work"
               />
             ) : null}
-            {canPublish && !frozen ? (
+            {canManageReviews && canPublish && !frozen ? (
+              <ActionForm
+                fields={[
+                  {
+                    name: "reviewType",
+                    label: "Kind",
+                    type: "select",
+                    options: REVIEW_TYPES.map((t) => ({ value: t, label: REVIEW_TYPE_LABELS[t] })),
+                  },
+                  { name: "title", label: "Title", wide: true },
+                  { name: "scheduledFor", label: "Scheduled for", type: "datetime" },
+                  {
+                    name: "baselineId",
+                    label: "Baseline",
+                    type: "select",
+                    options: [
+                      { value: "", label: "None" },
+                      ...baselines.map((b) => ({ value: b.id, label: b.label })),
+                    ],
+                  },
+                  { name: "summary", label: "Summary", type: "textarea", wide: true },
+                  {
+                    name: "reason",
+                    label: "Reason this successor is needed",
+                    type: "textarea",
+                    wide: true,
+                  },
+                ]}
+                defaultValues={{
+                  reviewType: row.review_type,
+                  title: element.title,
+                  scheduledFor: row.scheduled_for ? row.scheduled_for.slice(0, 16) : "",
+                  baselineId: row.baseline_id ?? "",
+                  summary: reviewSummary,
+                }}
+                action={createReviewSuccessor.bind(null, element.id, engagement.id)}
+                submitLabel="Create successor"
+                trigger="Create successor"
+                confirm="Create a new draft review pre-filled from this one, and mark this one superseded by it immediately? This cannot be undone."
+              />
+            ) : null}
+            {canPublish && element.lifecycle !== "retired" ? (
               <ActionForm
                 fields={[{ name: "reason", label: "Reason", type: "textarea" }]}
                 action={retireElement.bind(null, element.id)}
                 submitLabel="Retire"
                 variant="danger"
                 trigger="Retire"
+                confirm={
+                  element.lifecycle === "superseded"
+                    ? "Retire this superseded review? This withdraws it from the client."
+                    : undefined
+                }
               />
             ) : null}
           </div>
@@ -296,8 +343,7 @@ export default async function ReviewDetailPage({
                 {
                   name: "scheduledFor",
                   label: "Scheduled for",
-                  type: "text",
-                  hint: "YYYY-MM-DDTHH:mm",
+                  type: "datetime",
                 },
                 {
                   name: "baselineId",

@@ -16,7 +16,7 @@ import {
   listEvidence,
   loadArchitecture,
 } from "@/domain/architecture/queries";
-import { updateDeliverable } from "@/domain/deliverables/actions";
+import { createDeliverableSuccessor, updateDeliverable } from "@/domain/deliverables/actions";
 import { DELIVERABLE_TYPES, DELIVERABLE_TYPE_LABELS } from "@/domain/deliverables/catalog";
 import { getDeliverableFiles, getDeliverableRegister } from "@/domain/deliverables/queries";
 import { getEdgeItems } from "@/domain/edge/queries";
@@ -120,13 +120,70 @@ export default async function DeliverableDetailPage({
                 trigger="Return for work"
               />
             ) : null}
-            {canPublish && !frozen ? (
+            {canManageDeliverables && canPublish && !frozen ? (
+              <ActionForm
+                fields={[
+                  {
+                    name: "deliverableType",
+                    label: "Kind",
+                    type: "select",
+                    options: DELIVERABLE_TYPES.map((t) => ({
+                      value: t,
+                      label: DELIVERABLE_TYPE_LABELS[t],
+                    })),
+                  },
+                  { name: "title", label: "Title", wide: true },
+                  {
+                    name: "baselineId",
+                    label: "Baseline",
+                    type: "select",
+                    options: [
+                      { value: "", label: "None" },
+                      ...baselines.map((b) => ({ value: b.id, label: b.label })),
+                    ],
+                  },
+                  {
+                    name: "confidential",
+                    label: "Confidential",
+                    type: "select",
+                    options: [
+                      { value: "no", label: "No" },
+                      { value: "yes", label: "Yes — needs view_confidential_deliverables" },
+                    ],
+                  },
+                  { name: "summary", label: "Summary", type: "textarea", wide: true },
+                  {
+                    name: "reason",
+                    label: "Reason this successor is needed",
+                    type: "textarea",
+                    wide: true,
+                  },
+                ]}
+                defaultValues={{
+                  deliverableType: row.deliverable_type,
+                  title: element.title,
+                  baselineId: row.baseline_id ?? "",
+                  confidential: row.confidential ? "yes" : "no",
+                  summary: element.summary,
+                }}
+                action={createDeliverableSuccessor.bind(null, element.id, engagement.id)}
+                submitLabel="Create successor"
+                trigger="Create successor"
+                confirm="Create a new draft deliverable pre-filled from this one, and mark this one superseded by it immediately? This cannot be undone."
+              />
+            ) : null}
+            {canPublish && element.lifecycle !== "retired" ? (
               <ActionForm
                 fields={[{ name: "reason", label: "Reason", type: "textarea" }]}
                 action={retireElement.bind(null, element.id)}
                 submitLabel="Retire"
                 variant="danger"
                 trigger="Retire"
+                confirm={
+                  element.lifecycle === "superseded"
+                    ? "Retire this superseded deliverable? This withdraws it from the client."
+                    : undefined
+                }
               />
             ) : null}
           </div>

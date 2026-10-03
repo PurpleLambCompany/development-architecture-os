@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   addRelationship,
   deleteRelationship,
+  publishRelationship,
   retireRelationship,
 } from "@/domain/architecture/actions";
 import {
@@ -33,6 +34,7 @@ import { ActionButton, ActionForm } from "@/components/ui/action-form";
 import { EmptyState, Panel } from "@/components/ui/panel";
 import { StatusTag } from "@/components/ui/status-tag";
 import { ElementLink, InternalMark } from "./badges";
+import { RelationshipTargetPicker } from "./relationship-target-picker";
 
 export function elementTypeLabel(element: LoadedElement): string {
   if (element.object) return objectType(element.object.object_type)?.label ?? "Object";
@@ -100,14 +102,25 @@ export function RelationshipsPanel({
     (e) => e.id !== element.id && e.lifecycle !== "retired" && e.lifecycle !== "superseded",
   );
   const allowedTypes = new Set<RelationshipTypeKey>();
-  const targets = candidates.filter((candidate) => {
+  // Every type a candidate is valid for (F2): a candidate whose pairing
+  // allows at least one type is kept, grouped under each type it allows, so
+  // the target picker can filter its list down to the currently chosen type.
+  const targetsByType: Record<string, { value: string; label: string; search: string }[]> = {};
+  for (const candidate of candidates) {
     const types = allowedRelationshipTypes(
       source,
       elementClass(candidate.kind, candidate.object?.object_type ?? null),
     );
-    types.forEach((t) => allowedTypes.add(t));
-    return types.length > 0;
-  });
+    for (const t of types) {
+      allowedTypes.add(t);
+      (targetsByType[t] ??= []).push({
+        value: candidate.id,
+        label: elementOptionLabel(candidate),
+        search: `${candidate.reference_code ?? ""} ${candidate.title}`.toLowerCase(),
+      });
+    }
+  }
+  const hasTargets = Object.keys(targetsByType).length > 0;
   // validates is written only by record_review_validation (D13); never offered
   // as a free-form relationship insert here.
   const typeOptions = RELATIONSHIP_TYPES.filter(
@@ -172,6 +185,9 @@ export function RelationshipsPanel({
                           r={r}
                           canEdit={canEdit && !frozen}
                           canPublish={canPublish}
+                          bothEndsPublished={
+                            element.latest_version_id != null && other!.latest_version_id != null
+                          }
                         />
                       )}
                     </span>
@@ -186,68 +202,27 @@ export function RelationshipsPanel({
             </div>
           );
         })}
-        {canEdit && !frozen && targets.length > 0 ? (
-          <ActionForm
-            fields={[
-              {
-                name: "relationshipType",
-                label: "This element…",
-                type: "select",
-                options: typeOptions,
-              },
-              {
-                name: "targetElementId",
-                label: "Target",
-                type: "select",
-                options: targets.map((t) => ({ value: t.id, label: elementOptionLabel(t) })),
-                wide: true,
-              },
-              {
-                name: "requiredProficiency",
-                label: "Required proficiency",
-                type: "select",
-                options: [
-                  { value: "", label: "Not applicable" },
-                  ...SKILL_PROFICIENCIES.map((p) => ({
-                    value: p,
-                    label: SKILL_PROFICIENCY_LABELS[p],
-                  })),
-                ],
-                hint: "Only for a role requiring a skill.",
-              },
-              {
-                name: "provenance",
-                label: "Provenance",
-                type: "select",
-                options: EDITABLE_PROVENANCE.map((p) => ({
-                  value: p,
-                  label: PROVENANCE_LABELS[p],
-                })),
-              },
-              ...(canPublish
+        {canEdit && !frozen && hasTargets ? (
+          <RelationshipTargetPicker
+            typeOptions={typeOptions}
+            targetsByType={targetsByType}
+            requiredProficiencyOptions={SKILL_PROFICIENCIES.map((p) => ({
+              value: p,
+              label: SKILL_PROFICIENCY_LABELS[p],
+            }))}
+            provenanceOptions={EDITABLE_PROVENANCE.map((p) => ({
+              value: p,
+              label: PROVENANCE_LABELS[p],
+            }))}
+            clientVisibilityOptions={
+              canPublish
                 ? [
-                    {
-                      name: "clientVisibility",
-                      label: "Client visibility",
-                      type: "select" as const,
-                      options: [
-                        { value: "client", label: "Client-visible once both ends are published" },
-                        { value: "internal", label: "Internal only" },
-                      ],
-                    },
+                    { value: "client", label: "Client-visible once both ends are published" },
+                    { value: "internal", label: "Internal only" },
                   ]
-                : []),
-              { name: "description", label: "Description", type: "textarea" },
-            ]}
-            defaultValues={{
-              relationshipType: typeOptions[0]?.value ?? "",
-              targetElementId: targets[0]!.id,
-              provenance: "architect_judgment",
-              clientVisibility: "client",
-            }}
+                : null
+            }
             action={addRelationship.bind(null, engagementId, element.id)}
-            submitLabel="Add relationship"
-            trigger="Add relationship"
           />
         ) : null}
       </div>
@@ -265,21 +240,43 @@ function RelationshipControls({
   r,
   canEdit,
   canPublish,
+  bothEndsPublished,
 }: {
   r: RelationshipRow;
   canEdit: boolean;
   canPublish: boolean;
+  bothEndsPublished: boolean;
 }) {
   if (r.retired_at || r.relationship_type === "supersedes") return null;
   if (!r.published_at) {
-    return canEdit ? (
-      <ActionButton
-        action={deleteRelationship.bind(null, r.id)}
-        label="Remove"
-        variant="ghost"
-        confirm="Remove this unpublished relationship?"
-      />
-    ) : null;
+    return (
+      <span className="flex items-center gap-2">
+        {bothEndsPublished ? (
+          <span
+            className="text-xs text-ink-subtle"
+            title="Both ends are already published; this relationship is pending publication."
+          >
+            Pending publication
+          </span>
+        ) : null}
+        {canPublish && bothEndsPublished ? (
+          <ActionButton
+            action={publishRelationship.bind(null, r.id)}
+            label="Publish relationship"
+            variant="ghost"
+            title="Both ends are already published; this relationship is pending publication."
+          />
+        ) : null}
+        {canEdit ? (
+          <ActionButton
+            action={deleteRelationship.bind(null, r.id)}
+            label="Remove"
+            variant="ghost"
+            confirm="Remove this unpublished relationship?"
+          />
+        ) : null}
+      </span>
+    );
   }
   return canPublish ? (
     <ActionForm

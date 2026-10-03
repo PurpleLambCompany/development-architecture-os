@@ -16,10 +16,11 @@ import { clearMailbox, confirmationLink } from "./support/mailbox";
  *
  * Covered: G-1 and G-2 (Workstream A, Increment 2), G-3, part of G-4
  * (create and publish), G-6 and G-7 (Workstream B, Increment 3), the
- * client-visibility part of G-8, G-9 (Workstream C, Increment 4), and part
- * of G-10. Deferred until their workstreams land: G-4's evidence and
- * relationships and G-5 (D), G-8's invoice and payment (F), and the rest of
- * G-10 (E).
+ * client-visibility part of G-8, G-9 (Workstream C, Increment 4), and
+ * G-10's password recovery part (E1, Increment 6; see
+ * v1a-recovery-and-dead-ends.spec.ts). Deferred until their workstreams
+ * land: G-4's evidence and relationships and G-5 (D), G-8's invoice and
+ * payment (F).
  *
  * Starts from an unseeded database (no organizations, no users). The only
  * step outside the app is the documented local bootstrap command (D6); from
@@ -63,13 +64,6 @@ const fullName = (person: { first: string; last: string }) => `${person.first} $
 let deliverableId = "";
 let reviewId = "";
 let initiativeId = "";
-
-/** Marks an assertion that pins a known V1-A dead end, and the workstream that closes it. */
-function boundary(workstream: string, description: string) {
-  test
-    .info()
-    .annotations.push({ type: "v1-a-boundary", description: `${workstream}: ${description}` });
-}
 
 test.describe.configure({ mode: "serial" });
 
@@ -621,11 +615,10 @@ test("C3: an unexpected error shows the calm boundary, not the framework's own p
   await expect(lead.getByRole("heading", { name: "Something went wrong" })).toBeVisible();
 });
 
-test("G-10 (part): the login page offers no password recovery", async ({ page }) => {
-  boundary("E1", "there is no forgot-password flow");
+test("G-10 (part): the login page offers password recovery (E1, Increment 6)", async ({ page }) => {
   await page.goto("/login");
   await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
-  await expect(page.getByText(/forgot/i)).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Forgot your password?" })).toBeVisible();
 });
 
 /** The organization member row for a person. */

@@ -98,7 +98,7 @@ select is((select count(*)::int from public.client_architecture('e0000000-0000-4
 select pg_temp.reset_actor();
 
 select pg_temp.act_as('lead@meridian.test');
-select is((select count(*)::int from public.client_architecture('e0000000-0000-4000-8000-000000000001')), 34,
+select is((select count(*)::int from public.client_architecture('e0000000-0000-4000-8000-000000000001')), 37,
   'the Client Project Lead holds view_full_architecture and sees everything published');
 select is((select count(*)::int from public.engagement_member_areas), 0, 'and does not read others'' areas');
 select pg_temp.reset_actor();
@@ -165,7 +165,7 @@ select pg_temp.act_as('viewer@meridian.test');
 select is(pg_temp.seen(), 'APP-001,APP-005,APP-006,DEC-001,DEP-001', 'and sees only that area');
 select pg_temp.reset_actor();
 select pg_temp.act_as('contributor@meridian.test');
-select is((select count(*)::int from public.client_architecture('e0000000-0000-4000-8000-000000000001')), 34,
+select is((select count(*)::int from public.client_architecture('e0000000-0000-4000-8000-000000000001')), 37,
   'a Client Contributor granted view_full_architecture sees everything published');
 select pg_temp.reset_actor();
 

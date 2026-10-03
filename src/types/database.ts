@@ -7697,6 +7697,7 @@ export type Database = {
       defer_decision: { Args: { p_decision_id: string; p_reason: string }; Returns: undefined };
       delete_acceptance_criterion: { Args: { p_criterion_id: string }; Returns: undefined };
       delete_dam_release: { Args: { p_release_id: string }; Returns: undefined };
+      delete_evidence_source: { Args: { p_source_id: string }; Returns: string[] };
       delete_method_asset_version: { Args: { p_version_id: string }; Returns: undefined };
       deliverable_register: {
         Args: { p_engagement_id?: string };
@@ -8367,6 +8368,15 @@ export type Database = {
           p_version_label: string;
         };
         Returns: undefined;
+      };
+      publish_relationships: {
+        Args: { p_relationship_ids: string[] };
+        Returns: {
+          error_code: string;
+          error_message: string;
+          published: boolean;
+          relationship_id: string;
+        }[];
       };
       reassign_client_action: {
         Args: { p_action_id: string; p_member_id: string; p_note?: string };
