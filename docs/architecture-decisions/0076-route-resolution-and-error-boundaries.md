@@ -1,6 +1,6 @@
 # ADR-0076: Canonical route resolution and error boundaries
 
-**Status:** Implemented on a draft PR (V1-A Increment 4, Workstream C; plan §4 Workstream C). Not yet merged or accepted.
+**Status:** Accepted (V1-A Increment 4, Workstream C; plan §4 Workstream C accepted by Kerrick 2026-10-02 as part of the V1-A implementation plan, sequenced by decision D13; merged in PR #20, `7793510`).
 
 ## Context
 
